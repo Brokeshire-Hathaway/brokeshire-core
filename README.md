@@ -1,2 +1,2 @@
 # py-project-template
-Template for a new Python project using my selected stack
+Template to use for new Python projects using my selected stack.

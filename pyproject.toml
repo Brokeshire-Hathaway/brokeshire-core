@@ -1,7 +1,7 @@
 [project]
 name = "py-project-template"
 version = "0.1.0"
-description = "Default template for PDM package"
+description = "Template to use for new Python projects using my selected stack"
 authors = [
     {name = "Tom Daniel", email = "0xtomdaniel@gmail.com"},
 ]
