@@ -1,0 +1,15 @@
+[project]
+name = "py-project-template"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "Tom Daniel", email = "0xtomdaniel@gmail.com"},
+]
+dependencies = []
+requires-python = "==3.11.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+package-type = "application"
