@@ -1,5 +1,5 @@
 [project]
-name = "py-project-template"
+name = "ember-agents"
 version = "0.1.0"
 description = "Template to use for new Python projects using my selected stack"
 authors = [
