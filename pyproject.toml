@@ -5,7 +5,9 @@ description = "The Ember AI agent swarm for intent based cognition and reasoning
 authors = [
     {name = "Tom Daniel", email = "0xtomdaniel@gmail.com"},
 ]
-dependencies = []
+dependencies = [
+    "python-dotenv>=1.0.0",
+]
 requires-python = "==3.11.*"
 readme = "README.md"
 license = {text = "MIT"}
@@ -15,6 +17,10 @@ pythonpath = ["src"]
 
 [tool.pdm]
 package-type = "application"
+
+[tool.pdm.scripts]
+#start = "flask run -p 54321"
+test = "pytest"
 
 [tool.pdm.dev-dependencies]
 test = [
