@@ -7,6 +7,7 @@ authors = [
 ]
 dependencies = [
     "python-dotenv>=1.0.0",
+    "semantic-router>=0.0.14",
 ]
 requires-python = "==3.11.*"
 readme = "README.md"
@@ -20,7 +21,7 @@ package-type = "application"
 
 [tool.pdm.scripts]
 #start = "flask run -p 54321"
-test = "pytest"
+test = "pytest -s"
 
 [tool.pdm.dev-dependencies]
 test = [
