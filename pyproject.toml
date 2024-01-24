@@ -8,6 +8,9 @@ authors = [
 dependencies = [
     "python-dotenv>=1.0.0",
     "semantic-router>=0.0.14",
+    "pydantic>=1.10.13",
+    "guidance>=0.1.10",
+    "pyautogen>=0.2.6",
 ]
 requires-python = "==3.11.*"
 readme = "README.md"
@@ -15,6 +18,7 @@ license = {text = "MIT"}
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+asyncio_mode="auto"
 
 [tool.pdm]
 package-type = "application"
@@ -26,6 +30,7 @@ test = "pytest -s"
 [tool.pdm.dev-dependencies]
 test = [
     "pytest>=7.4.4",
+    "pytest-asyncio>=0.23.3",
 ]
 code-analysis = [
     "ruff>=0.1.9",

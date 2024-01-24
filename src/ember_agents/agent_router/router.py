@@ -51,7 +51,15 @@ decision_layer = RouteLayer(encoder=encoder, routes=routes)
 
 
 def router(intent: str) -> str:
-    """Route an intent to the appropriate agent."""
+    """Route a user intent to the appropriate agent team."""
+
+    # TODO: Track sessions using a user id and thread id.
+    #       (A thread represents a private chat, public group, or chat thread)
+
+    # TODO: Each time an agent team ends their session with the user, they should return
+    #       a summary of their conversation with the user so that it can be included in
+    #       the top level conversation for context.
+
     route = decision_layer(intent).name
     if route is None:
         return "internal"
