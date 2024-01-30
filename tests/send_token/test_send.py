@@ -8,13 +8,12 @@ from ember_agents.send_token.send import (
     TxIdState,
     TxPreview,
     TxRequest,
-    send,
 )
 
 pytest_plugins = "pytest_asyncio"
 
 
-@pytest.mark.parametrize(
+"""@pytest.mark.parametrize(
     "intent, user_replies",
     [
         (
@@ -83,4 +82,4 @@ async def test_send(intent: str, user_replies: List[str]):
 
     await send(
         intent, user_reply, assistant_reply, prepare_transaction, get_transaction_result
-    )
+    )"""

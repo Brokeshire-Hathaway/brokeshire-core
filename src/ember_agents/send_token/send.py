@@ -12,6 +12,7 @@ from autogen import (
     UserProxyAgent,
     config_list_from_json,
 )
+from ember_agents.common.agents import AgentTeam
 from guidance import assistant, gen, instruction, models, select, system, user
 
 
@@ -29,9 +30,9 @@ class TxRequest(NamedTuple):
     #       EXAMPLES:
     #           ethereum://0x2D6c1025994dB45c7618571d6cB49B064DA9881B
     #           ethereum:0x2D6c1025994dB45c7618571d6cB49B064DA9881B
-    #           ethereum://alice.telegram.org
-    #           bitcoin://84738954.telegram.org
-    #           ethereum:alice@telegram.org
+    #           ethereum://@alice.telegram.org
+    #           ethereum://alice@telegram.org
+    #           bitcoin://@84738954.telegram.org
     #           solana://+1234567890
     #           solana:+1234567890/$SOL
 
@@ -110,7 +111,7 @@ class SendTokenGroupChat(GroupChat):
         """Select the next speaker."""
         print(f"last_speaker = {last_speaker.name}")
         print(
-            f"self.last_speaker = {self.last_speaker.name if self.last_speaker is not None else None}"
+            f"self.last_speaker = {self.last_speaker.name if self.last_speaker else None}"
         )
         # print(f"self.messages = {self.messages}")
 
@@ -302,6 +303,90 @@ You are a technician responsible for executing tools and returning the results t
 """
 
 
+class SendTokenAgentTeam(AgentTeam):
+    def __init__(
+        self,
+        sender_did: str,
+        thread_id: str,
+        # on_complete: Callable[[str], None],
+        prepare_transaction: Callable[[TxRequest], Awaitable[TxPreview]],
+        get_transaction_result: Callable[[str], Awaitable[TxIdState]],
+    ):
+        self._prepare_transaction = prepare_transaction
+        self._get_transaction_result = get_transaction_result
+        super().__init__(sender_did, thread_id)
+
+    async def _run_conversation(self, message: str):
+        user_proxy = MessagingUserProxyAgent(
+            "user",
+            human_input_mode="ALWAYS",
+            code_execution_config={"work_dir": "coding"},
+            is_termination_msg=lambda x: x.get("content", "")
+            and x.get("content", "").rstrip().endswith("TERMINATE"),
+            a_human_reply=self._get_human_messages,
+            assistant_reply=self._send_team_response,
+        )
+
+        # No system message needed for OpenAI completion API used by Guidance agent.
+        interpreter_agent = AssistantAgent("interpreter", llm_config=llm_config)
+        interpreter_agent.register_reply(Agent, convert_to_request, 1)
+
+        validator = AssistantAgent(
+            "validator", system_message=validator_system_message, llm_config=llm_config
+        )
+
+        broker = AssistantAgent(
+            "broker",
+            system_message=broker_system_message,
+            llm_config=llm_config,
+        )
+
+        executor = AssistantAgent(
+            "executor", system_message=executor_system_message, llm_config=llm_config
+        )
+
+        technician = AssistantAgent(
+            "technician",
+            system_message=technician_system_message,
+            llm_config=llm_config,
+        )
+
+        @technician.register_for_execution()
+        @executor.register_for_llm(
+            description="Prepare a transaction for the user to review and sign."
+        )
+        async def a_prepare_transaction():
+            tx_request = TxRequest(
+                sender_did="ethereum://84738954.telegram.org",
+                recipient_did="ethereum://0xc6A9f8f20d79Ae0F1ADf448A0C460178dB6655Cf",
+                receive_token_address="0x514910771AF9Ca656af840dff83E8264EcF986CA",
+                amount="0.0001",
+            )
+            return await self._prepare_transaction(tx_request)
+
+        @technician.register_for_execution()
+        @executor.register_for_llm(description="Get the results of a transaction.")
+        async def a_get_transaction_result(tx_id: str):
+            return await self._get_transaction_result(tx_id)
+
+        groupchat = SendTokenGroupChat(
+            agents=[
+                user_proxy,
+                interpreter_agent,
+                validator,
+                broker,
+                executor,
+                technician,
+            ],
+            messages=[],
+            max_round=20,
+        )
+        manager = GroupChatManager(groupchat=groupchat, llm_config=llm_config)
+
+        await user_proxy.a_initiate_chat(manager, message=message)
+
+
+"""
 async def send(
     intent: str,
     user_reply: Callable[[], Awaitable[str]],
@@ -377,3 +462,4 @@ async def send(
     manager = GroupChatManager(groupchat=groupchat, llm_config=llm_config)
 
     await user_proxy.a_initiate_chat(manager, message=intent)
+    """
