@@ -1,3 +1,4 @@
+import asyncio
 from typing import Union
 
 from fastapi import FastAPI, Request
@@ -5,7 +6,6 @@ from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
 from ember_agents.agent_router.router import AgentTeamSessionManager, Router
-from ember_agents.send_token.send import send
 
 app = FastAPI()
 
@@ -28,10 +28,17 @@ agent_team_session_manager = AgentTeamSessionManager()
 @app.post("/v1/threads/{thread_id}/messages")
 async def create_message(thread_id: str, message: Message, request: Request):
     async def event_generator():
+        count = 0
         while True:
             if await request.is_disconnected():
                 break
-            yield None
+
+            await asyncio.sleep(1)
+            count += 1
+            yield {
+                "id": count,
+                "data": f"Message {count}",
+            }
 
     # Select route for thread
     # Route to proper agent team
@@ -42,9 +49,9 @@ async def create_message(thread_id: str, message: Message, request: Request):
 
     # Repeat
 
-    router = Router(agent_team_session_manager)
-    agent_team = router.get_active_agent_team(thread_id, message.message)
-    agent_team.get_activity_updates(lambda activity: None)
-    response = await agent_team.send(message.message)
+    # router = Router(agent_team_session_manager)
+    # agent_team = router.get_active_agent_team(thread_id, message.message)
+    # agent_team.get_activity_updates(lambda activity: None)
+    # response = await agent_team.send(message.message)
 
     return EventSourceResponse(event_generator())
