@@ -28,6 +28,7 @@ package-type = "application"
 
 [tool.pdm.scripts]
 #start = "flask run -p 54321"
+start = "uvicorn --app-dir src ember_agents.main:app --reload"
 test = "pytest -s"
 
 [tool.pdm.dev-dependencies]
