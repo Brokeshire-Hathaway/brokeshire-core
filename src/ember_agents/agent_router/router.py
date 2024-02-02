@@ -1,6 +1,7 @@
 import asyncio
 import os
 import uuid
+from typing import Callable
 from weakref import WeakValueDictionary
 
 from ember_agents.common.agents import AgentTeam
@@ -138,10 +139,18 @@ class Router:
     def __init__(self, session_manager: AgentTeamSessionManager):
         self._session_manager = session_manager
 
-    async def send(self, sender_did: str, thread_id: str, message: str):
+    async def send(
+        self,
+        sender_did: str,
+        thread_id: str,
+        message: str,
+        activity: Callable[[str], None] | None = None,
+    ):
         agent_team = self._get_agent_team_session(sender_did, thread_id)
         if agent_team is None:
             agent_team = self._create_agent_team_session(sender_did, thread_id, message)
+        if activity is not None:
+            agent_team.get_activity_updates(activity)
         return await agent_team.send(message)
 
     def _create_agent_team_session(

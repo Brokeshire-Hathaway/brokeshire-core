@@ -24,7 +24,7 @@ class TxRequest(NamedTuple):
     #       It must include the following:
     #           - UID
     #           - Platform
-    #           - Network
+    #           - Network/Protocol
     #           - (MAYBE) Token Symbol
     #
     #       EXAMPLES:
@@ -127,12 +127,14 @@ class SendTokenGroupChat(GroupChat):
                 print(f"Extracted suggested_next = {suggested_next}")
                 try:
                     next_speaker = self.agent_by_name(suggested_next)
-                except ValueError:
+                except ValueError as error:
+                    print(f"Error: {error}")
                     pass
             elif "TERMINATE" in last_message["content"]:
                 try:
                     next_speaker = self.agent_by_name("user")
-                except ValueError:
+                except ValueError as error:
+                    print(f"Error: {error}")
                     pass
             elif self.last_speaker is None:
                 next_speaker = self.agent_by_name("interpreter")
