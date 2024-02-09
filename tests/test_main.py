@@ -22,7 +22,7 @@ async def test_create_message(message: str, expected: str):
     class Response(NamedTuple):
         reply_message: str | None
         activity_message: str | None
-        state: str
+        status: str
     def response_callback(response: Response):
         print(response_message)
     router.send(thread_id, message, response_callback)

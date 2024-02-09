@@ -26,7 +26,7 @@ def test_default_route(intent: str, expected: str):
 @pytest.mark.parametrize(
     "message",
     [
-        ("Send 5 Bitcoin to Alice"),
+        ("Send 5 uni to Alice"),
     ],
 )
 async def test_send_route(message: str):
@@ -36,7 +36,7 @@ async def test_send_route(message: str):
     thread_id = str(uuid.uuid4())
     response = await router.send(sender_did, thread_id, message)
     print(response)
-    new_message = "0xc6A9f8f20d79Ae0F1ADf448A0C460178dB6655Cf is Alice's address. Use whatever you have for Bitcoin."
+    new_message = "0xc6A9f8f20d79Ae0F1ADf448A0C460178dB6655Cf is Alice's address. Use whatever you have for uni."
     response = await router.send(sender_did, thread_id, new_message)
     print(response)
     new_message = "execute"

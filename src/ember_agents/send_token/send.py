@@ -1,8 +1,10 @@
 import asyncio
 import pprint
+import re
 from inspect import cleandoc
 from typing import Awaitable, Callable, Literal, NamedTuple, Optional
 
+import requests
 from autogen import (
     Agent,
     AssistantAgent,
@@ -14,12 +16,21 @@ from autogen import (
 )
 from ember_agents.common.agents import AgentTeam
 from guidance import assistant, gen, instruction, models, select, system, user
+from pydantic import BaseModel, Field, validator
+
+
+class UniversalAddress(BaseModel):
+    identifier: str
+    platform: str
+    network: str
 
 
 # NOTE: I can use this as a universal format for single user swaps and sending between users.
-class TxRequest(NamedTuple):
+class TxRequest(BaseModel):
     # NOTE: Employ a Universal Money Address(UMA) or Decentralized ID (DID) scheme for
     #       sender and recipient.
+    #
+    #       TODO: Still running into issues parsing between an email and other UID+platform combinations.
     #
     #       It must include the following:
     #           - UID
@@ -36,15 +47,16 @@ class TxRequest(NamedTuple):
     #           solana://+1234567890
     #           solana:+1234567890/$SOL
 
-    sender_did: str
-    recipient_did: str
-    receive_token_address: str
+    sender_address: UniversalAddress
+    recipient_address: UniversalAddress
+    is_receive_native_token: bool
+    receive_token_address: str | None
     amount: str
     send_token_address: str | None = None
     # NOTE: I might be able to have an abstract trigger for limit orders and other varous automations.
 
 
-class TxDetails(NamedTuple):
+"""class TxDetails(NamedTuple):
     sender_did: str
     recipient_did: str
     receive_token_address: str
@@ -70,11 +82,48 @@ class TxDetails(NamedTuple):
 class TxPreview(NamedTuple):
     tx_id: str
     tx_details: TxDetails
-    signature_link: str
+    signature_link: str"""
+
+
+class TxPreview(BaseModel):
+    recipient: str
+    amount: str
+    token_symbol: str
+    gas_fee: str
+    total_amount: str
+    transaction_uuid: str
+
+
+class ExecuteTxBody(BaseModel):
+    transaction_uuid: str
+
+
+class Transaction(BaseModel):
+    recipient_name: Optional[str] = None
+    recipient_address: str
+    network: str
+    amount: str
+    token_name: Optional[str] = None
+    is_native_token: bool
+    token_address: Optional[str] = None
+
+    # Custom validator to ensure amount is a positive value
+    @validator("amount")
+    def amount_must_be_positive(cls, value):
+        if float(value) <= 0:
+            raise ValueError("amount must be a positive number")
+        return value
+
+    # Custom validator to ensure token_address is provided when is_native_token is False
+    @validator("token_address", always=True)
+    def token_address_required_for_non_native_tokens(cls, v, values):
+        if not values.get("is_native_token") and not v:
+            raise ValueError("token_address is required for non-native tokens")
+        return v
 
 
 """
-class TxState(Enum):
+class TxStatus(Enum):
     PENDING = 0  # The transaction is in the mempool, meaning it has been broadcasted to the network but not yet included in a block.
     UNCONFIRMED = 1  # The transaction is included in a block, but this block has not yet been confirmed by subsequent blocks.
     FINALIZED = 2  # The transaction has received many confirmations, making it extremely unlikely to be reversed. It is permanently recorded in the blockchain.
@@ -82,17 +131,32 @@ class TxState(Enum):
     FAILED = 4  # The transaction failed or was rejected by the network.
 """
 
-TxState = Literal["pending", "unconfirmed", "finalized", "cancelled", "failed"]
+TxStatus = Literal["pending", "unconfirmed", "finalized", "cancelled", "failed"]
 
 
-class TxIdState(NamedTuple):
+class TxIdStatus(NamedTuple):
     tx_id: str
     tx_hash: str
     explorer_link: str
     confirmations: int
-    state: TxState
-    final_tx_details: TxDetails | None = None
+    status: TxStatus
+    # final_tx_details: TxDetails | None = None
     error_message: str | None = None
+
+
+UserReceiptTxStatus = Literal["pending", "success", "failure"]
+
+
+class UserReceipt(BaseModel):
+    status: UserReceiptTxStatus
+    recipient: str
+    amount: str
+    token_symbol: str
+    gas_fee: str
+    total_amount: str
+    transaction_hash: str
+    transaction_uuid: str
+    reason: Optional[str] = None
 
 
 llm_config = {
@@ -190,6 +254,14 @@ class MessagingUserProxyAgent(UserProxyAgent):
         return await self.a_human_reply()
 
 
+def get_last_message(recipient: ConversableAgent) -> str:
+    last_message = recipient.last_message()
+    content = last_message.get("content") if last_message else None
+    if not isinstance(content, str):
+        raise Exception("No message content found")
+    return content
+
+
 def convert_to_request(recipient: ConversableAgent, messages, sender, config):
     # pprint.pprint(messages)
 
@@ -197,11 +269,9 @@ def convert_to_request(recipient: ConversableAgent, messages, sender, config):
         "gpt-3.5-turbo-instruct", api_key=llm_config.get("api_key")
     )
 
-    last_message = recipient.last_message()
-    if last_message is not None:
-        intent = last_message.get("content")
-    else:
-        raise Exception("No intent found")
+    print(f"recipient = {recipient}")
+    intent = get_last_message(recipient)
+    print(f"intent = {intent}")
 
     with instruction():
         # TODO: Add link to token for user verification
@@ -210,20 +280,23 @@ def convert_to_request(recipient: ConversableAgent, messages, sender, config):
             gpt_instruct
             + f"""
             You are an intent interpreter responsible for converting user intent into a structured JSON request.
-            Use the following JSON example as a guide.
+            
+            "network" will always be "sepolia" for now.
+
+            Use the following JSON example as a guide. ALWAYS remember wrap your JSON in a code block.
             ---
             # Intent
             Send .5 Chainlink to Susan
             ```json
-            [
-                {{
-                    "recipient_name": "Susan",
-                    "recipient_address": "None",
-                    "amount": "0.5",
-                    "token_name": "Chainlink",
-                    "token_address": "None"
-                }}
-            ]
+            {{
+                "recipient_name": "Susan",
+                "recipient_address": null,
+                "network": "sepolia",
+                "amount": "0.5",
+                "token_name": "Chainlink",
+                "is_native_token": false,
+                "token_address": null
+            }}
             ```
             ---
             # Intent
@@ -231,7 +304,7 @@ def convert_to_request(recipient: ConversableAgent, messages, sender, config):
             """
         )
 
-    lm += gen("json", stop="```\n")
+    lm += gen("json", stop="```\n", save_stop_text=True)
 
     return True, {
         "content": cleandoc(lm["json"]),
@@ -240,14 +313,23 @@ def convert_to_request(recipient: ConversableAgent, messages, sender, config):
     }
 
 
-validator_system_message = """
-You are a validator responsible for determining if a request is valid.
-A request is only valid if it contains a Recipient Address, Amount, and Token Address.
-If the request is valid, you must use \"NEXT: executor\" to pass the request to the executor.
-If the request is invalid, list the missing information.
-Be brief and clear.
-You must append \"NEXT: broker\" to pass along your message.
 """
+            ---
+            # Intent
+            Send 1 eth to 0x2D6c1025994dB45c7618571d6cB49B064DA9881B
+            ```json
+            {{
+                "recipient_name": null,
+                "recipient_address": "0x2D6c1025994dB45c7618571d6cB49B064DA9881B",
+                "network": "sepolia",
+                "amount": "1",
+                "token_name": "eth",
+                "is_native_token": true,
+                "token_address": null
+            }}
+            ```
+"""
+
 
 broker_system_message = """
 You are a cryptocurrency copilot responsible for gathering missing information from the user necessary to complete their request.
@@ -264,23 +346,15 @@ NEXT: interpreter
 # TODO: Add new agent for showing tx preview, determining if any changes are needed, and
 #       confirming if the user will proceed or cancel. Broker might be able to handle this.
 
-# PROBLEM:  The executor expects a reply after sending the preview and signature link to the user.
-#           However, the user must sign using the URL, not by replying to the executor.
+# PROBLEM:  The executor expects a reply after sending the preview and signature link to the user. However, the user must sign using the URL, not by replying to the executor.
 #
-#           - Maybe the prepare transaction function should send the preview and signature link to the user
-#           and only return with a success or failure result.
-#           - Another option might be to have the human input method to check if the last message
-#           from the executor. If so, then it will reply either from the user or signing result.
-#           Whichever comes first.
+#           - Maybe the prepare transaction function should send the preview and signature link to the user and only return with a success or failure result.
+#           - Another option might be to have the human input method to check if the last message from the executor. If so, then it will reply either from the user or signing result. Whichever comes first.
 
 # TODO: Skip signature link for now and just have the user reply with proceed or cancel.
 executor_system_message = """
-You are an executor responsible for showing the user a preview of their transaction request
-and asking them to confirm if they will proceed or cancel.
-You must use the "a_prepare_transaction" function to prepare the transaction and get the preview.
-After getting a confirmation from the user, you must use the "get_transaction_result"
-function to get the outcome of the transaction and pass it along to the user.
-You must append \"TERMINATE\" to pass along the result and end the conversation.
+You are an executor responsible for showing the user a preview of their transaction request and asking them to confirm if they will proceed or cancel.
+You must use the "a_prepare_transaction" function to prepare the transaction and get the preview. After getting a confirmation from the user, you must use the "get_transaction_result" function to get the outcome of the transaction and pass it along to the user. You must append \"TERMINATE\" to pass along the result and end the conversation.
 """
 
 
@@ -304,16 +378,32 @@ technician_system_message = """
 You are a technician responsible for executing tools and returning the results to the requester.
 """
 
+# DEPRECATED PROMPTS
+#
+validator_system_message = """
+You are a validator responsible for determining if a request is valid.
+A request is only valid if it contains a Recipient Address, Amount, and Token Address.
+If the request is valid, you must use \"NEXT: executor\" to pass the request to the executor.
+If the request is invalid, list the missing information.
+Be brief and clear.
+You must append \"NEXT: broker\" to pass along your message.
+"""
+
 
 class SendTokenAgentTeam(AgentTeam):
+    _transaction: Optional[Transaction] = None
+    _transaction_request: Optional[TxRequest] = None
+    _transaction_preview: Optional[TxPreview] = None
+
     def __init__(
         self,
         sender_did: str,
         thread_id: str,
         # on_complete: Callable[[str], None],
         prepare_transaction: Callable[[TxRequest], Awaitable[TxPreview]],
-        get_transaction_result: Callable[[str], Awaitable[TxIdState]],
+        get_transaction_result: Callable[[str], Awaitable[TxIdStatus]],
     ):
+        # TODO: Create a new protocol for the prepare_transaction and get_transaction_result functions as a separation of concerns for transactions.
         self._prepare_transaction = prepare_transaction
         self._get_transaction_result = get_transaction_result
         super().__init__(sender_did, thread_id)
@@ -329,13 +419,21 @@ class SendTokenAgentTeam(AgentTeam):
             assistant_reply=self._send_team_response,
         )
 
-        # No system message needed for OpenAI completion API used by Guidance agent.
-        interpreter_agent = AssistantAgent("interpreter", llm_config=llm_config)
+        # DEBUG
+        print("creating interpreter agent...")
+        self._send_activity_update("creating interpreter agent...")
+
+        # No system message needed for OpenAI completion API used by Guidance agent (Metis).
+        interpreter_agent = AssistantAgent("interpreter", None, llm_config=llm_config)
         interpreter_agent.register_reply(Agent, convert_to_request, 1)
 
-        validator = AssistantAgent(
-            "validator", system_message=validator_system_message, llm_config=llm_config
-        )
+        # DEBUG
+        print("creating validator agent...")
+        self._send_activity_update("creating validator agent...")
+
+        # No system message needed for code based agent (Spock).
+        validator = AssistantAgent("validator", None, llm_config=llm_config)
+        validator.register_reply(Agent, self._validate_request, 1)
 
         broker = AssistantAgent(
             "broker",
@@ -358,18 +456,65 @@ class SendTokenAgentTeam(AgentTeam):
             description="Prepare a transaction for the user to review and sign."
         )
         async def a_prepare_transaction():
+            """
             tx_request = TxRequest(
                 sender_did="ethereum://84738954.telegram.org",
                 recipient_did="ethereum://0xc6A9f8f20d79Ae0F1ADf448A0C460178dB6655Cf",
                 receive_token_address="0x514910771AF9Ca656af840dff83E8264EcF986CA",
                 amount="0.0001",
             )
-            return await self._prepare_transaction(tx_request)
+            return await self._prepare_transaction(tx_request)"""
 
-        @technician.register_for_execution()
+            if self._transaction_request is None:
+                raise ValueError("Transaction request not found")
+            self._transaction_preview = await self._prepare_transaction(
+                self._transaction_request
+            )
+
+            # tx_details = self._transaction_preview.tx_details
+            response_message = f"""You are about to send 💰 {self._transaction_preview.amount} {self._transaction_preview.token_symbol} to {self._transaction_preview.recipient}.
+
+            **💰 Subtotal・** {self._transaction_preview.amount} {self._transaction_preview.token_symbol}
+            **⛽️ Fees・** {self._transaction_preview.gas_fee} {self._transaction_preview.token_symbol}
+            **💸 Total・** {self._transaction_preview.total_amount} {self._transaction_preview.token_symbol}
+
+            Would you like to proceed?"""
+
+            return response_message
+
+        """@technician.register_for_execution()
         @executor.register_for_llm(description="Get the results of a transaction.")
         async def a_get_transaction_result(tx_id: str):
-            return await self._get_transaction_result(tx_id)
+            return await self._get_transaction_result(tx_id)"""
+
+        # TODO: This is a temporary method that will be replaced by the get_transaction_result method.
+        @technician.register_for_execution()
+        @executor.register_for_llm(description="Execute a transaction.")
+        async def a_execute_transaction():
+            if self._transaction_preview is None:
+                raise ValueError("Transaction request not found")
+            URL = "http://localhost:3000/transactions/send"
+            body = ExecuteTxBody(
+                transaction_uuid=self._transaction_preview.transaction_uuid
+            ).json()
+            HEADERS = {"Content-Type": "application/json"}
+            response = requests.post(URL, data=body, headers=HEADERS)
+            user_receipt = UserReceipt.parse_raw(response.text)
+
+            if user_receipt.status == "failure":
+                return f"""Your transaction failed. 😔
+                
+                Details: {user_receipt.reason}"""
+
+            response_message = f"""Your transaction was successful! 🎉
+            
+            **👤 Recipient・** {user_receipt.recipient}
+            **💰 Amount Sent・** {user_receipt.amount} {user_receipt.token_symbol}
+            **⛽️ Fees・** {user_receipt.gas_fee} {user_receipt.token_symbol}
+            **💸 Total・** {user_receipt.total_amount} {user_receipt.token_symbol}
+            **📜 Transaction Hash・** {user_receipt.transaction_hash}"""
+
+            return response_message
 
         groupchat = SendTokenGroupChat(
             agents=[
@@ -387,81 +532,51 @@ class SendTokenAgentTeam(AgentTeam):
 
         await user_proxy.a_initiate_chat(manager, message=message)
 
+    def _validate_request(self, recipient: ConversableAgent, messages, sender, config):
+        try:
+            message = get_last_message(recipient)
+            print(f"message = {message}")
+            print(type(message))
+            pattern = r"```json\n([\s\S]*?)\n```"
+            match = re.search(pattern, message)
+            print(f"match = {match}")
+            json_str = match.group(1) if match else None
+            print(f"json_str = {json_str}")
+            print(type(json_str))
+            if not isinstance(json_str, str):
+                raise ValueError("JSON request not found in message")
+        except Exception as e:
+            return True, {
+                "content": f"{str(e)}\n\nTERMINATE",
+                "name": "interpreter",
+                "role": "assistant",
+            }
 
-"""
-async def send(
-    intent: str,
-    user_reply: Callable[[], Awaitable[str]],
-    assistant_reply: Callable[[str], None],
-    prepare_transaction: Callable[[TxRequest], Awaitable[TxPreview]],
-    get_transaction_result: Callable[[str], Awaitable[TxIdState]],
-):
-    # Interpreter: Guidance agent to convert intent into structured request
-
-    # Validator: Determistic Pydantic agent. Is the request valid? What are the issues?
-
-    # Broker: Collect missing information from user and update intent.
-
-    # Round robin to Interpreter
-
-    # Executor: Execute the request
-
-    user_proxy = MessagingUserProxyAgent(
-        "user",
-        human_input_mode="ALWAYS",
-        code_execution_config={"work_dir": "coding"},
-        is_termination_msg=lambda x: x.get("content", "")
-        and x.get("content", "").rstrip().endswith("TERMINATE"),
-        a_human_reply=user_reply,
-        assistant_reply=assistant_reply,
-    )
-
-    # No system message needed for OpenAI completion API used by Guidance agent.
-    interpreter_agent = AssistantAgent("interpreter", llm_config=llm_config)
-    interpreter_agent.register_reply(Agent, convert_to_request, 1)
-
-    validator = AssistantAgent(
-        "validator", system_message=validator_system_message, llm_config=llm_config
-    )
-
-    broker = AssistantAgent(
-        "broker",
-        system_message=broker_system_message,
-        llm_config=llm_config,
-    )
-
-    executor = AssistantAgent(
-        "executor", system_message=executor_system_message, llm_config=llm_config
-    )
-
-    technician = AssistantAgent(
-        "technician", system_message=technician_system_message, llm_config=llm_config
-    )
-
-    @technician.register_for_execution()
-    @executor.register_for_llm(
-        description="Prepare a transaction for the user to review and sign."
-    )
-    async def a_prepare_transaction():
-        tx_request = TxRequest(
-            sender_did="ethereum://84738954.telegram.org",
-            recipient_did="ethereum://0xc6A9f8f20d79Ae0F1ADf448A0C460178dB6655Cf",
-            receive_token_address="0x514910771AF9Ca656af840dff83E8264EcF986CA",
-            amount="0.0001",
-        )
-        return await prepare_transaction(tx_request)
-
-    @technician.register_for_execution()
-    @executor.register_for_llm(description="Get the results of a transaction.")
-    async def a_get_transaction_result(tx_id: str):
-        return await get_transaction_result(tx_id)
-
-    groupchat = SendTokenGroupChat(
-        agents=[user_proxy, interpreter_agent, validator, broker, executor, technician],
-        messages=[],
-        max_round=20,
-    )
-    manager = GroupChatManager(groupchat=groupchat, llm_config=llm_config)
-
-    await user_proxy.a_initiate_chat(manager, message=intent)
-    """
+        try:
+            self._transaction = Transaction.parse_raw(json_str)
+            self._transaction_request = TxRequest(
+                sender_address=UniversalAddress(
+                    identifier=self.sender_did,
+                    platform="telegram.me",
+                    network="sepolia",
+                ),
+                recipient_address=UniversalAddress(
+                    identifier=self._transaction.recipient_address,
+                    platform="native",
+                    network="sepolia",
+                ),
+                is_receive_native_token=self._transaction.is_native_token,
+                receive_token_address=self._transaction.token_address,
+                amount=self._transaction.amount,
+            )
+            return True, {
+                "content": "NEXT: executor",
+                "name": "interpreter",
+                "role": "assistant",
+            }
+        except Exception as e:
+            return True, {
+                "content": f"{str(e)}\nNEXT: broker",
+                "name": "interpreter",
+                "role": "assistant",
+            }

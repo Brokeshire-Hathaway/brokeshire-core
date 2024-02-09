@@ -64,6 +64,10 @@ class AgentTeam(Protocol):
 
         self._is_initialized = True
 
+    def _send_activity_update(self, message: str):
+        if self._on_activity is not None:
+            self._on_activity(message)
+
     def get_activity_updates(self, on_activity: Callable[[str], None]):
         self._on_activity = on_activity
 
