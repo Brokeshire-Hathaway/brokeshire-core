@@ -208,9 +208,16 @@ class SendTokenGroupChat(GroupChat):
                         next_speaker = self.agent_by_name("validator")
                     case "broker":
                         next_speaker = self.agent_by_name("user")
+                    case "transaction_coordinator":
+                        next_speaker = self.agent_by_name("user")
                     case "user":
-                        next_speaker = self.last_speaker
+                        if self.last_speaker.name == "transaction_coordinator":
+                            next_speaker = self.agent_by_name("executor")
+                        else:
+                            next_speaker = self.last_speaker
                     case "executor":
+                        next_speaker = self.agent_by_name("user")
+                    case "confirmation_specialist":
                         next_speaker = self.agent_by_name("user")
                     case "technician":
                         next_speaker = self.last_speaker
@@ -283,7 +290,7 @@ def convert_to_request(recipient: ConversableAgent, messages, sender, config):
             
             "network" will always be "sepolia" for now.
 
-            Use the following JSON example as a guide. ALWAYS remember wrap your JSON in a code block.
+            Use the following JSON example as a guide. ALWAYS remember to wrap your JSON in a code block.
             ---
             # Intent
             Send .5 Chainlink to Susan
@@ -353,8 +360,7 @@ NEXT: interpreter
 
 # TODO: Skip signature link for now and just have the user reply with proceed or cancel.
 executor_system_message = """
-You are an executor responsible for showing the user a preview of their transaction request and asking them to confirm if they will proceed or cancel.
-You must use the "a_prepare_transaction" function to prepare the transaction and get the preview. After getting a confirmation from the user, you must use the "get_transaction_result" function to get the outcome of the transaction and pass it along to the user. You must append \"TERMINATE\" to pass along the result and end the conversation.
+You are an executor responsible for determining whether the user will proceed or cancel their transaction request. If they proceed, you must reply with \"NEXT: confirmation_specialist\" to pass the request to the confirmation specialist. If they cancel, you must reply with \"TERMINATE\" to end the conversation.
 """
 
 
@@ -387,6 +393,11 @@ If the request is valid, you must use \"NEXT: executor\" to pass the request to 
 If the request is invalid, list the missing information.
 Be brief and clear.
 You must append \"NEXT: broker\" to pass along your message.
+"""
+
+"""executor_system_message = 
+You are an executor responsible for showing the user a preview of their transaction request and asking them to confirm if they will proceed or cancel.
+You must use the "a_prepare_transaction" function to prepare the transaction and get the preview. After getting a confirmation from the user, you must use the "get_transaction_result" function to get the outcome of the transaction and pass it along to the user. You must append \"TERMINATE\" to pass along the result and end the conversation.
 """
 
 
@@ -441,21 +452,14 @@ class SendTokenAgentTeam(AgentTeam):
             llm_config=llm_config,
         )
 
-        executor = AssistantAgent(
-            "executor", system_message=executor_system_message, llm_config=llm_config
-        )
-
-        technician = AssistantAgent(
-            "technician",
-            system_message=technician_system_message,
-            llm_config=llm_config,
-        )
-
-        @technician.register_for_execution()
+        """@technician.register_for_execution()
         @executor.register_for_llm(
             description="Prepare a transaction for the user to review and sign."
-        )
-        async def a_prepare_transaction():
+        )"""
+
+        async def a_prepare_transaction(
+            recipient: ConversableAgent, messages, sender, config
+        ):
             """
             tx_request = TxRequest(
                 sender_did="ethereum://84738954.telegram.org",
@@ -472,25 +476,40 @@ class SendTokenAgentTeam(AgentTeam):
             )
 
             # tx_details = self._transaction_preview.tx_details
-            response_message = f"""You are about to send 💰 {self._transaction_preview.amount} {self._transaction_preview.token_symbol} to {self._transaction_preview.recipient}.
+            response_message = f"""You are about to send 💸 {self._transaction_preview.amount} {self._transaction_preview.token_symbol} to {self._transaction_preview.recipient}.
 
-            **💰 Subtotal・** {self._transaction_preview.amount} {self._transaction_preview.token_symbol}
-            **⛽️ Fees・** {self._transaction_preview.gas_fee} {self._transaction_preview.token_symbol}
-            **💸 Total・** {self._transaction_preview.total_amount} {self._transaction_preview.token_symbol}
+**💸 Subtotal ・** {self._transaction_preview.amount} {self._transaction_preview.token_symbol}
+**⛽️ Fees ・** {self._transaction_preview.gas_fee} {self._transaction_preview.token_symbol}
+**🔢 Total ・** {self._transaction_preview.total_amount} {self._transaction_preview.token_symbol}
 
-            Would you like to proceed?"""
+Would you like to proceed?"""
 
-            return response_message
+            return True, {
+                "content": response_message,
+                "name": "transaction_coordinator",
+                "role": "assistant",
+            }
 
-        """@technician.register_for_execution()
-        @executor.register_for_llm(description="Get the results of a transaction.")
-        async def a_get_transaction_result(tx_id: str):
-            return await self._get_transaction_result(tx_id)"""
+        # (Spock)
+        transaction_coordinator = AssistantAgent(
+            "transaction_coordinator",
+            None,
+            llm_config=llm_config,
+        )
+        transaction_coordinator.register_reply(Agent, a_prepare_transaction, 1)
 
-        # TODO: This is a temporary method that will be replaced by the get_transaction_result method.
+        # TODO: Can be converted to Metis agent.
+        executor = AssistantAgent(
+            "executor", system_message=executor_system_message, llm_config=llm_config
+        )
+
+        """# TODO: This is a temporary method that will be replaced by the get_transaction_result method.
         @technician.register_for_execution()
-        @executor.register_for_llm(description="Execute a transaction.")
-        async def a_execute_transaction():
+        @executor.register_for_llm(description="Execute a transaction.")"""
+
+        async def a_execute_transaction(
+            recipient: ConversableAgent, messages, sender, config
+        ):
             if self._transaction_preview is None:
                 raise ValueError("Transaction request not found")
             URL = "http://localhost:3000/transactions/send"
@@ -499,6 +518,10 @@ class SendTokenAgentTeam(AgentTeam):
             ).json()
             HEADERS = {"Content-Type": "application/json"}
             response = requests.post(URL, data=body, headers=HEADERS)
+
+            print("@@@ response.text")
+            print(response.text)
+
             user_receipt = UserReceipt.parse_raw(response.text)
 
             if user_receipt.status == "failure":
@@ -507,14 +530,38 @@ class SendTokenAgentTeam(AgentTeam):
                 Details: {user_receipt.reason}"""
 
             response_message = f"""Your transaction was successful! 🎉
-            
-            **👤 Recipient・** {user_receipt.recipient}
-            **💰 Amount Sent・** {user_receipt.amount} {user_receipt.token_symbol}
-            **⛽️ Fees・** {user_receipt.gas_fee} {user_receipt.token_symbol}
-            **💸 Total・** {user_receipt.total_amount} {user_receipt.token_symbol}
-            **📜 Transaction Hash・** {user_receipt.transaction_hash}"""
 
-            return response_message
+**👤 Recipient ・** {user_receipt.recipient}
+**💸 Amount Sent ・** {user_receipt.amount} {user_receipt.token_symbol}
+**⛽️ Fees ・** {user_receipt.gas_fee} {user_receipt.token_symbol}
+**🔢 Total ・** {user_receipt.total_amount} {user_receipt.token_symbol}
+**📜 Transaction Hash ・** {user_receipt.transaction_hash}
+TERMINATE"""
+
+            return True, {
+                "content": response_message,
+                "name": "confirmation_specialist",
+                "role": "assistant",
+            }
+
+        # (Spock)
+        confirmation_specialist = AssistantAgent(
+            "confirmation_specialist",
+            None,
+            llm_config=llm_config,
+        )
+        confirmation_specialist.register_reply(Agent, a_execute_transaction, 1)
+
+        technician = AssistantAgent(
+            "technician",
+            system_message=technician_system_message,
+            llm_config=llm_config,
+        )
+
+        """@technician.register_for_execution()
+        @executor.register_for_llm(description="Get the results of a transaction.")
+        async def a_get_transaction_result(tx_id: str):
+            return await self._get_transaction_result(tx_id)"""
 
         groupchat = SendTokenGroupChat(
             agents=[
@@ -522,7 +569,9 @@ class SendTokenAgentTeam(AgentTeam):
                 interpreter_agent,
                 validator,
                 broker,
+                transaction_coordinator,
                 executor,
+                confirmation_specialist,
                 technician,
             ],
             messages=[],
@@ -570,7 +619,7 @@ class SendTokenAgentTeam(AgentTeam):
                 amount=self._transaction.amount,
             )
             return True, {
-                "content": "NEXT: executor",
+                "content": "NEXT: transaction_coordinator",
                 "name": "interpreter",
                 "role": "assistant",
             }
