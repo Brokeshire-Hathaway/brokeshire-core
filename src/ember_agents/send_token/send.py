@@ -2,7 +2,6 @@ import asyncio
 import pprint
 import re
 from inspect import cleandoc
-from os import error
 from typing import Awaitable, Callable, Literal, NamedTuple, Optional
 
 import httpx
@@ -168,8 +167,15 @@ llm_config = {
 
 
 class SendTokenGroupChat(GroupChat):
-    def __init__(self, agents, messages, max_round=10):
+    def __init__(
+        self,
+        agents,
+        messages,
+        max_round=10,
+        on_activity: Optional[Callable[[str], None]] = None,
+    ):
         self.last_speaker = None
+        self._on_activity = on_activity
         super().__init__(agents, messages, max_round)
 
     async def a_select_speaker(self, last_speaker: Agent, selector: ConversableAgent):
@@ -228,6 +234,10 @@ class SendTokenGroupChat(GroupChat):
         print(f"next_speaker = {next_speaker.name}")
 
         return next_speaker
+
+    def _send_activity_update(self, message: str):
+        if self._on_activity is not None:
+            self._on_activity(message)
 
 
 class MessagingUserProxyAgent(UserProxyAgent):
@@ -431,17 +441,9 @@ class SendTokenAgentTeam(AgentTeam):
             assistant_reply=self._send_team_response,
         )
 
-        # DEBUG
-        print("creating interpreter agent...")
-        self._send_activity_update("creating interpreter agent...")
-
         # No system message needed for OpenAI completion API used by Guidance agent (Metis).
         interpreter_agent = AssistantAgent("interpreter", None, llm_config=llm_config)
         interpreter_agent.register_reply(Agent, convert_to_request, 1)
-
-        # DEBUG
-        print("creating validator agent...")
-        self._send_activity_update("creating validator agent...")
 
         # No system message needed for code based agent (Spock).
         validator = AssistantAgent("validator", None, llm_config=llm_config)
@@ -469,6 +471,8 @@ class SendTokenAgentTeam(AgentTeam):
                 amount="0.0001",
             )
             return await self._prepare_transaction(tx_request)"""
+
+            self._send_activity_update("Preparing transaction preview...")
 
             try:
                 if self._transaction_request is None:
@@ -521,6 +525,10 @@ Would you like to proceed?"""
         async def a_execute_transaction(
             recipient: ConversableAgent, messages, sender, config
         ):
+            self._send_activity_update("Executing transaction...")
+
+            # TODO: Repeat fun facts until TX completes.
+
             try:
                 if self._transaction_preview is None:
                     raise ValueError("Transaction request not found")
@@ -598,6 +606,8 @@ TERMINATE"""
             max_round=20,
         )
         manager = GroupChatManager(groupchat=groupchat, llm_config=llm_config)
+
+        self._send_activity_update("Understanding your request...")
 
         await user_proxy.a_initiate_chat(manager, message=message)
 
