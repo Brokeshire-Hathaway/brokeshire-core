@@ -2,9 +2,10 @@ import asyncio
 import pprint
 import re
 from inspect import cleandoc
+from os import error
 from typing import Awaitable, Callable, Literal, NamedTuple, Optional
 
-import requests
+import httpx
 from autogen import (
     Agent,
     AssistantAgent,
@@ -469,17 +470,27 @@ class SendTokenAgentTeam(AgentTeam):
             )
             return await self._prepare_transaction(tx_request)"""
 
-            if self._transaction_request is None:
-                raise ValueError("Transaction request not found")
-            self._transaction_preview = await self._prepare_transaction(
-                self._transaction_request
-            )
+            try:
+                if self._transaction_request is None:
+                    raise ValueError("Transaction request not found")
+                self._transaction_preview = await self._prepare_transaction(
+                    self._transaction_request
+                )
+            except Exception as e:
+                error_message = str(e) if str(e) else str(type(e))
+                return (
+                    True,
+                    f"""Failed to prepare transaction. 😔
+
+Details: {error_message}
+TERMINATE""",
+                )
 
             # tx_details = self._transaction_preview.tx_details
             response_message = f"""You are about to send 💸 {self._transaction_preview.amount} {self._transaction_preview.token_symbol} to {self._transaction_preview.recipient}.
 
 **💸 Subtotal ・** {self._transaction_preview.amount} {self._transaction_preview.token_symbol}
-**⛽️ Fees ・** {self._transaction_preview.gas_fee} {self._transaction_preview.token_symbol}
+**⛽️ Fees Estimation ・** {self._transaction_preview.gas_fee} {self._transaction_preview.token_symbol}
 **🔢 Total ・** {self._transaction_preview.total_amount} {self._transaction_preview.token_symbol}
 
 Would you like to proceed?"""
@@ -510,24 +521,33 @@ Would you like to proceed?"""
         async def a_execute_transaction(
             recipient: ConversableAgent, messages, sender, config
         ):
-            if self._transaction_preview is None:
-                raise ValueError("Transaction request not found")
-            URL = "http://localhost:3000/transactions/send"
-            body = ExecuteTxBody(
-                transaction_uuid=self._transaction_preview.transaction_uuid
-            ).json()
-            HEADERS = {"Content-Type": "application/json"}
-            response = requests.post(URL, data=body, headers=HEADERS)
+            try:
+                if self._transaction_preview is None:
+                    raise ValueError("Transaction request not found")
+                URL = "http://localhost:3000/transactions/send"
+                body = ExecuteTxBody(
+                    transaction_uuid=self._transaction_preview.transaction_uuid
+                )
+                # HEADERS = {"Content-Type": "application/json"}
+                async with httpx.AsyncClient(http2=True, timeout=65) as client:
+                    response = await client.post(URL, json=body.dict())
 
-            print("@@@ response.text")
-            print(response.text)
+                print("@@@ response.text")
+                print(response.text)
 
-            user_receipt = UserReceipt.parse_raw(response.text)
+                user_receipt = UserReceipt.parse_raw(response.text)
 
-            if user_receipt.status == "failure":
-                return f"""Your transaction failed. 😔
-                
-                Details: {user_receipt.reason}"""
+                if user_receipt.status == "failure":
+                    raise Exception(user_receipt.reason)
+            except Exception as e:
+                error_message = str(e) if str(e) else str(type(e))
+                return (
+                    True,
+                    f"""Your transaction failed. 😔
+
+Details: {error_message}
+TERMINATE""",
+                )
 
             response_message = f"""Your transaction was successful! 🎉
 

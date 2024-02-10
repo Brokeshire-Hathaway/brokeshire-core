@@ -4,7 +4,7 @@ import uuid
 from typing import Callable
 from weakref import WeakValueDictionary
 
-import requests
+import httpx
 from ember_agents.common.agents import AgentTeam
 from ember_agents.send_token.send import (
     SendTokenAgentTeam,
@@ -40,9 +40,8 @@ from semantic_router.layer import RouteLayer
 
 async def prepare_transaction(tx_request: TxRequest):
     URL = "http://localhost:3000/transactions/prepare"
-    TX_REQUEST_JSON = tx_request.json()
-    HEADERS = {"Content-Type": "application/json"}
-    response = requests.post(URL, data=TX_REQUEST_JSON, headers=HEADERS)
+    async with httpx.AsyncClient(http2=True, timeout=65) as client:
+        response = await client.post(URL, json=tx_request.dict())
 
     print("@@@ response from server")
     print(response.text)
