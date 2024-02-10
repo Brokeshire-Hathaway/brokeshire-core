@@ -563,7 +563,8 @@ TERMINATE""",
 **💸 Amount Sent ・** {user_receipt.amount} {user_receipt.token_symbol}
 **⛽️ Fees ・** {user_receipt.gas_fee} {user_receipt.token_symbol}
 **🔢 Total ・** {user_receipt.total_amount} {user_receipt.token_symbol}
-**📜 Transaction Hash ・** {user_receipt.transaction_hash}
+
+_[🔗 View on Blockchain](https://sepolia.etherscan.io/tx/{user_receipt.transaction_hash})_
 TERMINATE"""
 
             return True, {
