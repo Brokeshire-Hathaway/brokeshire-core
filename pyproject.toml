@@ -11,6 +11,10 @@ dependencies = [
     "pydantic>=1.10.13",
     "guidance>=0.1.10",
     "pyautogen>=0.2.6",
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "sse-starlette>=1.8.2",
+    "httpx[http2]>=0.26.0",
 ]
 requires-python = "==3.11.*"
 readme = "README.md"
@@ -25,6 +29,7 @@ package-type = "application"
 
 [tool.pdm.scripts]
 #start = "flask run -p 54321"
+start = "uvicorn --app-dir src ember_agents.main:app --port 8001 --reload"
 test = "pytest -s"
 
 [tool.pdm.dev-dependencies]

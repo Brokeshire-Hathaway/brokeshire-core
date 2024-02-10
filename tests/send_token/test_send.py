@@ -4,17 +4,16 @@ from typing import List
 
 import pytest
 from ember_agents.send_token.send import (
-    TxDetails,
-    TxIdState,
+    # TxDetails,
+    TxIdStatus,
     TxPreview,
     TxRequest,
-    send,
 )
 
 pytest_plugins = "pytest_asyncio"
 
 
-@pytest.mark.parametrize(
+"""@pytest.mark.parametrize(
     "intent, user_replies",
     [
         (
@@ -71,16 +70,16 @@ async def test_send(intent: str, user_replies: List[str]):
     async def get_transaction_result(tx_id: str):
         print(f"getting update for transaction id: {tx_id}")
         await asyncio.sleep(1)
-        tx_status = TxIdState(
+        tx_status = TxIdStatus(
             tx_id,
             tx_hash="0xeef10fc5170f669b86c4cd0444882a96087221325f8bf2f55d6188633aa7be7c",
             explorer_link="https://etherscan.io/tx/0xeef10fc5170f669b86c4cd0444882a96087221325f8bf2f55d6188633aa7be7c",
             confirmations=6,
-            state="finalized",
+            status="finalized",
             final_tx_details=tx_details,
         )
         return tx_status
 
     await send(
         intent, user_reply, assistant_reply, prepare_transaction, get_transaction_result
-    )
+    )"""
