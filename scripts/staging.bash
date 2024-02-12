@@ -10,11 +10,5 @@ fi
 
 mise install -y
 
-if ! command -v pdm &> /dev/null
-then
-    echo 'eval "$(/usr/local/bin/mise activate bash)"' >> ~/.bashrc
-    . ~/.bashrc
-fi
-
-pdm sync
-pdm start
+mise x pdm -- pdm sync
+mise x pdm -- pdm start
