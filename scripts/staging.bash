@@ -7,6 +7,6 @@ then
     . ~/.bashrc
 fi
 
-mise install
+mise install -y
 mise x pdm sync
 mise x pdm start
