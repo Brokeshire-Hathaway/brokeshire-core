@@ -7,7 +7,14 @@ then
     echo 'eval "$(/usr/local/bin/mise activate bash)"' >> ~/.bashrc
     . ~/.bashrc
 fi
+
 mise install -y
+
+if ! command -v pdm &> /dev/null
+then
+    echo 'eval "$(/usr/local/bin/mise activate bash)"' >> ~/.bashrc
+    . ~/.bashrc
+fi
 
 pdm sync
 pdm start
