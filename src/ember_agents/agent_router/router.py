@@ -164,9 +164,11 @@ class Router:
                     sender_did, thread_id, prepare_transaction, get_transaction_result
                 )
             case "market":
-                raise Exception("Market not implemented")
+                raise Exception("Market feature disabled, but you can send tokens 😊")
             case "internal" | None | _:
-                raise Exception("Internal not implemented")
+                raise Exception(
+                    "Discussion feature disabled, but you can send tokens 😊"
+                )
         self._session_manager.create_session(agent_team)
         return agent_team
 

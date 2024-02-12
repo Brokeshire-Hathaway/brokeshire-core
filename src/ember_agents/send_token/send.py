@@ -15,6 +15,7 @@ from autogen import (
     config_list_from_json,
 )
 from ember_agents.common.agents import AgentTeam
+from ember_agents.info_bites.info_bites import get_random_info_bite
 from guidance import assistant, gen, instruction, models, select, system, user
 from pydantic import BaseModel, Field, validator
 
@@ -525,9 +526,23 @@ Would you like to proceed?"""
         async def a_execute_transaction(
             recipient: ConversableAgent, messages, sender, config
         ):
-            self._send_activity_update("Executing transaction...")
+            # self._send_activity_update("Executing transaction...")
 
-            # TODO: Repeat fun facts until TX completes.
+            async def repeating_task(seconds, task, *args):
+                while True:
+                    await task(*args)
+                    await asyncio.sleep(seconds)
+
+            async def send_info_bite():
+                bite = get_random_info_bite()
+                message = f"""Executing transaction...
+
+> **・ Fun Fact ・**
+>🍬 {bite}"""
+                self._send_activity_update(message)
+
+            SECONDS = 8
+            timer_task = asyncio.create_task(repeating_task(SECONDS, send_info_bite))
 
             try:
                 if self._transaction_preview is None:
@@ -556,6 +571,8 @@ Would you like to proceed?"""
 Details: {error_message}
 TERMINATE""",
                 )
+            finally:
+                timer_task.cancel()
 
             response_message = f"""Your transaction was successful! 🎉
 
