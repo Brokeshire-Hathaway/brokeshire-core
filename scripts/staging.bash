@@ -8,5 +8,6 @@ then
 fi
 
 mise install -y
-mise x pdm sync
-mise x pdm start
+
+pdm sync
+pdm start
