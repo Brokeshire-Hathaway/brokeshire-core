@@ -5,6 +5,7 @@ Description=Ember agents service (staging)
 [Service]
 ExecStartPre=/bin/bash -c 'mv /var/log/ember-agents-stage/output.log /var/log/ember-agents-stage/output-$$(date -Is).log; mv /var/log/ember-agents-stage/error.log /var/log/ember-agents-stage/error-$$(date -Is).log'
 ExecStart=/opt/ember-agents/scripts/staging.bash
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 StandardOutput=file:/var/log/ember-agents-stage/output.log
 StandardError=file:/var/log/ember-agents-stage/error.log
 
