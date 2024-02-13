@@ -547,7 +547,7 @@ Would you like to proceed?"""
             try:
                 if self._transaction_preview is None:
                     raise ValueError("Transaction request not found")
-                URL = "http://172.17.0.1:3000/transactions/send"
+                URL = "http://0.0.0.0:3000/transactions/send"
                 body = ExecuteTxBody(
                     transaction_uuid=self._transaction_preview.transaction_uuid
                 )
