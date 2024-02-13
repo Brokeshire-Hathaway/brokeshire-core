@@ -17,5 +17,9 @@ services:
     # command: bash -c "while true; do sleep 1000; done"
     command: bash -c "pdm sync && pdm start"
     networks:
-      ember-engine_default: 
-        external: true
+      - first_project_default
+
+networks:
+  ember-engine-stage_default: 
+    external:
+      name: ember-engine-stage_default
