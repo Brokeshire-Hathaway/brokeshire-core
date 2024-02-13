@@ -16,3 +16,6 @@ services:
         max-file: "1"
     # command: bash -c "while true; do sleep 1000; done"
     command: bash -c "pdm sync && pdm start"
+    networks:
+      ember-engine_default: 
+        external: true
