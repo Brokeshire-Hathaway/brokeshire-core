@@ -20,6 +20,6 @@ services:
       - first_project_default
 
 networks:
-  ember-engine-stage_default: 
-    external:
-      name: ember-engine-stage_default
+  first_project_default:
+    external: true
+    name: ember-engine-stage_default
