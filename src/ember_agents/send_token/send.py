@@ -1,4 +1,6 @@
 import asyncio
+import json
+import os
 import pprint
 import re
 from inspect import cleandoc
@@ -159,9 +161,18 @@ class UserReceipt(BaseModel):
     transaction_uuid: str
     reason: Optional[str] = None
 
+OAI_CONFIG_LIST = [
+    {
+        "model": "gpt-4-1106-preview",
+        "api_key": os.getenv("OPENAI_API_KEY")
+    }
+]
+
+# needed to convert to str
+OAI_CONFIG_LIST = json.dumps(OAI_CONFIG_LIST)
 
 llm_config = {
-    **config_list_from_json("OAI_CONFIG_LIST")[0],
+    **config_list_from_json(env_or_file=OAI_CONFIG_LIST)[0],
     "stream": True,
 }  # use the first config
 # gpt = models.OpenAI("gpt-4", api_key=llm_config.get("api_key"))
