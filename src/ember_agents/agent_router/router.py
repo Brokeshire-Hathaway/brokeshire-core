@@ -39,7 +39,7 @@ from semantic_router.layer import RouteLayer
 
 
 async def prepare_transaction(tx_request: TxRequest):
-    URL = "http://172.17.0.1:3000/transactions/prepare"
+    URL = "http://firepot_chatgpt_app:3000/transactions/prepare"
     async with httpx.AsyncClient(http2=True, timeout=65) as client:
         response = await client.post(URL, json=tx_request.dict())
 
