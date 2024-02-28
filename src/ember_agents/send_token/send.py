@@ -4,6 +4,7 @@ import os
 import pprint
 import re
 from inspect import cleandoc
+import tempfile
 from typing import Awaitable, Callable, Literal, NamedTuple, Optional
 
 import httpx
@@ -168,14 +169,18 @@ OAI_CONFIG_LIST = [
     }
 ]
 
-# needed to convert to str
-OAI_CONFIG_LIST = json.dumps(OAI_CONFIG_LIST)
+# Create a temporary file
+# Write the JSON structure to a temporary file and pass it to config_list_from_json
+with tempfile.NamedTemporaryFile(mode='w+', delete=True) as temp:
+    env_var = json.dumps(OAI_CONFIG_LIST)
+    temp.write(env_var)
+    temp.flush()
 
-llm_config = {
-    **config_list_from_json(env_or_file=OAI_CONFIG_LIST)[0],
-    "stream": True,
-}  # use the first config
-# gpt = models.OpenAI("gpt-4", api_key=llm_config.get("api_key"))
+    llm_config = {
+        **config_list_from_json(env_or_file=temp.name)[0],
+        "stream": True,
+    }  # use the first config
+    # gpt = models.OpenAI("gpt-4", api_key=llm_config.get("api_key"))
 
 
 class SendTokenGroupChat(GroupChat):
