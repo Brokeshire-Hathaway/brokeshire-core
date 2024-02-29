@@ -24,10 +24,16 @@ class AgentTeam(Protocol):
         # assistant_reply: Callable[[str], None]
 
     def _send_team_response(self, message: str):
+        # DEBUG
+        print("===== _send_team_response =====")
+        print(message)
         self._agent_team_response.set_result(message)
 
     async def _on_team_response(self) -> str:
+        # DEBUG
+        print("===== _on_team_response =====")
         self._agent_team_response: Future[str] = Future()
+        print("===== self._agent_team_response: new Future created =====")
         await self._agent_team_response
         return self._agent_team_response.result()
 
