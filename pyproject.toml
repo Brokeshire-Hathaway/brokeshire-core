@@ -32,7 +32,7 @@ package-type = "application"
 start = "uvicorn --app-dir src ember_agents.main:app --host 0.0.0.0 --port 8101"
 dev = "uvicorn --app-dir src ember_agents.main:app --host 0.0.0.0 --port 8101 --reload"
 test = "pytest -s"
-error = "sleep 2 && echo 'exiting with error...' && exit 1"
+error = "bash -c 'sleep 2 && echo 'exiting with error...' && exit 1'"
 
 [tool.pdm.dev-dependencies]
 test = [
