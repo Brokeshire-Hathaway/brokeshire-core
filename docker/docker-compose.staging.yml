@@ -15,7 +15,8 @@ services:
         max-size: "1m"
         max-file: "1"
     # command: bash -c "while true; do sleep 1000; done"
-    command: ./scripts/start.sh
+    # command: ./scripts/start.sh
+    command: bash -c "sleep 2 && exit 1"
     networks:
       - shared_network
 
