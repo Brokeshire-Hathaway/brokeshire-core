@@ -16,7 +16,7 @@ services:
         max-file: "1"
     # command: bash -c "while true; do sleep 1000; done"
     # command: ./scripts/start.sh
-    command: bash -c "sleep 2 && && echo `exiting with error...` && exit 1"
+    command: bash -c "sleep 2 && && echo 'exiting with error...' && exit 1"
     networks:
       - shared_network
 
