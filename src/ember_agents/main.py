@@ -1,7 +1,7 @@
 import asyncio
-from asyncio import Queue
 import sys
 import time
+from asyncio import Queue
 from typing import Literal, Union
 
 from fastapi import FastAPI, Request
@@ -39,10 +39,6 @@ agent_team_session_manager = AgentTeamSessionManager()
 
 @app.post("/v1/threads/{thread_id}/messages")
 async def create_message(thread_id: str, body: Message, request: Request):
-    # DEBUG
-    time.sleep(2)
-    print("\nNon-zero exit...")
-    sys.exit(1)
     message_queue: Queue[Response] = Queue()
 
     def on_activity(activity: str):
