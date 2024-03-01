@@ -29,10 +29,12 @@ class AgentTeam(Protocol):
         print(message)
         self._agent_team_response.set_result(message)
 
+    def _prepare_team_response(self):
+        self._agent_team_response: Future[str] = Future()
+
     async def _on_team_response(self) -> str:
         # DEBUG
         print("===== _on_team_response =====")
-        self._agent_team_response: Future[str] = Future()
         print("===== self._agent_team_response: new Future created =====")
         await self._agent_team_response
         return self._agent_team_response.result()
@@ -58,7 +60,7 @@ class AgentTeam(Protocol):
         return "\n\n".join(messages)
 
     def _init_conversation(self, message: str):
-        # BUG: self._run_conversation does not return until the entire team conversation is complete
+        # NOTE: self._run_conversation does not return until the entire team conversation is complete
 
         # TODO: Probably should first have a setup method, then execute a run method
         async def task():
@@ -81,7 +83,7 @@ class AgentTeam(Protocol):
         # send message to human proxy agent
         # await and return response
 
-        response = self._on_team_response()
+        self._prepare_team_response()
 
         if not self._is_initialized:
             # asyncio.create_task(self._init_conversation(message))
@@ -89,4 +91,4 @@ class AgentTeam(Protocol):
         else:
             self._user_message_queue.put_nowait(message)
 
-        return await response
+        return await self._on_team_response()
