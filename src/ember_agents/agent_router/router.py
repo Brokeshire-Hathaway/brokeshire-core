@@ -80,6 +80,8 @@ class AgentTeamSessionManager:
         return agent_team
 
     def remove_session(self, sender_did: str, thread_id: str):
+        # DEBUG
+        print("===== remove_session =====")
         session_id = self._get_session_id(sender_did, thread_id)
         if session_id in self._sessions:
             del self._sessions[session_id]

@@ -388,7 +388,7 @@ NEXT: interpreter
 
 # TODO: Skip signature link for now and just have the user reply with proceed or cancel.
 executor_system_message = """
-You are an executor responsible for determining whether the user will proceed or cancel their transaction request. If they proceed, you must reply with \"NEXT: confirmation_specialist\" to pass the request to the confirmation specialist. If they cancel, you must reply with \"TERMINATE\" to end the conversation.
+You are an executor responsible for determining whether the user will proceed or cancel their transaction request. If they proceed, you must reply with \"NEXT: confirmation_specialist\" to pass the request to the confirmation specialist. If they cancel, you must reply with \"Transaction canceled\nTERMINATE\" to end the conversation.
 """
 
 

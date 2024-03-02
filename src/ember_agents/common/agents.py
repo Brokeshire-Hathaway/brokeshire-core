@@ -66,6 +66,8 @@ class AgentTeam(Protocol):
         async def task():
             await self._run_conversation(message)
             if self.on_complete is not None:
+                # DEBUG
+                print("===== _init_conversation: self.on_complete =====")
                 self.on_complete(self.sender_did, self.thread_id)
 
         asyncio.create_task(task())
