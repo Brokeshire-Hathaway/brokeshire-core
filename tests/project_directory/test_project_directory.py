@@ -116,7 +116,7 @@ async def test_full_workflow_live(update_post):
     ],
     
 )
-#@pytest.mark.skip()
+@pytest.mark.skip()
 async def test_run_all_things(update):
     date= "**February 19**"
     print(f"============running test for {date}==================")

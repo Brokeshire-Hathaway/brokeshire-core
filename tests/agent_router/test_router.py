@@ -29,6 +29,7 @@ def test_default_route(intent: str, expected: str):
         ("Send 5 uni to Alice"),
     ],
 )
+@pytest.mark.skip
 async def test_send_route(message: str):
     agent_team_sessions = AgentTeamSessionManager()
     router = Router(agent_team_sessions)

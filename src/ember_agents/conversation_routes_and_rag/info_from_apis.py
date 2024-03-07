@@ -137,14 +137,16 @@ async def market_route(message:str) -> str:
     ath_delta = round(((float(info_of_token.price) - float(info_of_token.ath)) / float(info_of_token.ath)),2) if info_of_token.ath is not None else None
     if embers_description is None:
         response = f"""
-**🪙 Name:** {info_of_token.name} **(${token_ticker})**
-**🔗 Network:** {network}
-**💵 Price:** ${price} (24hr {info_of_token.price_change_24h}%) 
-**💰 Market Cap:** ${market_cap}
-**💧 Liquidity:** {liquidity}
-**🔖 Token Contract Address:** {info_of_token.token_contract_address}
-**🏊 Pool Address:** {info_of_token.pool_address}
-**Remember:** Always DYOR before buying any crypto, especially shitcoins! 🧐💡🚀
+**| {info_of_token.name} (${token_ticker}) |**
+
+**🔗 Network・** {network}
+**💵 Price・** ${price} (24hr {info_of_token.price_change_24h}%) 
+**💰 Market Cap・** ${market_cap}
+**💧 Liquidity・** {liquidity}
+**🔖 Token Contract Address・** {info_of_token.token_contract_address}
+**🏊 Pool Address・** {info_of_token.pool_address}
+
+_Always do your own research_ 🧐💡🚀
 """
         return response
     else:
@@ -154,14 +156,17 @@ async def market_route(message:str) -> str:
         #print(f"emoji: {emoji}")
         # ADD SENTIMENT BACK WHEN LUNARCRUSH IS PAID FOR
         response = f"""
-**{emoji} Name:** {info_of_token.name} **(${token_ticker})**
-**🕸️ Website:** {info_of_token.website}
-**🐦 Twitter Handle:** @{info_of_token.twitter_handle}
-**🔗 Network:** {network}
-**📝 Description:** {desc}
+**| {emoji} {info_of_token.name}** **(${token_ticker}) |**
 
-**💵 Price:** ${price} (24hΔ: {info_of_token.price_change_24h}%) (ATH: ${ath} Δ: {ath_delta}%) 
-**💰 Market Cap:** ${market_cap}
+**🔗 Network・** {network}
+**💵 Price・** ${price} (24hΔ: {info_of_token.price_change_24h}%)
+(ATH: ${ath} Δ: {ath_delta}%) 
+**💰 Market Cap・** ${market_cap}
+
+{desc}
+
+🐦・(@{info_of_token.twitter_handle})[https://twitter.com/{info_of_token.twitter_handle}]
+🕸️・{info_of_token.website}
 """
         return response    
 #### get new description of token from ember
@@ -344,7 +349,7 @@ async def coingecko(token_id: str):
         market_cap=json_response["market_data"]["market_cap"]["usd"],
         asset_platform_id=json_response["asset_platform_id"]
         if json_response.get("asset_platform_id")
-        else "This token is native to its own blockchain and has no address.",
+        else "_Native to its own blockchain._",
     )
 
 #### lunarcrush info
