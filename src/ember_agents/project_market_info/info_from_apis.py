@@ -1,7 +1,8 @@
 import json
 import os
-from typing import Literal, Optional
 from pprint import pprint
+from typing import Literal, Optional
+
 import httpx
 from attr import asdict
 from numpy import empty, full
@@ -17,11 +18,13 @@ client = AsyncOpenAI(
 )
 
 openai_settings = {
-    "model":"gpt-3.5-turbo-0125",
-    "response_format":{"type": "json_object"},
+    "model": "gpt-3.5-turbo-0125",
+    "response_format": {"type": "json_object"},
     "temperature": 0,
-    "seed": 1
+    "seed": 1,
 }
+
+
 class ResponseFormat(BaseModel):
     # coingecko
     ember_response: str
@@ -39,6 +42,7 @@ class ResponseFormat(BaseModel):
     token_contract_address: Optional[str]
     # lunarcrush
     sentiment: Optional[Sentiment]
+
 
 class ProjectInfo(BaseModel):
     # coingecko
@@ -58,7 +62,8 @@ class ProjectInfo(BaseModel):
     pool_address: Optional[str]
     # lunarcrush
     sentiment: Optional[Sentiment]
-    #goplus
+    # goplus
+
 
 class CoinGecko(BaseModel):
     token_contract_address: Optional[str]
@@ -76,6 +81,7 @@ class CoinGecko(BaseModel):
     class Config:
         extra = Extra.ignore
 
+
 class LunarCrush(BaseModel):
     sentiment: Sentiment
     galaxy_score: str
@@ -83,12 +89,13 @@ class LunarCrush(BaseModel):
     class Config:
         extra = Extra.ignore
 
+
 class DexScreener(BaseModel):
     token_contract_address: str
     name: str
     description: str
     symbol: str
-    network: str #network
+    network: str  # network
     price: str
     price_change_24h: str
     market_cap: str
@@ -97,12 +104,14 @@ class DexScreener(BaseModel):
     class Config:
         extra = Extra.ignore
 
+
 class EmberOnProject(BaseModel):
     project_description: str
     project_emoji: str
 
     class Config:
         extra = Extra.ignore
+
 
 class TokenQueried(BaseModel):
     token_name_or_symbol: str
@@ -111,8 +120,9 @@ class TokenQueried(BaseModel):
     class Config:
         extra = Extra.ignore
 
+
 #### main market route function
-async def market_route(message:str) -> str:
+async def market_route(message: str) -> str:
     token_queried = await extract_token_from_message(message)
     print("___token_queried___")
     print(token_queried)
@@ -127,14 +137,35 @@ async def market_route(message:str) -> str:
     print(info_of_token)
     if info_of_token is None:
         response = "token not found"
-    embers_description = await get_new_desc_from_ember(info_of_token.description) if info_of_token.description is not None else None
+    embers_description = (
+        await get_new_desc_from_ember(info_of_token.description)
+        if info_of_token.description is not None
+        else None
+    )
     token_ticker = info_of_token.symbol.upper()
-    market_cap=format(int(info_of_token.market_cap), ",") 
-    network=info_of_token.network.capitalize()
-    price=format(round(float(info_of_token.price),2), ",")
-    ath=format(float(info_of_token.ath), ",") if info_of_token.ath is not None else None
-    liquidity=format(float(info_of_token.liquidity), ",") if info_of_token.liquidity is not None else None
-    ath_delta = round(((float(info_of_token.price) - float(info_of_token.ath)) / float(info_of_token.ath)),2) if info_of_token.ath is not None else None
+    market_cap = format(int(info_of_token.market_cap), ",")
+    network = info_of_token.network.capitalize()
+    price = format(round(float(info_of_token.price), 2), ",")
+    ath = (
+        format(float(info_of_token.ath), ",") if info_of_token.ath is not None else None
+    )
+    liquidity = (
+        format(float(info_of_token.liquidity), ",")
+        if info_of_token.liquidity is not None
+        else None
+    )
+    ath_delta = (
+        round(
+            (
+                (float(info_of_token.price) - float(info_of_token.ath))
+                / float(info_of_token.ath)
+            )
+            * 100,
+            2,
+        )
+        if info_of_token.ath is not None
+        else None
+    )
     if embers_description is None:
         response = f"""
 **| {info_of_token.name} (${token_ticker}) |**
@@ -150,10 +181,10 @@ _Always do your own research_ 🧐💡🚀
 """
         return response
     else:
-        desc=embers_description.project_description
-        emoji=embers_description.project_emoji
-        #print(f"desc: {desc}")
-        #print(f"emoji: {emoji}")
+        desc = embers_description.project_description
+        emoji = embers_description.project_emoji
+        # print(f"desc: {desc}")
+        # print(f"emoji: {emoji}")
         # ADD SENTIMENT BACK WHEN LUNARCRUSH IS PAID FOR
         response = f"""
 **| {emoji} {info_of_token.name}** **(${token_ticker}) |**
@@ -168,7 +199,9 @@ _Always do your own research_ 🧐💡🚀
 🐦・(@{info_of_token.twitter_handle})[https://twitter.com/{info_of_token.twitter_handle}]
 🕸️・{info_of_token.website}
 """
-        return response    
+        return response
+
+
 #### get new description of token from ember
 async def get_new_desc_from_ember(description: str) -> EmberOnProject:
     system_message = """
@@ -202,9 +235,7 @@ Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fr
 }
 ```
 """
-    user_message = (
-        f"Return the description and emoji for this:\n{description}"
-    )
+    user_message = f"Return the description and emoji for this:\n{description}"
     chat_completion = await client.chat.completions.create(
         messages=[
             {
@@ -216,13 +247,14 @@ Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fr
                 "content": user_message,
             },
         ],
-        **openai_settings
+        **openai_settings,
     )
     response = chat_completion.choices[0].message.content
     json_response = json.loads(response)
     EmbersTake = EmberOnProject(**json_response)
     print(f"EmbersTake:\n{EmbersTake}")
     return EmbersTake
+
 
 #### Extracts the token name or address for user message
 async def extract_token_from_message(message: str) -> TokenQueried:
@@ -247,9 +279,7 @@ search 0x1234567890123456789012345678901234567890
 }
 ```
 """
-    user_message = (
-        f"Extract the singular crypto token or contract address the user is referencing:\n{message}"
-    )
+    user_message = f"Extract the singular crypto token or contract address the user is referencing:\n{message}"
     chat_completion = await client.chat.completions.create(
         messages=[
             {
@@ -261,12 +291,13 @@ search 0x1234567890123456789012345678901234567890
                 "content": user_message,
             },
         ],
-        **openai_settings
+        **openai_settings,
     )
     response = chat_completion.choices[0].message.content
     json_response = json.loads(response)
     token_queried = TokenQueried(**json_response)
-    return token_queried 
+    return token_queried
+
 
 #### main info function
 async def info_from_apis(token_queried: TokenQueried) -> Optional[ProjectInfo]:
@@ -287,12 +318,13 @@ async def info_from_apis(token_queried: TokenQueried) -> Optional[ProjectInfo]:
             raise ValueError("Token not found, please use Contract Address")
     return project_details
 
+
 #### orchestrate cg and lc
 async def coingecko_and_lunarcrush(input: str) -> ProjectInfo:
     cg_response = await coingecko(input)
-    #print(f"___cg_response___{cg_response}")
+    # print(f"___cg_response___{cg_response}")
     lc_response = await lunarcrush(cg_response.symbol)
-    #print(f"___lc_response___{lc_response}")
+    # print(f"___lc_response___{lc_response}")
     return ProjectInfo(
         token_contract_address=cg_response.token_contract_address,
         name=cg_response.name,
@@ -308,6 +340,7 @@ async def coingecko_and_lunarcrush(input: str) -> ProjectInfo:
         sentiment=lc_response.sentiment,
     )  # type: ignore
 
+
 #### coingecko search for id
 async def getidfromcoingecko(searchterm: str):
     URL = f"https://api.coingecko.com/api/v3/search?query={searchterm}"
@@ -321,15 +354,16 @@ async def getidfromcoingecko(searchterm: str):
     else:
         return json_response["coins"][0]["id"]
 
+
 #### coingecko info from id
 async def coingecko(token_id: str):
     URL = f"https://api.coingecko.com/api/v3/coins/{token_id}?symbols=false&market_data=true&community_data=false&developer_data=false&sparkline=false"
     async with httpx.AsyncClient(http2=True) as client:
         response = await client.get(URL)
     json_response = response.json()
-    #pprint(f"___coingecko_response___{json_response}")
-    #Output json_response to a file
-    #with open(f"{token_id}_coingecko_response.json", "w") as file:
+    # pprint(f"___coingecko_response___{json_response}")
+    # Output json_response to a file
+    # with open(f"{token_id}_coingecko_response.json", "w") as file:
     #    json.dump(json_response, file, indent=4)
 
     #    print("____contract address___")
@@ -351,6 +385,7 @@ async def coingecko(token_id: str):
         if json_response.get("asset_platform_id")
         else "_Native to its own blockchain._",
     )
+
 
 #### lunarcrush info
 async def lunarcrush(symbol: str):
@@ -379,6 +414,7 @@ async def lunarcrush(symbol: str):
         galaxy_score=gscore,
     )
 
+
 #### map lunarcursh sentiment to literal
 def map_sentiment_to_literal(sentiment_score: int) -> Sentiment:
     if sentiment_score > 88:
@@ -389,6 +425,7 @@ def map_sentiment_to_literal(sentiment_score: int) -> Sentiment:
         return "negative"
     else:
         return "unknown"
+
 
 #### get dexscreener info of token contract
 async def dexscreener(token_contract_address: str) -> ProjectInfo | None:
@@ -404,7 +441,7 @@ async def dexscreener(token_contract_address: str) -> ProjectInfo | None:
     print("================= (all info local to this pool) =============")
     if jsonresp is None:
         print("=====No pairs found for the given token contract address.======")
-        return None ###how to handle this correctly?
+        return None  ###how to handle this correctly?
     print(
         jsonresp.get("baseToken", {}).get("symbol")
         + " / "
@@ -414,7 +451,7 @@ async def dexscreener(token_contract_address: str) -> ProjectInfo | None:
         + " @ "
         + str(jsonresp.get("pairAddress"))
     )
-    price=jsonresp.get("priceUsd")
+    price = jsonresp.get("priceUsd")
     print(f"{price}")
     return ProjectInfo(
         token_contract_address=token_contract_address,
@@ -427,11 +464,12 @@ async def dexscreener(token_contract_address: str) -> ProjectInfo | None:
         sentiment=None,
         symbol=jsonresp.get("baseToken", {}).get("symbol"),
         price=jsonresp.get("priceUsd"),
-        price_change_24h=str(jsonresp.get("priceChange", {}).get("h24")), 
-        market_cap=jsonresp.get("fdv"), 
+        price_change_24h=str(jsonresp.get("priceChange", {}).get("h24")),
+        market_cap=jsonresp.get("fdv"),
         pool_address=jsonresp.get("pairAddress"),
-        liquidity=jsonresp.get("liquidity").get("usd"), #
+        liquidity=jsonresp.get("liquidity").get("usd"),  #
     )
+
 
 #### get largest pool with passed contract by volume
 def get_largest_by_volume_24h(data):
