@@ -1,0 +1,24 @@
+{
+    "parsed_threads_and_reads": [
+        {
+            "name": "ThreadOnRetailInvestorsHedge",
+            "description": "Thread on retail investors hedge by @0xTexasHedge",
+            "publication_date": "20230218",
+            "source_link": "https://twitter.com/0xTexasHedge/status/1758936908787265750",
+            "author": "0xTexasHedge",
+            "category": "investing",
+            "evergreen_score": 0.7,
+            "organization": []
+        },
+        {
+            "name": "ThreadOnTheAbilityToNavigateTimeFrames",
+            "description": "Thread on the ability to navigate time frames by @mrjasonchoi",
+            "publication_date": "20230218",
+            "source_link": "https://twitter.com/mrjasonchoi/status/1758902284980027818",
+            "author": "mrjasonchoi",
+            "category": "investing",
+            "evergreen_score": 0.7,
+            "organization": []
+        }
+    ]
+}

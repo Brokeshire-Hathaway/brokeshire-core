@@ -1,0 +1,416 @@
+MERGE (n:NewsItem {
+            name: 'CoinbaseEarningsExceedEstimates',
+            description: 'Coinbase earnings exceeded estimates',
+            sentiment: 'positive',
+            publication_date: date('20230216'),
+            source_link: 'https://twitter.com/stocktalkweekly/status/1758240448294814176',
+            author: 'stocktalkweekly',
+            category: 'update'
+        })
+        WITH n as newsItem
+        UNWIND ['Coinbase'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'OpenAIIntroducesSora',
+            description: 'OpenAI introduces Sora (text-to-video model)',
+            sentiment: 'positive',
+            publication_date: date('20230216'),
+            source_link: 'https://twitter.com/OpenAI/status/1758192957386342435',
+            author: 'OpenAI',
+            category: 'update'
+        })
+        WITH n as newsItem
+        UNWIND ['OpenAI'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)MERGE (n:NewsItem {
+            name: '5MBEAMXDumpedPhishingAttack',
+            description: '$5M $BEAMX dumped due to phishing attack',
+            sentiment: 'negative',
+            publication_date: date('20240216'),
+            source_link: 'https://twitter.com/Pentosh1/status/1758173394368151999',
+            author: 'Pentosh1',
+            category: 'exploit'
+        })
+        WITH n as newsItem
+        UNWIND ['BEAMX'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'ParclMigrateLPAccounts',
+            description: '@Parcl PSA to migrate LP accounts to new system',
+            sentiment: 'neutral',
+            publication_date: date('20240216'),
+            source_link: 'https://twitter.com/Parcl/status/1758182168315248868',
+            author: 'Parcl',
+            category: 'update'
+        })
+        WITH n as newsItem
+        UNWIND ['Parcl'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'AevoxyzAddsSHFLPreMarkets',
+            description: '@aevoxyz adds $SHFL pre-markets',
+            sentiment: 'positive',
+            publication_date: date('20240216'),
+            source_link: 'https://twitter.com/aevoxyz/status/1758367424666059260',
+            author: 'aevoxyz',
+            category: 'update'
+        })
+        WITH n as newsItem
+        UNWIND ['aevoxyz', 'SHFL'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'AptosNetworkLaunchesJamboPhone',
+            description: '@Aptos_Network x @JamboTechnology launches JamboPhone',
+            sentiment: 'positive',
+            publication_date: date('20240216'),
+            source_link: 'https://twitter.com/Aptos_Network/status/1758129330541285790',
+            author: 'Aptos_Network',
+            category: 'partnership'
+        })
+        WITH n as newsItem
+        UNWIND ['AptosNetwork', 'JamboTechnology'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'LiquityProtocolEvolutionCDPs',
+            description: '@LiquityProtocol introduces next evolution of CDPs',
+            sentiment: 'positive',
+            publication_date: date('20240216'),
+            source_link: 'https://twitter.com/LiquityProtocol/status/1758151325802488313',
+            author: 'LiquityProtocol',
+            category: 'update'
+        })
+        WITH n as newsItem
+        UNWIND ['LiquityProtocol'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'FraxtalFXTLPointSnapshot',
+            description: 'Fraxtal $FXTL point snapshot planned on March 6th',
+            sentiment: 'neutral',
+            publication_date: date('20240216'),
+            source_link: 'https://twitter.com/CryptoGrills/status/1758163681207046428',
+            author: 'CryptoGrills',
+            category: 'update'
+        })
+        WITH n as newsItem
+        UNWIND ['Fraxtal', 'FXTL'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'ThorChainCapIncreaseRUNEBurn',
+            description: '@ThorChain cap increasing + 60M RUNE burn proposal passed',
+            sentiment: 'positive',
+            publication_date: date('20240216'),
+            source_link: 'https://twitter.com/THORChain/status/1758371052441485628',
+            author: 'THORChain',
+            category: 'update'
+        })
+        WITH n as newsItem
+        UNWIND ['ThorChain'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'BybitDelistsSpotRUNE',
+            description: '@Bybit_Official delists spot $RUNE',
+            sentiment: 'negative',
+            publication_date: date('20240216'),
+            source_link: 'https://twitter.com/LMaskedman/status/1758439195063046373',
+            author: 'LMaskedman',
+            category: 'update'
+        })
+        WITH n as newsItem
+        UNWIND ['Bybit', 'RUNE'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'TradeparadexAnnouncesPointSystem',
+            description: '@Tradeparadex announces point system',
+            sentiment: 'neutral',
+            publication_date: date('20240216'),
+            source_link: 'https://twitter.com/tradeparadex/status/1757326604651598141',
+            author: 'tradeparadex',
+            category: 'update'
+        })
+        WITH n as newsItem
+        UNWIND ['Tradeparadex'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'MoonbeamPartnersAnimoCryptoGamePlayStation',
+            description: 'Moonbeam partners with Animo with goal to launch crypto game for PlayStation',
+            sentiment: 'positive',
+            publication_date: date('20240216'),
+            source_link: 'https://www.theblock.co/post/277632/moonbeam-partners-with-crypto-gamer-animo-with-goal-to-bring-stars-arena-to-playstation',
+            author: 'theblock',
+            category: 'partnership'
+        })
+        WITH n as newsItem
+        UNWIND ['Moonbeam', 'Animo'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'UniswapV4TentativelyInQ3',
+            description: '@Uniswap v4 tentatively in Q3',
+            sentiment: 'neutral',
+            publication_date: date('20240216'),
+            source_link: 'https://blockworks.co/news/uniswap-foundation-v4-launch-announcement',
+            author: 'blockworks',
+            category: 'update'
+        })
+        WITH n as newsItem
+        UNWIND ['Uniswap'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)MERGE (e:EducationalContent {
+            name: 'ThreadOnBnb',
+            description: 'Thread on $BNB by @DefiIgnas',
+            publication_date: date('20230216'),
+            source_link: 'https://twitter.com/DefiIgnas/status/1757910866614497486',
+            author: 'DefiIgnas',
+            category: 'tech',
+            evergreen_score: 0.6
+        })
+        WITH e as EducationalContent
+        FOREACH (org IN [] |
+            FOREACH (ignoreMe IN CASE WHEN org <> '' THEN [1] ELSE [] END |
+                MERGE (o:Project { name: org })
+                MERGE (o)-[:HAS_EDUCATIONAL_CONTENT]->(EducationalContent)
+            )
+        )
+MERGE (e:EducationalContent {
+            name: 'ThreadOnAlphaAndEdges',
+            description: 'Thread on alpha and edges by @TyrogueD',
+            publication_date: date('20230216'),
+            source_link: 'https://twitter.com/TyrogueD/status/1758170844013216146',
+            author: 'TyrogueD',
+            category: 'investing',
+            evergreen_score: 0.7
+        })
+        WITH e as EducationalContent
+        FOREACH (org IN [] |
+            FOREACH (ignoreMe IN CASE WHEN org <> '' THEN [1] ELSE [] END |
+                MERGE (o:Project { name: org })
+                MERGE (o)-[:HAS_EDUCATIONAL_CONTENT]->(EducationalContent)
+            )
+        )
+MERGE (e:EducationalContent {
+            name: 'ThesisOnMaticPol',
+            description: 'Thesis on $MATIC & $POL by @Thiccyth0t',
+            publication_date: date('20230216'),
+            source_link: 'https://thiccythot.substack.com/p/reviving-a-cursed-coin',
+            author: 'Thiccyth0t',
+            category: 'tech',
+            evergreen_score: 0.8
+        })
+        WITH e as EducationalContent
+        FOREACH (org IN [] |
+            FOREACH (ignoreMe IN CASE WHEN org <> '' THEN [1] ELSE [] END |
+                MERGE (o:Project { name: org })
+                MERGE (o)-[:HAS_EDUCATIONAL_CONTENT]->(EducationalContent)
+            )
+        )
+MERGE (e:EducationalContent {
+            name: 'ThesisOnRon',
+            description: 'Thesis on $RON by @s4msies',
+            publication_date: date('20230216'),
+            source_link: 'https://twitter.com/s4msies/status/1757803212130967732',
+            author: 's4msies',
+            category: 'tech',
+            evergreen_score: 0.5
+        })
+        WITH e as EducationalContent
+        FOREACH (org IN [] |
+            FOREACH (ignoreMe IN CASE WHEN org <> '' THEN [1] ELSE [] END |
+                MERGE (o:Project { name: org })
+                MERGE (o)-[:HAS_EDUCATIONAL_CONTENT]->(EducationalContent)
+            )
+        )MERGE (l:Launch {
+            name: 'HarborMarketProtocol',
+            launch_date: date('20230216'),
+            launch_time: 'Live',
+            network: 'BSC',
+            source_link: 'https://twitter.com/0xHarborMarket/status/1758314523227017310',
+            author: '0xHarborMarket',
+            website: 'http://harbor.market/',
+            category: 'other'
+        })
+        WITH l as Launch
+        FOREACH (org IN ['HarborMarketProtocol'] |
+            FOREACH (ignoreMe IN CASE WHEN org <> '' THEN [1] ELSE [] END |
+                MERGE (o:Project { name: org })
+                MERGE (o)-[:HAS_LAUNCH]->(Launch)
+            )
+        )
+MERGE (l:Launch {
+            name: 'MobyStaking',
+            launch_date: date('20230216'),
+            launch_time: 'Live',
+            network: 'Eth',
+            source_link: 'https://blog.launchmoby.com/staking/',
+            author: 'launchmoby',
+            website: 'https://launchmoby.com/',
+            category: 'other'
+        })
+        WITH l as Launch
+        FOREACH (org IN ['Moby'] |
+            FOREACH (ignoreMe IN CASE WHEN org <> '' THEN [1] ELSE [] END |
+                MERGE (o:Project { name: org })
+                MERGE (o)-[:HAS_LAUNCH]->(Launch)
+            )
+        )MERGE (Slate:Project {
+            name: 'Slate',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: [],
+            category: ['Infrastructure'],
+            x_handle: 'slate_ceo',
+            website: 'https://t.co/imSaZGl7Qb'
+        })
+MERGE (Cloudinary:Project {
+            name: 'Cloudinary',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: ['Ethereum'],
+            category: ['Cloud', 'GPU Network', 'Service'],
+            x_handle: 'Cloudinaryio',
+            website: 'http://cloudinary.io/'
+        })
+MERGE (MIMSwap:Project {
+            name: 'MIMSwap',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: ['Blast'],
+            category: ['Stable Swap'],
+            x_handle: 'MIMSwap',
+            website: 'http://abracadabra.money/'
+        })
+MERGE (Witness:Project {
+            name: 'Witness',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: [],
+            category: ['Identity', 'Verification'],
+            x_handle: 'WitnessCo_',
+            website: 'http://witness.co/'
+        })
+MERGE (OnChainBots:Project {
+            name: 'OnChainBots',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: [],
+            category: ['AI', 'Infrastructure'],
+            x_handle: 'onchain_bots',
+            website: 'http://onchainbots.eth.limo/'
+        })
+MERGE (Moria:Project {
+            name: 'Moria',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: [],
+            category: ['Mining'],
+            x_handle: 'MoriaMining',
+            website: 'http://moria.com/'
+        })
+MERGE (SmartWhalesAI:Project {
+            name: 'SmartWhalesAI',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: ['Optimism', 'Arbitrum', 'zkSync'],
+            category: ['AI', 'Copy Trade Platform'],
+            x_handle: 'SmartwhalesAI',
+            website: 'http://smartwhales.ai/'
+        })
+MERGE (Penguin404:Project {
+            name: 'Penguin404',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: ['Avalanche'],
+            category: ['ERC404'],
+            x_handle: 'Penguin404AVAX',
+            website: ''
+        })
+MERGE (Belugas:Project {
+            name: 'Belugas',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: ['Sei'],
+            category: ['Money Market'],
+            x_handle: 'belugasdefi',
+            website: 'http://belugas.io/'
+        })
+MERGE (ChaiAI:Project {
+            name: 'ChaiAI',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: [],
+            category: ['AI'],
+            x_handle: 'chai_research',
+            website: 'http://chai-research.com/'
+        })
+MERGE (GMNetwork:Project {
+            name: 'GMNetwork',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: [],
+            category: ['AI', 'DePin'],
+            x_handle: 'GMNetwork_AI',
+            website: 'http://gmnetwork.ai/'
+        })
+MERGE (GasPods:Project {
+            name: 'GasPods',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: ['Ethereum'],
+            category: ['DEX'],
+            x_handle: 'Gaspods_fi',
+            website: ''
+        })
+MERGE (WenExchange:Project {
+            name: 'WenExchange',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: ['Blast'],
+            category: ['NFT DEX'],
+            x_handle: 'wen_exchange',
+            website: 'http://wen.exchange/earlyaccess'
+        })
+MERGE (Palisade:Project {
+            name: 'Palisade',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: [],
+            category: ['Infrastructure'],
+            x_handle: 'palisadeinc',
+            website: 'http://palisade.co/'
+        })
+MERGE (MeteorMarkets:Project {
+            name: 'MeteorMarkets',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: ['Blast'],
+            category: ['Money Market'],
+            x_handle: 'MeteorMarkets',
+            website: ''
+        })
+MERGE (SummitSwap:Project {
+            name: 'SummitSwap',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: ['Blast'],
+            category: ['Dex Aggregator'],
+            x_handle: 'SummitDefiAg',
+            website: ''
+        })
+MERGE (ClusterProtocol:Project {
+            name: 'ClusterProtocol',
+            publication_date: '20230216',
+            launch_quarter: '',
+            network: [],
+            category: ['AI'],
+            x_handle: 'ClusterProtocol',
+            website: ''
+        })

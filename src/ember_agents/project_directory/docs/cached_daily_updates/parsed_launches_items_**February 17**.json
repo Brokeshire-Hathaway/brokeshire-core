@@ -1,0 +1,15 @@
+{
+    "parsed_launches": [
+        {
+            "name": "GnosisCards",
+            "publication_date": "20230217",
+            "launch_time": "Live",
+            "network": "",
+            "source_link": "https://twitter.com/gnosispay/status/1758838718201290813",
+            "website": "http://gnosispay.com/",
+            "author": "gnosispay",
+            "category": "",
+            "organization": ["GnosisPay"]
+        }
+    ]
+}

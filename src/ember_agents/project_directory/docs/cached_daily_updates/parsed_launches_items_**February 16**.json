@@ -1,0 +1,26 @@
+{
+    "parsed_launches": [
+        {
+            "name": "HarborMarketProtocol",
+            "publication_date": "20230216",
+            "launch_time": "Live",
+            "network": "BSC",
+            "source_link": "https://twitter.com/0xHarborMarket/status/1758314523227017310",
+            "website": "http://harbor.market/",
+            "author": "0xHarborMarket",
+            "category": "other",
+            "organization": ["HarborMarketProtocol"]
+        },
+        {
+            "name": "MobyStaking",
+            "publication_date": "20230216",
+            "launch_time": "Live",
+            "network": "Eth",
+            "source_link": "https://blog.launchmoby.com/staking/",
+            "website": "https://launchmoby.com/",
+            "author": "launchmoby",
+            "category": "other",
+            "organization": ["Moby"]
+        }
+    ]
+}

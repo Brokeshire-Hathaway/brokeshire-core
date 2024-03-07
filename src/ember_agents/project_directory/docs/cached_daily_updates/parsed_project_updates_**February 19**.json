@@ -1,0 +1,64 @@
+{
+    "parsed_news_items": [
+        {
+            "name": "SturdyFinanceProposal",
+            "description": "@SturdyFinance proposal to enable transferability of $STRDY",
+            "sentiment": "neutral",
+            "publication_date": "20230219",
+            "source_link": "https://twitter.com/SturdyFinance/status/1758600668594799017",
+            "author": "SturdyFinance",
+            "category": "update",
+            "organization": ["SturdyFinance"]
+        },
+        {
+            "name": "StarknetFndnDistributeSTRK",
+            "description": "@StarknetFndn to distribute 40M STRK to DeFi protocols",
+            "sentiment": "positive",
+            "publication_date": "20230219",
+            "source_link": "https://twitter.com/StarknetFndn/status/1759567375370772507",
+            "author": "StarknetFndn",
+            "category": "update",
+            "organization": ["StarknetFndn"]
+        },
+        {
+            "name": "AptosNetworkAlpha",
+            "description": "@Aptos_Network alpha by @adamcader_",
+            "sentiment": "neutral",
+            "publication_date": "20230219",
+            "source_link": "https://twitter.com/adamcader_/status/1759290063488528735",
+            "author": "adamcader_",
+            "category": "update",
+            "organization": ["Aptos_Network"]
+        },
+        {
+            "name": "ArgentHQIntroducesStarknetPortfolio",
+            "description": "@ArgentHQ introduces Starknet Portfolio",
+            "sentiment": "positive",
+            "publication_date": "20230219",
+            "source_link": "https://twitter.com/argentHQ/status/1759540227910078708",
+            "author": "argentHQ",
+            "category": "update",
+            "organization": ["ArgentHQ"]
+        },
+        {
+            "name": "EthenaLabsFunding",
+            "description": "@Ethena_Labs announces additional funding and hints surprise with @echodotxyz",
+            "sentiment": "positive",
+            "publication_date": "20230219",
+            "source_link": "https://twitter.com/leptokurtic_/status/1759546414252863949",
+            "author": "leptokurtic_",
+            "category": "update",
+            "organization": ["Ethena_Labs", "echodotxyz"]
+        },
+        {
+            "name": "ChilizPartnersKLeague",
+            "description": "@Chiliz partners with K-League",
+            "sentiment": "positive",
+            "publication_date": "20230219",
+            "source_link": "https://chiliz.medium.com/k-league-partners-with-web3-pioneer-chiliz-to-enhance-fan-engagement-and-power-global-expansion-ab1b9e558206",
+            "author": "Chiliz",
+            "category": "partnership",
+            "organization": ["Chiliz", "K-League"]
+        }
+    ]
+}

@@ -1,0 +1,257 @@
+MERGE (n:NewsItem {
+            name: 'FixedFloatExploited',
+            description: '@FixedFloat exploited for $26.1M',
+            sentiment: 'negative',
+            publication_date: date('20230218'),
+            source_link: 'https://twitter.com/BeosinAlert/status/1759229411713528029',
+            author: 'BeosinAlert',
+            category: 'exploit'
+        })
+        WITH n as newsItem
+        UNWIND ['FixedFloat'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'PixelsOnlineAirdrop',
+            description: '@Pixels_Online airdropping 20M $PIXEL to $RON stakers',
+            sentiment: 'positive',
+            publication_date: date('20230218'),
+            source_link: 'https://twitter.com/ICODrops/status/1759155993307484446',
+            author: 'ICODrops',
+            category: 'update'
+        })
+        WITH n as newsItem
+        UNWIND ['Pixels_Online'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'AltLayerAnnouncement',
+            description: '@Alt_Layer announced $TIA staker airdrop claim date',
+            sentiment: 'positive',
+            publication_date: date('20230218'),
+            source_link: 'https://twitter.com/alt_layer/status/1759149811972899047',
+            author: 'alt_layer',
+            category: 'update'
+        })
+        WITH n as newsItem
+        UNWIND ['Alt_Layer'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'SnapshotForCNVHolders',
+            description: 'Snapshot this week for $CNV holders to share @FjordFoundry fees',
+            sentiment: 'positive',
+            publication_date: date('20230218'),
+            source_link: 'https://twitter.com/dcfgod/status/1759095749927923916',
+            author: 'dcfgod',
+            category: 'update'
+        })
+        WITH n as newsItem
+        UNWIND ['FjordFoundry'] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)
+MERGE (n:NewsItem {
+            name: 'SecondSTRKAirdrop',
+            description: 'Second $STRK airdrop confirmed',
+            sentiment: 'positive',
+            publication_date: date('20230218'),
+            source_link: 'https://twitter.com/Starknet_OG/status/1758865367517073520',
+            author: 'Starknet_OG',
+            category: 'update'
+        })
+        WITH n as newsItem
+        UNWIND [] AS org
+        MERGE (o:Project { name: org })
+        MERGE (o)-[:HAS_NEWS]->(newsItem)MERGE (e:EducationalContent {
+            name: 'ThreadOnRetailInvestorsHedge',
+            description: 'Thread on retail investors hedge by @0xTexasHedge',
+            publication_date: date('20230218'),
+            source_link: 'https://twitter.com/0xTexasHedge/status/1758936908787265750',
+            author: '0xTexasHedge',
+            category: 'investing',
+            evergreen_score: 0.7
+        })
+        WITH e as EducationalContent
+        FOREACH (org IN [] |
+            FOREACH (ignoreMe IN CASE WHEN org <> '' THEN [1] ELSE [] END |
+                MERGE (o:Project { name: org })
+                MERGE (o)-[:HAS_EDUCATIONAL_CONTENT]->(EducationalContent)
+            )
+        )
+MERGE (e:EducationalContent {
+            name: 'ThreadOnTheAbilityToNavigateTimeFrames',
+            description: 'Thread on the ability to navigate time frames by @mrjasonchoi',
+            publication_date: date('20230218'),
+            source_link: 'https://twitter.com/mrjasonchoi/status/1758902284980027818',
+            author: 'mrjasonchoi',
+            category: 'investing',
+            evergreen_score: 0.7
+        })
+        WITH e as EducationalContent
+        FOREACH (org IN [] |
+            FOREACH (ignoreMe IN CASE WHEN org <> '' THEN [1] ELSE [] END |
+                MERGE (o:Project { name: org })
+                MERGE (o)-[:HAS_EDUCATIONAL_CONTENT]->(EducationalContent)
+            )
+        )MERGE (ChakraChain:Project {
+            name: 'ChakraChain',
+            publication_date: '20240301',
+            launch_quarter: 'Q12024',
+            network: ['Bitcoin'],
+            category: ['Restaking', 'ZKP'],
+            x_handle: 'ChakraChain',
+            website: 'http://linktr.ee/ChakraChain'
+        })
+MERGE (Ironclad:Project {
+            name: 'Ironclad',
+            publication_date: '20240301',
+            launch_quarter: 'Q12024',
+            network: ['Mode'],
+            category: ['Money Market'],
+            x_handle: 'IroncladFinance',
+            website: 'http://ironclad.finance/'
+        })
+MERGE (Nettensor:Project {
+            name: 'Nettensor',
+            publication_date: '20240301',
+            launch_quarter: 'Q12024',
+            network: ['Bittensor', 'Ethereum'],
+            category: ['AI'],
+            x_handle: 'nettensor',
+            website: 'http://nettensor.com/'
+        })
+MERGE (Tangible:Project {
+            name: 'Tangible',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: [],
+            category: ['RWA'],
+            x_handle: 'tangibleRWA',
+            website: ''
+        })
+MERGE (Infinit:Project {
+            name: 'Infinit',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: ['Blast'],
+            category: ['Money Market'],
+            x_handle: 'InfinitCapital_',
+            website: ''
+        })
+MERGE (AlienFinance:Project {
+            name: 'AlienFinance',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: ['Blast'],
+            category: ['Money Market'],
+            x_handle: 'aliendotfinance',
+            website: ''
+        })
+MERGE (BlinkFi:Project {
+            name: 'BlinkFi',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: ['Blast'],
+            category: [],
+            x_handle: 'BlonkFi',
+            website: ''
+        })
+MERGE (InflectionAI:Project {
+            name: 'InflectionAI',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: [],
+            category: ['AI'],
+            x_handle: 'inflectionAI',
+            website: 'http://inflection.ai/'
+        })
+MERGE (Cliiquid:Project {
+            name: 'Cliiquid',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: ['Ethereum'],
+            category: ['Restaking'],
+            x_handle: 'cliquid_xyz',
+            website: 'http://cliquid.xyz/'
+        })
+MERGE (FrontrunMarket:Project {
+            name: 'FrontrunMarket',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: ['Blast'],
+            category: ['OTC'],
+            x_handle: 'Frontrun_market',
+            website: ''
+        })
+MERGE (Restake:Project {
+            name: 'Restake',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: ['Starknet'],
+            category: ['Cross Chain', 'Liquid Staking'],
+            x_handle: 'Restake_it',
+            website: 'http://testnet.restake.it/'
+        })
+MERGE (RPGOnBlast:Project {
+            name: 'RPGOnBlast',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: ['Blast'],
+            category: ['Game Fi'],
+            x_handle: 'RPGonBlast',
+            website: ''
+        })
+MERGE (PL:Project {
+            name: '0xPPL',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: [],
+            category: ['Social'],
+            x_handle: '0xppl_',
+            website: 'http://0xppl.com/'
+        })
+MERGE (NimNetwork:Project {
+            name: 'NimNetwork',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: [],
+            category: [],
+            x_handle: 'nim_network',
+            website: ''
+        })
+MERGE (FedMLAi:Project {
+            name: 'FedMLAi',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: [],
+            category: ['Cloud'],
+            x_handle: 'FedML_AI',
+            website: 'http://fedml.ai/'
+        })
+MERGE (LangChain:Project {
+            name: 'LangChain',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: [],
+            category: ['AI', 'Language Models'],
+            x_handle: 'LangChainAI',
+            website: 'http://langchain.com/'
+        })
+MERGE (Sentient:Project {
+            name: 'Sentient',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: [],
+            category: ['AI'],
+            x_handle: 'sentient_agi',
+            website: 'http://sentient.foundation/'
+        })
+MERGE (BittensorArt:Project {
+            name: 'BittensorArt',
+            publication_date: '20230218',
+            launch_quarter: 'Q12023',
+            network: ['Bittensor'],
+            category: ['Art Creation'],
+            x_handle: 'Bittensor_art',
+            website: 'http://corcel.io/'
+        })

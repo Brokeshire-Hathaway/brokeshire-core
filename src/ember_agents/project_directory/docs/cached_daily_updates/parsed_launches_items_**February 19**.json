@@ -1,0 +1,81 @@
+{
+    "parsed_launches": [
+        {
+            "name": "MyxFinance",
+            "publication_date": "20230219",
+            "launch_time": "Live",
+            "network": "Arbitrum",
+            "source_link": "https://twitter.com/MYX_Finance/status/1759201098181616001",
+            "website": "http://linktr.ee/myxfinance",
+            "author": "MYX_Finance",
+            "category": "other",
+            "organization": ["MyxFinance"]
+        },
+        {
+            "name": "PixelTge",
+            "publication_date": "20230219",
+            "launch_time": "Live",
+            "network": "Binance",
+            "source_link": "https://twitter.com/binance/status/1759538598456819963",
+            "website": "https://t.co/6EsMggBAqd",
+            "author": "binance",
+            "category": "token",
+            "organization": ["Pixel"]
+        },
+        {
+            "name": "ZkxProTrade",
+            "publication_date": "20230219",
+            "launch_time": "Today",
+            "network": "Starknet",
+            "source_link": "https://twitter.com/zkxprotocol/status/1758121509846130754",
+            "website": "http://app.zkx.fi/",
+            "author": "zkxprotocol",
+            "category": "app",
+            "organization": ["ZKX"]
+        },
+        {
+            "name": "ArcadeSnapshot",
+            "publication_date": "20230219",
+            "launch_time": "8pm UTC",
+            "network": "",
+            "source_link": "https://twitter.com/Arcade_xyz/status/1758248494131748880",
+            "website": "http://arcade.xyz/",
+            "author": "Arcade_xyz",
+            "category": "other",
+            "organization": ["Arcade"]
+        },
+        {
+            "name": "ParadexOpenBeta",
+            "publication_date": "20230219",
+            "launch_time": "Live",
+            "network": "Starknet",
+            "source_link": "https://twitter.com/tradeparadex",
+            "website": "http://paradex.trade/",
+            "author": "tradeparadex",
+            "category": "app",
+            "organization": ["Paradex"]
+        },
+        {
+            "name": "TaoBankPresale2",
+            "publication_date": "20230219",
+            "launch_time": "12am UTC",
+            "network": "Eth",
+            "source_link": "https://twitter.com/TaoPadX/status/1758844647399416296",
+            "website": "http://linktr.ee/taopad",
+            "author": "TaoPadX",
+            "category": "token",
+            "organization": ["TaoBank"]
+        },
+        {
+            "name": "Jivara",
+            "publication_date": "20230219",
+            "launch_time": "Live",
+            "network": "Solana",
+            "source_link": "https://twitter.com/JivaraLabs",
+            "website": "http://jivara.ai/",
+            "author": "JivaraLabs",
+            "category": "other",
+            "organization": ["Jivara"]
+        }
+    ]
+}

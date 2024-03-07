@@ -1,0 +1,93 @@
+
+{
+    "parsed_new_projects": [
+        {
+            "name": "YoloGames",
+            "publication_date": "20230217",
+            "launch_quarter": "",
+            "network": [],
+            "category": ["Casino"],
+            "x_handle": "YOLO_Blast",
+            "website": "http://yologames.io/",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "Sphinx",
+            "publication_date": "20230217",
+            "launch_quarter": "",
+            "network": [],
+            "category": ["SC Development"],
+            "x_handle": "sphinxdeploy",
+            "website": "http://sphinx.dev/",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "DePHY",
+            "publication_date": "20230217",
+            "launch_quarter": "",
+            "network": [],
+            "category": ["Infrastructure", "DePin"],
+            "x_handle": "dephynetwork",
+            "website": "http://dephy.io/",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "Analog",
+            "publication_date": "20230217",
+            "launch_quarter": "",
+            "network": [],
+            "category": ["Chain"],
+            "x_handle": "OneAnalog",
+            "website": "http://analog.one/",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "GainsAssociates",
+            "publication_date": "20230217",
+            "launch_quarter": "",
+            "network": [],
+            "category": ["Crowdfunding"],
+            "x_handle": "GainsAssociates",
+            "website": "http://gains-associates.com/",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "AgentFi",
+            "publication_date": "20230217",
+            "launch_quarter": "",
+            "network": [],
+            "category": ["AI", "Agents"],
+            "x_handle": "Agent_Fi",
+            "website": "",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "AminoChain",
+            "publication_date": "20230217",
+            "launch_quarter": "",
+            "network": [],
+            "category": ["Healthcare", "DeSci"],
+            "x_handle": "Amino_Chain",
+            "website": "http://aminochain.io/",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "StarkScale",
+            "publication_date": "20230217",
+            "launch_quarter": "",
+            "network": [],
+            "category": ["ZK", "Machine Learning"],
+            "x_handle": "StarkScale",
+            "website": "https://t.co/KwRubuWi41",
+            "symbol": "",
+            "description": ""
+        }
+    ]
+}

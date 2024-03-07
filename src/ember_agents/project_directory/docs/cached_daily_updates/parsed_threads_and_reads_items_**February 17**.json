@@ -1,0 +1,14 @@
+{
+    "parsed_threads_and_reads": [
+        {
+            "name": "PsaOnCoinbaseResetFraud",
+            "description": "PSA on Coinbase reset fraud by @zachxbt",
+            "publication_date": "20230217",
+            "source_link": "https://twitter.com/zachxbt/status/1758542426128679172",
+            "author": "zachxbt",
+            "category": "tech",
+            "evergreen_score": 0.7,
+            "organization": []
+        }
+    ]
+}
