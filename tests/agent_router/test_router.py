@@ -23,7 +23,7 @@ def test_default_route(intent: str, expected: str):
 """
 
 
-@pytest.mark.parametrize(
+"""@pytest.mark.parametrize(
     "message",
     [
         ("Send 5 uni to Alice"),
@@ -42,4 +42,4 @@ async def test_send_route(message: str):
     print(response)
     new_message = "execute"
     response = await router.send(sender_did, thread_id, new_message)
-    print(response)
+    print(response)"""

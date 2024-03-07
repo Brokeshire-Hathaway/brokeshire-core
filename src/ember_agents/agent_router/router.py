@@ -43,9 +43,6 @@ async def prepare_transaction(tx_request: TxRequest):
     async with httpx.AsyncClient(http2=True, timeout=65) as client:
         response = await client.post(URL, json=tx_request.dict())
 
-    print("@@@ response from server")
-    print(response.text)
-
     return TxPreview.parse_raw(response.text)
 
 

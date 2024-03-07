@@ -39,6 +39,8 @@ agent_team_session_manager = AgentTeamSessionManager()
 
 @app.post("/v1/threads/{thread_id}/messages")
 async def create_message(thread_id: str, body: Message, request: Request):
+    # DEBUG
+    print(f"[/v1/threads/{thread_id}/messages] Received message: {body}", flush=True)
     message_queue: Queue[Response] = Queue()
 
     def on_activity(activity: str):
@@ -46,6 +48,8 @@ async def create_message(thread_id: str, body: Message, request: Request):
         message_queue.put_nowait(response)
 
     async def send_message():
+        print(f"Session manager: {agent_team_session_manager}", flush=True)
+        print({str(agent_team_session_manager._sessions)})
         router = Router(agent_team_session_manager)
         sender_did = body.sender_uid
         try:
@@ -61,11 +65,11 @@ async def create_message(thread_id: str, body: Message, request: Request):
         asyncio.create_task(send_message())
         while True:
             if await request.is_disconnected():
-                print(f"[/v1/threads/{thread_id}/messages] Client disconnected")
+                print(f"[/v1/threads/{thread_id}/messages] Client disconnected", flush=True)
                 break
             response = await message_queue.get()
             json = response.json()
-            print(f"[/v1/threads/{thread_id}/messages] Sending response: {json}")
+            print(f"[/v1/threads/{thread_id}/messages] Sending response: {json}", flush=True)
             print(type(json))
             print(json)
             match response.status:
