@@ -1,6 +1,7 @@
 import json
 import os
 from pprint import pprint
+from time import sleep
 from typing import Literal, Optional
 
 import httpx
@@ -123,17 +124,19 @@ class TokenQueried(BaseModel):
 
 #### main market route function
 async def market_route(message: str) -> str:
+    print("___market_route___", flush=True)
     token_queried = await extract_token_from_message(message)
-    print("___token_queried___")
-    print(token_queried)
+    print("___token_queried___", flush=True)
+    print(token_queried, flush=True)
     try:
         info_of_token = await info_from_apis(token_queried)
         if info_of_token is None:
+            print("Token not found, please use Contract Address", flush=True)
             return "Contract Address is not valid"
     except ValueError as e:
-        print(e)
+        print(f"ValueError: {e}", flush=True)
         return str(e)
-    print("___info_of_token___")
+    print("___info_of_token___", flush=True)
     print(info_of_token)
     if info_of_token is None:
         response = "token not found"
@@ -144,8 +147,8 @@ async def market_route(message: str) -> str:
     )
     token_ticker = info_of_token.symbol.upper()
     market_cap = format(int(info_of_token.market_cap), ",")
-    network = info_of_token.network.capitalize()
-    price = format(round(float(info_of_token.price), 2), ",")
+    network = info_of_token.network  # .capitalize()
+    price = format(round(float(info_of_token.price), 4), ",")
     ath = (
         format(float(info_of_token.ath), ",") if info_of_token.ath is not None else None
     )
@@ -170,12 +173,12 @@ async def market_route(message: str) -> str:
         response = f"""
 **| {info_of_token.name} (${token_ticker}) |**
 
-**🔗 Network・** {network}
-**💵 Price・** ${price} (24hr {info_of_token.price_change_24h}%) 
-**💰 Market Cap・** ${market_cap}
-**💧 Liquidity・** {liquidity}
-**🔖 Token Contract Address・** {info_of_token.token_contract_address}
-**🏊 Pool Address・** {info_of_token.pool_address}
+**🔗 Network ・** {network}
+**💵 Price ・** ${price} (24hr {info_of_token.price_change_24h}%) 
+**💰 Market Cap ・** ${market_cap}
+**💧 Liquidity ・** {liquidity}
+**🔖 Token Contract Address ・** {info_of_token.token_contract_address}
+**🏊 Pool Address ・** {info_of_token.pool_address}
 
 _Always do your own research_ 🧐💡🚀
 """
@@ -187,16 +190,16 @@ _Always do your own research_ 🧐💡🚀
         # print(f"emoji: {emoji}")
         # ADD SENTIMENT BACK WHEN LUNARCRUSH IS PAID FOR
         response = f"""
-**| {emoji} {info_of_token.name}** **(${token_ticker}) |**
+**| {emoji} {info_of_token.name} (${token_ticker}) |**
 
-**🔗 Network・** {network}
-**💵 Price・** ${price} (24hΔ: {info_of_token.price_change_24h}%)
+**🔗 Network ・** {network}
+**💵 Price ・** ${price} (24hΔ: {info_of_token.price_change_24h}%)
 (ATH: ${ath} Δ: {ath_delta}%) 
-**💰 Market Cap・** ${market_cap}
+**💰 Market Cap ・** ${market_cap}
 
 {desc}
 
-🐦・(@{info_of_token.twitter_handle})[https://twitter.com/{info_of_token.twitter_handle}]
+🐦・[@{info_of_token.twitter_handle}](https://twitter.com/{info_of_token.twitter_handle})
 🕸️・{info_of_token.website}
 """
         return response
@@ -293,6 +296,7 @@ search 0x1234567890123456789012345678901234567890
         ],
         **openai_settings,
     )
+    print(f"chat_completion DONE: {chat_completion}", flush=True)
     response = chat_completion.choices[0].message.content
     json_response = json.loads(response)
     token_queried = TokenQueried(**json_response)
@@ -302,18 +306,20 @@ search 0x1234567890123456789012345678901234567890
 #### main info function
 async def info_from_apis(token_queried: TokenQueried) -> Optional[ProjectInfo]:
     if token_queried.token_address is not (None or ""):
-        print("===0x detected===")
+        print("===0x detected===", flush=True)
         print(token_queried.token_address)
         project_details = await dexscreener(token_queried.token_address)
-        print("___project_details____")
+        print("___project_details____", flush=True)
         print(project_details)
     else:
+        print("===trying coingecko===", flush=True)
         coingeckoid = await getidfromcoingecko(token_queried.token_name_or_symbol)
-        print(f"====found in coingecko - name or ticker is {coingeckoid}====")
+        print(f"====coingecko done - name or ticker is {coingeckoid}====", flush=True)
         if coingeckoid is not None:
+            print("===coingecko found something===", flush=True)
             project_details = await coingecko_and_lunarcrush(coingeckoid)
-            print("___project_details____")
-            print(project_details)
+            print("___project_details____", flush=True)
+            print(project_details, flush=True)
         else:
             raise ValueError("Token not found, please use Contract Address")
     return project_details
@@ -321,8 +327,9 @@ async def info_from_apis(token_queried: TokenQueried) -> Optional[ProjectInfo]:
 
 #### orchestrate cg and lc
 async def coingecko_and_lunarcrush(input: str) -> ProjectInfo:
+    print(f"___coingecko_and_lunarcrush___{input}", flush=True)
     cg_response = await coingecko(input)
-    # print(f"___cg_response___{cg_response}")
+    print(f"___cg_response___{cg_response}", flush=True)
     lc_response = await lunarcrush(cg_response.symbol)
     # print(f"___lc_response___{lc_response}")
     return ProjectInfo(
@@ -357,9 +364,11 @@ async def getidfromcoingecko(searchterm: str):
 
 #### coingecko info from id
 async def coingecko(token_id: str):
+    sleep(0.1)
     URL = f"https://api.coingecko.com/api/v3/coins/{token_id}?symbols=false&market_data=true&community_data=false&developer_data=false&sparkline=false"
     async with httpx.AsyncClient(http2=True) as client:
         response = await client.get(URL)
+    print(f"___coingecko_response___{response}", flush=True)
     json_response = response.json()
     # pprint(f"___coingecko_response___{json_response}")
     # Output json_response to a file
@@ -368,10 +377,18 @@ async def coingecko(token_id: str):
 
     #    print("____contract address___")
     #    print(json_response["contract_address"])
-    return CoinGecko(
-        token_contract_address=json_response["contract_address"]
+    token_contract_address = (
+        json_response["contract_address"]
         if json_response.get("contract_address")
-        else None,
+        else None
+    )
+    asset_platform_id = (
+        json_response["asset_platform_id"].capitalize()
+        if json_response.get("asset_platform_id")
+        else "_Native to its own blockchain._"
+    )
+    return CoinGecko(
+        token_contract_address=token_contract_address,
         name=json_response["name"],
         description=json_response["description"]["en"],
         symbol=json_response["symbol"],
@@ -381,9 +398,7 @@ async def coingecko(token_id: str):
         ath=json_response["market_data"]["ath"]["usd"],
         price_change_24h=json_response["market_data"]["price_change_percentage_24h"],
         market_cap=json_response["market_data"]["market_cap"]["usd"],
-        asset_platform_id=json_response["asset_platform_id"]
-        if json_response.get("asset_platform_id")
-        else "_Native to its own blockchain._",
+        asset_platform_id=asset_platform_id,
     )
 
 

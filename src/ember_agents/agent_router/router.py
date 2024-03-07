@@ -119,6 +119,7 @@ market = Route(
         "market info",
         "project details",
         "token summary",
+        "filecoin",
     ],
 )
 
