@@ -8,6 +8,7 @@ from ember_agents.send_token.send import (
     TxIdStatus,
     TxPreview,
     TxRequest,
+    convert_to_json,
 )
 
 pytest_plugins = "pytest_asyncio"
@@ -83,3 +84,17 @@ async def test_send(intent: str, user_replies: List[str]):
     await send(
         intent, user_reply, assistant_reply, prepare_transaction, get_transaction_result
     )"""
+
+
+@pytest.mark.parametrize(
+    "user_request",
+    [
+        (".0001 link to joe"),
+        ("send"),
+        # ("Send 5 Bitcoin to 0x2D6c1025994dB45c7618571d6cB49B064DA9881B", ""),
+        # ("send token", ""),
+    ],
+)
+async def test_interpreter(user_request: str):
+    response = await convert_to_json(user_request)
+    print(f"response: {response}")

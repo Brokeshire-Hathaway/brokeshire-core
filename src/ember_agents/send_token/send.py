@@ -3,8 +3,8 @@ import json
 import os
 import pprint
 import re
-from inspect import cleandoc
 import tempfile
+from inspect import cleandoc
 from typing import Awaitable, Callable, Literal, NamedTuple, Optional
 
 import httpx
@@ -20,7 +20,10 @@ from autogen import (
 from ember_agents.common.agents import AgentTeam
 from ember_agents.info_bites.info_bites import get_random_info_bite
 from guidance import assistant, gen, instruction, models, select, system, user
+from openai import AsyncOpenAI
 from pydantic import BaseModel, Field, validator
+
+client = AsyncOpenAI()
 
 
 class UniversalAddress(BaseModel):
@@ -162,16 +165,14 @@ class UserReceipt(BaseModel):
     transaction_uuid: str
     reason: Optional[str] = None
 
+
 OAI_CONFIG_LIST = [
-    {
-        "model": "gpt-4-1106-preview",
-        "api_key": os.getenv("OPENAI_API_KEY")
-    }
+    {"model": "gpt-4-1106-preview", "api_key": os.getenv("OPENAI_API_KEY")}
 ]
 
 # Create a temporary file
 # Write the JSON structure to a temporary file and pass it to config_list_from_json
-with tempfile.NamedTemporaryFile(mode='w+', delete=True) as temp:
+with tempfile.NamedTemporaryFile(mode="w+", delete=True) as temp:
     env_var = json.dumps(OAI_CONFIG_LIST)
     temp.write(env_var)
     temp.flush()
@@ -197,11 +198,6 @@ class SendTokenGroupChat(GroupChat):
 
     async def a_select_speaker(self, last_speaker: Agent, selector: ConversableAgent):
         """Select the next speaker."""
-        print(f"last_speaker = {last_speaker.name}")
-        print(
-            f"self.last_speaker = {self.last_speaker.name if self.last_speaker else None}"
-        )
-        # print(f"self.messages = {self.messages}")
 
         next_speaker = self.agent_by_name("user")
 
@@ -247,8 +243,6 @@ class SendTokenGroupChat(GroupChat):
                         next_speaker = self.last_speaker
 
         self.last_speaker = last_speaker
-
-        print(f"next_speaker = {next_speaker.name}")
 
         return next_speaker
 
@@ -297,25 +291,17 @@ def get_last_message(recipient: ConversableAgent) -> str:
     return content
 
 
-def convert_to_request(recipient: ConversableAgent, messages, sender, config):
+async def interpreter_reply(recipient: ConversableAgent, messages, sender, config):
     # pprint.pprint(messages)
 
-    gpt_instruct = models.OpenAI(
-        "gpt-3.5-turbo-instruct", api_key=llm_config.get("api_key")
-    )
-
-    print(f"recipient = {recipient}")
-    intent = get_last_message(recipient)
-    print(f"intent = {intent}")
-
-    with instruction():
+    """with instruction():
         # TODO: Add link to token for user verification
 
         lm = (
             gpt_instruct
-            + f"""
+            + f\"""
             You are an intent interpreter responsible for converting user intent into a structured JSON request.
-            
+
             "network" will always be "sepolia" for now.
 
             Use the following JSON example as a guide. ALWAYS remember to wrap your JSON in a code block.
@@ -335,23 +321,77 @@ def convert_to_request(recipient: ConversableAgent, messages, sender, config):
             ```
             ---
             # Intent
-            {intent}
-            """
+            {request}
+            \"""
         )
 
-    lm += gen("json", stop="```\n", save_stop_text=True)
+    lm += gen("json", stop="```\n", save_stop_text=True)"""
+
+    print(f"recipient = {recipient._name}")
+    request = get_last_message(recipient)
+    print(f"request = {request}")
+
+    json = await convert_to_json(request)
 
     return True, {
-        "content": cleandoc(lm["json"]),
+        "content": f"```json\n{json}\n```",
         "name": "interpreter",
         "role": "assistant",
     }
 
 
+async def convert_to_json(request: str) -> str:
+    system_message = """You are an interpreter responsible for converting a user request into JSON. 'network' will always be 'sepolia' for now.
+
+# Example
+## User Request
+Send 1 eth to 0x2D6c1025994dB45c7618571d6cB49B064DA9881B
+## JSON
+```json
+{{
+    "recipient_name": null,
+    "recipient_address": "0x2D6c1025994dB45c7618571d6cB49B064DA9881B",
+    "network": "sepolia",
+    "amount": "1",
+    "token_name": "eth",
+    "is_native_token": true,
+    "token_address": null
+}}
+```"""
+
+    user_message = f"Convert the following request into JSON.\n---\n{request}"
+
+    chat_completion = await client.chat.completions.create(
+        messages=[
+            {
+                "role": "system",
+                "content": system_message,
+            },
+            {
+                "role": "user",
+                "content": user_message,
+            },
+        ],
+        model="gpt-3.5-turbo-0125",
+        temperature=0,
+        seed=42,
+        response_format={"type": "json_object"},
+    )
+
+    if len(chat_completion.choices) > 0 and chat_completion.choices[0].message.content:
+        response = chat_completion.choices[0].message.content
+    else:
+        raise Exception("Failed to convert request to JSON. 😔")
+
+    return response
+
+
 """
             ---
-            # Intent
+            # Example
+            ## User Request
             Send 1 eth to 0x2D6c1025994dB45c7618571d6cB49B064DA9881B
+            ## JSON
             ```json
             {{
                 "recipient_name": null,
@@ -460,7 +500,7 @@ class SendTokenAgentTeam(AgentTeam):
 
         # No system message needed for OpenAI completion API used by Guidance agent (Metis).
         interpreter_agent = AssistantAgent("interpreter", None, llm_config=llm_config)
-        interpreter_agent.register_reply(Agent, convert_to_request, 1)
+        interpreter_agent.register_reply(Agent, interpreter_reply, 1)
 
         # No system message needed for code based agent (Spock).
         validator = AssistantAgent("validator", None, llm_config=llm_config)
