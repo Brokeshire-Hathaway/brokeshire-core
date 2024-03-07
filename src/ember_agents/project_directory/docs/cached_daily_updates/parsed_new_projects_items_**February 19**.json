@@ -1,0 +1,159 @@
+
+{
+    "parsed_new_projects": [
+        {
+            "name": "Paradox",
+            "publication_date": "20240219",
+            "launch_quarter": "",
+            "network": ["Ethereum"],
+            "category": ["ERC404"],
+            "x_handle": "paradoxErc425",
+            "website": "http://pdx.buildjoined/",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "Jivara",
+            "publication_date": "20240219",
+            "launch_quarter": "",
+            "network": ["Solana"],
+            "category": ["AI"],
+            "x_handle": "JivaraLabs",
+            "website": "http://jivara.ai/",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "Plur",
+            "publication_date": "20240219",
+            "launch_quarter": "",
+            "network": ["Blast"],
+            "category": ["Social"],
+            "x_handle": "plurxyz",
+            "website": "http://plur.xyz/",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "CoreMarkets",
+            "publication_date": "20240219",
+            "launch_quarter": "",
+            "network": ["Blast"],
+            "category": ["Intent", "Derivatives"],
+            "x_handle": "Core_Markets",
+            "website": "",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "TatsuEcosystem",
+            "publication_date": "20240219",
+            "launch_quarter": "",
+            "network": ["Bittensor"],
+            "category": ["AI", "API"],
+            "x_handle": "TatsuEcosystem",
+            "website": "https://tatsuecosystem.com/",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "StarHeroes",
+            "publication_date": "20240219",
+            "launch_quarter": "",
+            "network": ["Game Fi"],
+            "category": [],
+            "x_handle": "StarHeroes_game",
+            "website": "http://linktr.ee/starheroes",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "PepeNads",
+            "publication_date": "20240219",
+            "launch_quarter": "",
+            "network": ["Monad"],
+            "category": ["Memecoin"],
+            "x_handle": "pepenads",
+            "website": "",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "Monadbrain",
+            "publication_date": "20240219",
+            "launch_quarter": "",
+            "network": ["Monad"],
+            "category": [],
+            "x_handle": "monadbrain",
+            "website": "http://monadbrain.com/",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "Swirl",
+            "publication_date": "20240219",
+            "launch_quarter": "",
+            "network": [],
+            "category": ["Airdrop", "Service"],
+            "x_handle": "0xSwirl",
+            "website": "http://link3.to/C0XOAGCP",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "BazaarX",
+            "publication_date": "20240219",
+            "launch_quarter": "",
+            "network": ["Chromia"],
+            "category": ["DEX"],
+            "x_handle": "bazaarx_io",
+            "website": "",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "Deriblast",
+            "publication_date": "20240219",
+            "launch_quarter": "",
+            "network": ["Blast"],
+            "category": [],
+            "x_handle": "deriblast",
+            "website": "http://deriblast.com/",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "Vesu",
+            "publication_date": "20240219",
+            "launch_quarter": "",
+            "network": ["Starknet"],
+            "category": ["Money Market"],
+            "x_handle": "vesuxyz",
+            "website": "",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "BlastIns",
+            "publication_date": "20240219",
+            "launch_quarter": "",
+            "network": ["Blast"],
+            "category": ["Inscriptions"],
+            "x_handle": "BlastIns_xyz",
+            "website": "http://blastins.xyz/",
+            "symbol": "",
+            "description": ""
+        },
+        {
+            "name": "FastChain",
+            "publication_date": "20240219",
+            "launch_quarter": "",
+            "network": ["Bitcoin"],
+            "category": ["L2"],
+            "x_handle": "FastLayer2",
+            "website": "http://fastchain.org/",
+            "symbol": "",
+            "description": ""
+        }
+    ]
+}

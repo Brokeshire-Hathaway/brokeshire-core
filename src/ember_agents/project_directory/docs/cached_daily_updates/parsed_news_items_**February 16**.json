@@ -1,0 +1,24 @@
+{
+    "parsed_news_items": [
+        {
+            "name": "CoinbaseEarningsExceedEstimates",
+            "description": "Coinbase earnings exceeded estimates",
+            "sentiment": "positive",
+            "publication_date": "20230216",
+            "source_link": "https://twitter.com/stocktalkweekly/status/1758240448294814176",
+            "author": "stocktalkweekly",
+            "category": "update",
+            "organization": ["Coinbase"]
+        },
+        {
+            "name": "OpenAIIntroducesSora",
+            "description": "OpenAI introduces Sora (text-to-video model)",
+            "sentiment": "positive",
+            "publication_date": "20230216",
+            "source_link": "https://twitter.com/OpenAI/status/1758192957386342435",
+            "author": "OpenAI",
+            "category": "update",
+            "organization": ["OpenAI"]
+        }
+    ]
+}

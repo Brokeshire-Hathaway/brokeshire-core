@@ -1,0 +1,44 @@
+{
+    "parsed_threads_and_reads": [
+        {
+            "name": "ThreadOnBnb",
+            "description": "Thread on $BNB by @DefiIgnas",
+            "publication_date": "20230216",
+            "source_link": "https://twitter.com/DefiIgnas/status/1757910866614497486",
+            "author": "DefiIgnas",
+            "category": "tech",
+            "evergreen_score": 0.6,
+            "organization": []
+        },
+        {
+            "name": "ThreadOnAlphaAndEdges",
+            "description": "Thread on alpha and edges by @TyrogueD",
+            "publication_date": "20230216",
+            "source_link": "https://twitter.com/TyrogueD/status/1758170844013216146",
+            "author": "TyrogueD",
+            "category": "investing",
+            "evergreen_score": 0.7,
+            "organization": []
+        },
+        {
+            "name": "ThesisOnMaticPol",
+            "description": "Thesis on $MATIC & $POL by @Thiccyth0t",
+            "publication_date": "20230216",
+            "source_link": "https://thiccythot.substack.com/p/reviving-a-cursed-coin",
+            "author": "Thiccyth0t",
+            "category": "tech",
+            "evergreen_score": 0.8,
+            "organization": []
+        },
+        {
+            "name": "ThesisOnRon",
+            "description": "Thesis on $RON by @s4msies",
+            "publication_date": "20230216",
+            "source_link": "https://twitter.com/s4msies/status/1757803212130967732",
+            "author": "s4msies",
+            "category": "tech",
+            "evergreen_score": 0.5,
+            "organization": []
+        }
+    ]
+}
