@@ -1,14 +1,14 @@
 import asyncio
-from asyncio import Future, Queue
+from asyncio import Future, InvalidStateError, Queue
 from typing import Callable, Protocol
 
 
 class AgentTeam(Protocol):
     _is_initialized: bool = False
     _on_activity: Callable[[str], None] | None = None
-    _user_message_queue: Queue[str] = Queue()
+    _user_message_queue: Queue[str]
     # TODO: might update to be a queue in case of an API reconnection
-    _agent_team_response: Future[str] = Future()
+    _agent_team_response: Future[str]
     on_complete: Callable[[str, str], None] | None = None
     sender_did: str
     thread_id: str
@@ -16,6 +16,7 @@ class AgentTeam(Protocol):
     def __init__(self, sender_did: str, thread_id: str):
         self.sender_did = sender_did
         self.thread_id = thread_id
+        self._user_message_queue: Queue[str] = Queue()
 
     async def _run_conversation(self, message: str):
         ...
@@ -24,19 +25,21 @@ class AgentTeam(Protocol):
         # assistant_reply: Callable[[str], None]
 
     def _send_team_response(self, message: str):
-        # DEBUG
-        print("===== _send_team_response =====")
-        print(message)
-        self._agent_team_response.set_result(message)
+        try:
+            self._agent_team_response.set_result(message)
+        except InvalidStateError as e:
+            print(e, flush=True)
+            raise e
 
     def _prepare_team_response(self):
         self._agent_team_response: Future[str] = Future()
 
     async def _on_team_response(self) -> str:
-        # DEBUG
-        print("===== _on_team_response =====")
-        print("===== self._agent_team_response: new Future created =====")
-        await self._agent_team_response
+        try:
+            await self._agent_team_response
+        except Exception as e:
+            print(e)
+            raise e
         return self._agent_team_response.result()
 
     async def _get_human_messages(self) -> str:
