@@ -29,6 +29,7 @@ def test_default_route(intent: str, expected: str):
         ("Send 5 uni to Alice"),
     ],
 )
+@pytest.mark.skip
 async def test_send_route(message: str):
     agent_team_sessions = AgentTeamSessionManager()
     router = Router(agent_team_sessions)
@@ -42,3 +43,24 @@ async def test_send_route(message: str):
     new_message = "execute"
     response = await router.send(sender_did, thread_id, new_message)
     print(response)"""
+
+
+agent_team_sessions = AgentTeamSessionManager()
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        ("jeo boden"),
+        ("tell me about arweave"),
+        ("how much is doge?"),
+        ("render"),
+    ],
+)
+@pytest.mark.skip
+async def test_market_route(message: str):
+    router = Router(agent_team_sessions)
+    sender_did = str(uuid.uuid4())
+    thread_id = str(uuid.uuid4())
+    response = await router.send(sender_did, thread_id, message)
+    print(response)

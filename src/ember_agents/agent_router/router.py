@@ -6,6 +6,7 @@ from weakref import WeakValueDictionary
 
 import httpx
 from ember_agents.common.agents import AgentTeam
+from ember_agents.project_market_info.market_agent_team import MarketAgentTeam
 from ember_agents.send_token.send import (
     SendTokenAgentTeam,
     # TxDetails,
@@ -107,24 +108,34 @@ send = Route(
 market = Route(
     name="market",
     utterances=[
-        "what's the price of bitcoin?",
-        "current ethereum price",
-        "how much is doge?",
-        "market cap of cardano",
-        "solana volume",
+        "what's the price of {token}?",
+        "current {token} price",
+        "how much is {token}?",
+        "market cap of {token}",
+        "{token} volume",
+        "doland tremp",
+        "{token}",
+        "tell me about {token}",
+        "market info",
+        "project details",
+        "{token} summary",
     ],
 )
 
 internal = Route(
     name="internal",
     utterances=[
-        "how does bitcoin work?",
+        "how does {protocol} work?",
         "what is a blockchain?",
         "explain a smart contract",
         "tell me about yourself",
         "good morning",
-        "what is the difference between chainlink and uniswap",
-        "technology comparison of optimism and arbitrum",
+        "what is the difference between {protocol Y} and {protocol Z}?",
+        "technology comparison of {protocol A} and {protocol B}",
+        "Will the price of {token} go up?",
+        "educational content",
+        "tell me a joke",
+        "technical questions",
     ],
 )
 
@@ -160,12 +171,12 @@ class Router:
                 agent_team = SendTokenAgentTeam(
                     sender_did, thread_id, prepare_transaction, get_transaction_result
                 )
-            case "market":
-                raise Exception("Market feature disabled, but you can send tokens 😊")
-            case "internal" | None | _:
+            case "internal":
                 raise Exception(
                     "Discussion feature disabled, but you can send tokens 😊"
                 )
+            case "market" | None | _:
+                agent_team = MarketAgentTeam(sender_did, thread_id)
         self._session_manager.create_session(agent_team)
         return agent_team
 

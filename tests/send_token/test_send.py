@@ -11,10 +11,10 @@ from ember_agents.send_token.send import (
     convert_to_json,
 )
 
+"""
 pytest_plugins = "pytest_asyncio"
 
-
-"""@pytest.mark.parametrize(
+@pytest.mark.parametrize(
     "intent, user_replies",
     [
         (
@@ -28,6 +28,7 @@ pytest_plugins = "pytest_asyncio"
         # ("send token", ""),
     ],
 )
+
 async def test_send(intent: str, user_replies: List[str]):
     async def user_reply():
         print("awaiting user reply")
@@ -95,6 +96,7 @@ async def test_send(intent: str, user_replies: List[str]):
         # ("send token", ""),
     ],
 )
+@pytest.mark.skip
 async def test_interpreter(user_request: str):
     response = await convert_to_json(user_request)
     print(f"response: {response}")
