@@ -3,8 +3,8 @@ from urllib import response
 
 import httpx
 import pytest
-
-from src.ember_agents.project_market_info.info_from_apis import (
+from ember_agents.project_market_info.info_from_apis import (
+    coingecko_and_lunarcrush,
     extract_token_from_message,
     info_from_apis,
     lunarcrush,
@@ -83,3 +83,18 @@ async def test_market_route(message):
     response = await market_route(message)
     print(f"========{message}==========")
     print(response)
+
+
+@pytest.mark.parametrize(
+    "search",
+    [
+        ("ember"),
+        # ("btc"),
+        # ("pepe"),
+    ],
+)
+@pytest.mark.skip
+async def test_coingecko_and_lunarcrush(search):
+    response = await coingecko_and_lunarcrush(search)
+    print(f"=== SUCCESS ===", flush=True)
+    print(response, flush=True)

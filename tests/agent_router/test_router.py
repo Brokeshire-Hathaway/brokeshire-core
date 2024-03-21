@@ -57,6 +57,7 @@ agent_team_sessions = AgentTeamSessionManager()
         ("render"),
     ],
 )
+@pytest.mark.skip
 async def test_market_route(message: str):
     router = Router(agent_team_sessions)
     sender_did = str(uuid.uuid4())

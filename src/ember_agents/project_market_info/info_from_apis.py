@@ -53,10 +53,10 @@ class ProjectInfo(BaseModel):
     website: Optional[str]
     twitter_handle: Optional[str]
     network: str
-    price: str
+    price: Optional[str]
     ath: Optional[str]
-    price_change_24h: str
-    market_cap: str
+    price_change_24h: Optional[str]
+    market_cap: Optional[str]
     liquidity: Optional[str]
     # dex screener
     token_contract_address: Optional[str]
@@ -74,10 +74,10 @@ class CoinGecko(BaseModel):
     homepage: HttpUrl  # Use only the first valid URL
     twitter_screen_name: str
     asset_platform_id: str
-    ath: str
-    price: str
-    price_change_24h: str
-    market_cap: str
+    ath: Optional[str]
+    price: Optional[str]
+    price_change_24h: Optional[str]
+    market_cap: Optional[str]
 
     class Config:
         extra = Extra.ignore
@@ -146,16 +146,18 @@ async def market_route(message: str) -> str:
         else None
     )
     token_ticker = info_of_token.symbol.upper()
-    market_cap = format(int(info_of_token.market_cap), ",")
-    network = info_of_token.network  # .capitalize()
-    price = format(round(float(info_of_token.price), 4), ",")
-    ath = (
-        format(float(info_of_token.ath), ",") if info_of_token.ath is not None else None
+    market_cap = (
+        format(int(info_of_token.market_cap), ",") if info_of_token.market_cap else None
     )
-    liquidity = (
-        format(float(info_of_token.liquidity), ",")
-        if info_of_token.liquidity is not None
+    network = info_of_token.network  # .capitalize()
+    price = (
+        format(round(float(info_of_token.price), 4), ",")
+        if info_of_token.price
         else None
+    )
+    ath = format(float(info_of_token.ath), ",") if info_of_token.ath else None
+    liquidity = (
+        format(float(info_of_token.liquidity), ",") if info_of_token.liquidity else None
     )
     ath_delta = (
         round(
@@ -166,7 +168,7 @@ async def market_route(message: str) -> str:
             * 100,
             2,
         )
-        if info_of_token.ath is not None
+        if info_of_token.ath
         else None
     )
     if embers_description is None:
@@ -188,14 +190,19 @@ _Always do your own research_ 🧐💡🚀
         emoji = embers_description.project_emoji
         # print(f"desc: {desc}")
         # print(f"emoji: {emoji}")
+        price_header = (
+            f"\n**💵 Price ・** ${price} (24hΔ: {info_of_token.price_change_24h}%)\n(ATH: ${ath} Δ: {ath_delta}%)"
+            if price
+            else ""
+        )
+        market_cap_header = (
+            f"\n**💰 Market Cap ・** ${market_cap}" if market_cap else ""
+        )
         # ADD SENTIMENT BACK WHEN LUNARCRUSH IS PAID FOR
         response = f"""
 **| {emoji} {info_of_token.name} (${token_ticker}) |**
 
-**🔗 Network ・** {network}
-**💵 Price ・** ${price} (24hΔ: {info_of_token.price_change_24h}%)
-(ATH: ${ath} Δ: {ath_delta}%) 
-**💰 Market Cap ・** ${market_cap}
+**🔗 Network ・** {network}{price_header}{market_cap_header}
 
 {desc}
 
@@ -209,7 +216,7 @@ _Always do your own research_ 🧐💡🚀
 async def get_new_desc_from_ember(description: str) -> EmberOnProject:
     system_message = """
 # Mission
-You will, in a few words, tell me what you think about projects and return a single emoji that best represents the theme of the project in a structured JSON format.
+Give your take on a project in a structured JSON format.
 
 # Identity
 - Name: Ember AI or Ember for short.
@@ -225,20 +232,22 @@ You will, in a few words, tell me what you think about projects and return a sin
 - Always answer truthfully and helpfully.
 - Avoid referencing yourself or Ember in the response.
 - Use declarative phrasing, don't use terms akin to sounds, seems like, appears to be. Inject your personality
-- for "project_emoji" refrain for using money emojis such as 💰, 💵, 💲, etc.
+- Be concise and provide only two or three sentences, but don't forget to have a little fun!
+- For "project_emoji" refrain for using money emojis such as 💰, 💵, 💲, etc.
 
 # Example
-## Input
+## User Project Input
 Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fraudulent transaction based on a set of fraud identification parameters and returns stolen funds back to the owner’s account.
 ## JSON
 ```json
-{
-"project_description": "Lossless is an innovative solution that enhances security for token creators. By providing a mechanism to freeze and reverse fraudulent transactions, it helps mitigate the risks associated with hacks and unauthorized transfers, potentially increasing trust and safety for participants in the DeFi ecosystem. 👍🔒🔄",
+"project_description": "Lossless is like the superhero cape for token creators, swooping in to freeze those dastardly fraudulent transactions with a flick of its mighty fraud-fighting parameters! 🦸‍♂️ With the power to hit the "undo" button on crypto theft, it's bringing a little peace of mind to the Wild West of tokenomics. 📚✨",
 "project_emoji": "🔐"
 }
 ```
 """
-    user_message = f"Return the description and emoji for this:\n{description}"
+    user_message = (
+        f"Return the description and emoji for this project:\n\n{description}"
+    )
     chat_completion = await client.chat.completions.create(
         messages=[
             {
@@ -257,6 +266,12 @@ Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fr
     EmbersTake = EmberOnProject(**json_response)
     print(f"EmbersTake:\n{EmbersTake}")
     return EmbersTake
+
+
+"""
+## Input
+Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fraudulent transaction based on a set of fraud identification parameters and returns stolen funds back to the owner’s account.
+"project_description": "Lossless is an innovative solution that enhances security for token creators. 🔒 By providing a mechanism to freeze and reverse fraudulent transactions, it helps mitigate the risks associated with hacks and unauthorized transfers, potentially increasing trust and safety for participants in the DeFi ecosystem. 👍🔄","""
 
 
 #### Extracts the token name or address for user message
@@ -283,19 +298,23 @@ search 0x1234567890123456789012345678901234567890
 ```
 """
     user_message = f"Extract the singular crypto token or contract address the user is referencing:\n{message}"
-    chat_completion = await client.chat.completions.create(
-        messages=[
-            {
-                "role": "system",
-                "content": system_message,
-            },
-            {
-                "role": "user",
-                "content": user_message,
-            },
-        ],
-        **openai_settings,
-    )
+    try:
+        chat_completion = await client.chat.completions.create(
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_message,
+                },
+                {
+                    "role": "user",
+                    "content": user_message,
+                },
+            ],
+            **openai_settings,
+        )
+    except Exception as e:
+        print(f"Error: {e}", flush=True)
+        raise e
     print(f"chat_completion DONE: {chat_completion}", flush=True)
     response = chat_completion.choices[0].message.content
     json_response = json.loads(response)
@@ -331,8 +350,9 @@ async def coingecko_and_lunarcrush(input: str) -> ProjectInfo:
     cg_response = await coingecko(input)
     print(f"___cg_response___{cg_response}", flush=True)
     lc_response = await lunarcrush(cg_response.symbol)
-    # print(f"___lc_response___{lc_response}")
-    return ProjectInfo(
+    print(f"___lc_response___{lc_response}", flush=True)
+
+    project_info = ProjectInfo(
         token_contract_address=cg_response.token_contract_address,
         name=cg_response.name,
         description=cg_response.description,
@@ -347,12 +367,22 @@ async def coingecko_and_lunarcrush(input: str) -> ProjectInfo:
         sentiment=lc_response.sentiment,
     )  # type: ignore
 
+    return project_info
+
 
 #### coingecko search for id
 async def getidfromcoingecko(searchterm: str):
+    print(f"___getidfromcoingecko___{searchterm}", flush=True)
     URL = f"https://api.coingecko.com/api/v3/search?query={searchterm}"
     async with httpx.AsyncClient(http2=True) as client:
         response = await client.get(URL)
+
+    if response.status_code != 200:
+        raise ValueError(
+            f"Coingecko API ({URL}) returned status code {response.status_code}"
+        )
+
+    print(f"___getidfromcoingecko_response___{response}", flush=True)
     json_response = response.json()
     #    with open(f"{searchterm}_getidfromcoingecko.json", "w") as file:
     #        json.dump(json_response, file, indent=4)
@@ -365,41 +395,55 @@ async def getidfromcoingecko(searchterm: str):
 #### coingecko info from id
 async def coingecko(token_id: str):
     sleep(0.1)
+    print(f"___coingecko___{token_id}", flush=True)
     URL = f"https://api.coingecko.com/api/v3/coins/{token_id}?symbols=false&market_data=true&community_data=false&developer_data=false&sparkline=false"
     async with httpx.AsyncClient(http2=True) as client:
         response = await client.get(URL)
+
+    if response.status_code != 200:
+        raise ValueError(
+            f"Coingecko API ({URL}) returned status code {response.status_code}"
+        )
+
     print(f"___coingecko_response___{response}", flush=True)
     json_response = response.json()
-    # pprint(f"___coingecko_response___{json_response}")
+    pprint(f"___coingecko_response___{json_response}")
     # Output json_response to a file
-    # with open(f"{token_id}_coingecko_response.json", "w") as file:
-    #    json.dump(json_response, file, indent=4)
+    """with open(f"{token_id}_coingecko_response.json", "w") as file:
+        json.dump(json_response, file, indent=4)"""
 
     #    print("____contract address___")
     #    print(json_response["contract_address"])
-    token_contract_address = (
-        json_response["contract_address"]
-        if json_response.get("contract_address")
-        else None
-    )
-    asset_platform_id = (
-        json_response["asset_platform_id"].capitalize()
-        if json_response.get("asset_platform_id")
-        else "_Native to its own blockchain._"
-    )
-    return CoinGecko(
-        token_contract_address=token_contract_address,
-        name=json_response["name"],
-        description=json_response["description"]["en"],
-        symbol=json_response["symbol"],
-        homepage=json_response["links"]["homepage"][0],
-        twitter_screen_name=json_response["links"]["twitter_screen_name"],
-        price=json_response["market_data"]["current_price"]["usd"],
-        ath=json_response["market_data"]["ath"]["usd"],
-        price_change_24h=json_response["market_data"]["price_change_percentage_24h"],
-        market_cap=json_response["market_data"]["market_cap"]["usd"],
-        asset_platform_id=asset_platform_id,
-    )
+    try:
+        token_contract_address = json_response.get("contract_address", None)
+        name = json_response["name"]
+        description = json_response["description"]["en"]
+        symbol = json_response["symbol"]
+        homepage = json_response["links"]["homepage"][0]
+        twitter_screen_name = json_response["links"]["twitter_screen_name"]
+        price = json_response["market_data"]["current_price"].get("usd", None)
+        ath = json_response["market_data"]["ath"].get("usd", None)
+        price_change_24h = json_response["market_data"]["price_change_percentage_24h"]
+        market_cap = json_response["market_data"]["market_cap"].get("usd", None)
+        asset_platform_id = "_Native to its own blockchain._" if json_response["asset_platform_id"] is None else json_response["asset_platform_id"]
+        coingecko = CoinGecko(
+            token_contract_address=token_contract_address,
+            name=name,
+            description=description,
+            symbol=symbol,
+            homepage=homepage,
+            twitter_screen_name=twitter_screen_name,
+            asset_platform_id=asset_platform_id,
+            ath=ath,
+            price=price,
+            price_change_24h=price_change_24h,
+            market_cap=market_cap,
+        )
+    except Exception as e:
+        print(f"Error: {e}", flush=True)
+        raise e
+
+    return coingecko
 
 
 #### lunarcrush info
