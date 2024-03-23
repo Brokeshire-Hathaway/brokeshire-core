@@ -18,6 +18,7 @@ from requests import session
 from semantic_router import Route
 from semantic_router.encoders import CohereEncoder
 from semantic_router.layer import RouteLayer
+from ember_agents.education.education import EducationAgentTeam
 
 """tx_details = TxDetails(
     sender_did="ethereum://84738954.telegram.org",
@@ -122,8 +123,8 @@ market = Route(
     ],
 )
 
-internal = Route(
-    name="internal",
+education = Route(
+    name="education",
     utterances=[
         "how does {protocol} work?",
         "what is a blockchain?",
@@ -139,7 +140,7 @@ internal = Route(
     ],
 )
 
-routes = [send, market, internal]
+routes = [send, market, education]
 
 decision_layer = RouteLayer(encoder=encoder, routes=routes)
 
@@ -171,10 +172,8 @@ class Router:
                 agent_team = SendTokenAgentTeam(
                     sender_did, thread_id, prepare_transaction, get_transaction_result
                 )
-            case "internal":
-                raise Exception(
-                    "Discussion feature disabled, but you can send tokens 😊"
-                )
+            case "education":
+                agent_team = EducationAgentTeam(sender_did, thread_id)
             case "market" | None | _:
                 agent_team = MarketAgentTeam(sender_did, thread_id)
         self._session_manager.create_session(agent_team)
@@ -203,6 +202,6 @@ def router(message: str) -> str:
             return "send"
         case "market":
             return "market"
-        case "internal" | None | _:
-            return "internal"
+        case "education" | None | _:
+            return "education"
 """
