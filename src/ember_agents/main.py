@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse, ServerSentEvent
 
 from ember_agents.agent_router.router import AgentTeamSessionManager, Router
+from ember_agents.education.education import upload_doc_memory
 
 app = FastAPI()
 
@@ -35,6 +36,9 @@ def read_root():
 # POST /v1/threads/{thread_id}/messages
 
 agent_team_session_manager = AgentTeamSessionManager()
+
+
+asyncio.create_task(upload_doc_memory())
 
 
 @app.post("/v1/threads/{thread_id}/messages")
@@ -65,11 +69,17 @@ async def create_message(thread_id: str, body: Message, request: Request):
         asyncio.create_task(send_message())
         while True:
             if await request.is_disconnected():
-                print(f"[/v1/threads/{thread_id}/messages] Client disconnected", flush=True)
+                print(
+                    f"[/v1/threads/{thread_id}/messages] Client disconnected",
+                    flush=True,
+                )
                 break
             response = await message_queue.get()
             json = response.json()
-            print(f"[/v1/threads/{thread_id}/messages] Sending response: {json}", flush=True)
+            print(
+                f"[/v1/threads/{thread_id}/messages] Sending response: {json}",
+                flush=True,
+            )
             print(type(json))
             print(json)
             match response.status:
