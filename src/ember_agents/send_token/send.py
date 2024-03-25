@@ -372,7 +372,7 @@ Send 1 eth to 0x2D6c1025994dB45c7618571d6cB49B064DA9881B
                 "content": user_message,
             },
         ],
-        model="gpt-3.5-turbo-0125",
+        model="gpt-4-1106-preview",
         temperature=0,
         seed=42,
         response_format={"type": "json_object"},
