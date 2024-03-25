@@ -16,6 +16,7 @@ jobs:
         run: |
           echo "COHERE_API_KEY=${{ secrets.COHERE_API_KEY }}" >> .env
           echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
+          echo "PINECONE_API_KEY=${{ secrets.PINECONE_API_KEY }}" >> .env
           echo "SSH_HOST=${{ vars.SSH_HOST }}" >> .env
 
       - name: Set up SSH
