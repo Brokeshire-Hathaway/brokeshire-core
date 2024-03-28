@@ -16,7 +16,7 @@ After that, a `.venv` folder with the virtual environment with the correct depen
 will be created.
 
 To run your API, you need to setup three API keys:
-- [Open AI](https://openai.com/): An open AI key. For the education step to work, you'll need a Tier 1 .
+- [Open AI](https://openai.com/): An open AI key. For the education step to work, you'll need a Tier 1 account, for which you will need a minimum 5 dollar charge in the account.
 - [Cohere](https://cohere.com/): A Cohere key, you can also get a free one by creating an account.
 - [Pinecone](https://app.pinecone.io/): A Pinecone key, you can also get a free one by creating an account. Additionally, through the `pinecone` app, create an index call `ember`. When configuring the model select dimensions as `1024` and metric as `cosine`.
 
