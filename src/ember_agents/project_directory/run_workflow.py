@@ -1,5 +1,4 @@
-from turtle import update
-from ember_agents.project_directory.parse_c4_updates import parse_threads_and_reads, parse_headers, parse_launches, parse_new_projects, parse_news_items, parse_project_updates, parse_threads_and_reads_live, parse_launches_live, parse_new_projects_live, parse_news_items_live, parse_project_updates_live
+from ember_agents.project_directory.parse_c4_updates import parse_headers, parse_new_projects, parse_threads_and_reads_live, parse_launches_live, parse_new_projects_live, parse_news_items_live, parse_project_updates_live
 from ember_agents.project_directory.cypher_conversion import main_news_items, main_new_projects, main_project_updates, main_threads_and_reads, main_launches
 
 ### functions here as defined to load data from a file

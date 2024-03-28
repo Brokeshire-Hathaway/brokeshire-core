@@ -1,6 +1,5 @@
-from typing import List, Optional
+from typing import List
 import re
-from pydantic import BaseModel
 import json
 
 from src.ember_agents.project_directory.parse_c4_updates import Launch, NewsItem, Project, ThreadsAndReads

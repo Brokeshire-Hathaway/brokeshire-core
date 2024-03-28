@@ -2,7 +2,7 @@ import json
 import os
 
 from typing import List, Literal, Optional
-from openai import AsyncOpenAI, chat
+from openai import AsyncOpenAI
 from pydantic import BaseModel
 from regex import R
 

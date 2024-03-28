@@ -1,10 +1,8 @@
 import asyncio
 import json
 import os
-import pprint
 import re
 import tempfile
-from inspect import cleandoc
 from typing import Awaitable, Callable, Literal, NamedTuple, Optional
 
 import httpx
@@ -19,9 +17,8 @@ from autogen import (
 )
 from ember_agents.common.agents import AgentTeam
 from ember_agents.info_bites.info_bites import get_random_info_bite
-from guidance import assistant, gen, instruction, models, select, system, user
 from openai import AsyncOpenAI
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, validator
 
 client = AsyncOpenAI()
 

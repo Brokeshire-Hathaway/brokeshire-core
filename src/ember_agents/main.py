@@ -1,8 +1,6 @@
 import asyncio
-import sys
-import time
 from asyncio import Queue
-from typing import Literal, Union
+from typing import Literal
 
 from fastapi import FastAPI, Request
 from pydantic import BaseModel

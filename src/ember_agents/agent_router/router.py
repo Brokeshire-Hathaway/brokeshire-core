@@ -1,20 +1,16 @@
 import asyncio
 import os
-import uuid
 from typing import Callable
-from weakref import WeakValueDictionary
 
 import httpx
 from ember_agents.common.agents import AgentTeam
 from ember_agents.project_market_info.market_agent_team import MarketAgentTeam
 from ember_agents.send_token.send import (
     SendTokenAgentTeam,
-    # TxDetails,
     TxIdStatus,
     TxPreview,
     TxRequest,
 )
-from requests import session
 from semantic_router import Route
 from semantic_router.encoders import CohereEncoder
 from semantic_router.layer import RouteLayer

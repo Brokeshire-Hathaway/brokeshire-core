@@ -5,11 +5,8 @@ from time import sleep
 from typing import Literal, Optional
 
 import httpx
-from attr import asdict
-from numpy import empty, full
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Extra, HttpUrl
-from regex import P
 
 Sentiment = Literal["positive", "neutral", "negative", "unknown"]
 
