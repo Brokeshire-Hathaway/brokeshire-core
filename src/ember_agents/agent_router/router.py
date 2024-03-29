@@ -35,9 +35,12 @@ from ember_agents.education.education import EducationAgentTeam
     total_amount_in_display_currency="",
 )"""
 
+TRANSACTION_SERVICE = os.environ.get(
+    "TRANSACTION_SERVICE_URL", "http://firepot_chatgpt_app:3000"
+)
 
 async def prepare_transaction(tx_request: TxRequest):
-    URL = "http://firepot_chatgpt_app:3000/transactions/prepare"
+    URL = f"{TRANSACTION_SERVICE}/transactions/prepare"
     async with httpx.AsyncClient(http2=True, timeout=65) as client:
         response = await client.post(URL, json=tx_request.dict())
 
