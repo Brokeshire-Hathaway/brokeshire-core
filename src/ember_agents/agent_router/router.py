@@ -1,20 +1,16 @@
 import asyncio
 import os
-import uuid
 from typing import Callable
-from weakref import WeakValueDictionary
 
 import httpx
 from ember_agents.common.agents import AgentTeam
 from ember_agents.project_market_info.market_agent_team import MarketAgentTeam
 from ember_agents.send_token.send import (
     SendTokenAgentTeam,
-    # TxDetails,
     TxIdStatus,
     TxPreview,
     TxRequest,
 )
-from requests import session
 from semantic_router import Route
 from semantic_router.encoders import CohereEncoder
 from semantic_router.layer import RouteLayer
@@ -39,9 +35,12 @@ from ember_agents.education.education import EducationAgentTeam
     total_amount_in_display_currency="",
 )"""
 
+TRANSACTION_SERVICE = os.environ.get(
+    "TRANSACTION_SERVICE_URL", "http://firepot_chatgpt_app:3000"
+)
 
 async def prepare_transaction(tx_request: TxRequest):
-    URL = "http://firepot_chatgpt_app:3000/transactions/prepare"
+    URL = f"{TRANSACTION_SERVICE}/transactions/prepare"
     async with httpx.AsyncClient(http2=True, timeout=65) as client:
         response = await client.post(URL, json=tx_request.dict())
 

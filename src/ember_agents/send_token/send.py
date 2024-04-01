@@ -1,10 +1,8 @@
 import asyncio
 import json
 import os
-import pprint
 import re
 import tempfile
-from inspect import cleandoc
 from typing import Awaitable, Callable, Literal, NamedTuple, Optional
 
 import httpx
@@ -19,9 +17,8 @@ from autogen import (
 )
 from ember_agents.common.agents import AgentTeam
 from ember_agents.info_bites.info_bites import get_random_info_bite
-from guidance import assistant, gen, instruction, models, select, system, user
 from openai import AsyncOpenAI
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, validator
 
 client = AsyncOpenAI()
 
@@ -463,7 +460,7 @@ Be brief and clear.
 You must append \"NEXT: broker\" to pass along your message.
 """
 
-"""executor_system_message = 
+"""executor_system_message =
 You are an executor responsible for showing the user a preview of their transaction request and asking them to confirm if they will proceed or cancel.
 You must use the "a_prepare_transaction" function to prepare the transaction and get the preview. After getting a confirmation from the user, you must use the "get_transaction_result" function to get the outcome of the transaction and pass it along to the user. You must append \"TERMINATE\" to pass along the result and end the conversation.
 """
@@ -603,7 +600,11 @@ Would you like to proceed?"""
             try:
                 if self._transaction_preview is None:
                     raise ValueError("Transaction request not found")
-                URL = "http://firepot_chatgpt_app:3000/transactions/send"
+
+                TRANSACTION_SERVICE = os.environ.get(
+                    "TRANSACTION_SERVICE_URL", "http://firepot_chatgpt_app:3000"
+                )
+                URL = f"{TRANSACTION_SERVICE}/transactions/send"
                 body = ExecuteTxBody(
                     transaction_uuid=self._transaction_preview.transaction_uuid
                 )

@@ -1,13 +1,10 @@
-import json
 import os
-from pprint import pprint
-from tokenize import String
 import uuid
 from datetime import datetime, timezone
 
 from langchain_text_splitters import CharacterTextSplitter
 from openai import AsyncOpenAI
-from pinecone import Pinecone, ServerlessSpec
+from pinecone import Pinecone
 from ember_agents.common.agents import AgentTeam
 
 class EducationAgentTeam(AgentTeam):

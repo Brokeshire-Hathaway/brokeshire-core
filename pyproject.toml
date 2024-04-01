@@ -2,9 +2,7 @@
 name = "ember-agents"
 version = "0.1.0"
 description = "The Ember AI agent swarm for intent based cognition and reasoning."
-authors = [
-    {name = "Tom Daniel", email = "0xtomdaniel@gmail.com"},
-]
+authors = [{ name = "Tom Daniel", email = "0xtomdaniel@gmail.com" }]
 dependencies = [
     "python-dotenv>=1.0.0",
     "semantic-router>=0.0.14",
@@ -22,14 +20,14 @@ dependencies = [
 ]
 requires-python = "==3.11.*"
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
-asyncio_mode="auto"
+asyncio_mode = "auto"
 
 [tool.pdm]
-package-type = "application"
+distribution = false
 
 [tool.pdm.scripts]
 #start = "flask run -p 54321"
@@ -39,10 +37,5 @@ test = "pytest -s"
 error = "bash -c 'sleep 2 && echo 'exiting with error...' && exit 1'"
 
 [tool.pdm.dev-dependencies]
-test = [
-    "pytest>=7.4.4",
-    "pytest-asyncio>=0.23.3",
-]
-code-analysis = [
-    "ruff>=0.1.9",
-]
+test = ["pytest>=7.4.4", "pytest-asyncio>=0.23.3"]
+code-analysis = ["ruff>=0.1.9"]
