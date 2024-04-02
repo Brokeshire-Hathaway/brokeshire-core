@@ -7,11 +7,13 @@ from openai import AsyncOpenAI
 from pinecone import Pinecone
 from ember_agents.common.agents import AgentTeam
 
+
 class EducationAgentTeam(AgentTeam):
     async def _run_conversation(self, message: str):
         self._send_activity_update("💭...")
         response = await education(message)
         self._send_team_response(response)
+
 
 pc = Pinecone(os.environ.get("PINECONE_API_KEY"))
 index = pc.Index("ember")

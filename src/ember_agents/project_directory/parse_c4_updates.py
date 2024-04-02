@@ -12,15 +12,16 @@ client = AsyncOpenAI(
 )
 
 openai_settings = {
-    "model":"gpt-4-0125-preview",
-    "response_format":{"type": "json_object"},
+    "model": "gpt-4-0125-preview",
+    "response_format": {"type": "json_object"},
     "temperature": 0,
-    "seed": 1
+    "seed": 1,
 }
 
 RelationshipType = Literal[
     "HAS_NEWS", "HAS_MENTION", "NEXT_ITEM", "IS_PARTNER", "ON_CHAIN"
 ]
+
 
 class HeadersAndContents(BaseModel):
     date: str
@@ -42,6 +43,7 @@ class NewsItem(BaseModel):
     category: str
     organization: List[str]
 
+
 class ThreadsAndReads(BaseModel):
     name: str
     description: str
@@ -51,6 +53,7 @@ class ThreadsAndReads(BaseModel):
     category: str
     evergreen_score: float
     organization: list[str]
+
 
 class Launch(BaseModel):
     name: str
@@ -63,20 +66,24 @@ class Launch(BaseModel):
     category: str
     organization: list[str]
 
+
 class Project(BaseModel):
     name: str
     publication_date: str
-    launch_quarter: Optional[str] 
+    launch_quarter: Optional[str]
     description: Optional[str]
-    symbol: Optional[str] 
+    symbol: Optional[str]
     network: list[str]
     category: list[str]
     x_handle: str
     website: str
+
+
 #### base model for nodes and relationships
 class Node(BaseModel):
     label: str
     properties: NewsItem | ThreadsAndReads | Project
+
 
 class Relationship(BaseModel):
     from_node: str
@@ -86,13 +93,14 @@ class Relationship(BaseModel):
 
 # - Scrape data (scrape.py)
 # - Extract relevant messages from scraped (WIP pick_updates.py)
-    
+
 # - LLM extracts all detected headers (parse_headers)
-    # - Contents deterministically split by headers and added to pydanitic data model 
-    # - Ignore headers that are not whitelisted
+# - Contents deterministically split by headers and added to pydanitic data model
+# - Ignore headers that are not whitelisted
 # - Extra individual news items from header contents and save to pydanitic data model (parse_items)
-    # - Use LLM to fill in extra context for each news item data model (parse_news_items)
+# - Use LLM to fill in extra context for each news item data model (parse_news_items)
 # - Load knowledge graph with news item data model using query language
+
 
 async def parse_headers(raw_post: str):
     system_message = """You are a content parser responsible for identifying ALL headers in a daily update and returning the content list in the following structured json format:
@@ -120,7 +128,7 @@ async def parse_headers(raw_post: str):
                 "content": user_message,
             },
         ],
-        **openai_settings
+        **openai_settings,
     )
     response = chat_completion.choices[0].message.content
     response = response if response else ""
@@ -128,30 +136,36 @@ async def parse_headers(raw_post: str):
     headers_response = json.loads(response)
     data = HeadersAndContents(**headers_response)
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response_{data.date}.json", "w"
-)   as f:
+        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response_{data.date}.json",
+        "w",
+    ) as f:
         f.write(response)
-        #will depricate once live is only version
+        # will depricate once live is only version
     with open(
-        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json", "w"
-)   as f:
+        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
+        "w",
+    ) as f:
         f.write(response)
     return response
-#validated
 
-async def parse_news_items(expected_result): #pass it the result of prase_headers
-#### loading stuff from file
+
+# validated
+
+
+async def parse_news_items(expected_result):  # pass it the result of prase_headers
+    #### loading stuff from file
     with open(
-        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json", "r"
+        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
+        "r",
     ) as f:
         headers_response = f.read()
 
     headers_response = headers_response if headers_response else ""
-    #print(f"response:\n{headers_response}")
+    # print(f"response:\n{headers_response}")
     headers_response = json.loads(headers_response)
     data = HeadersAndContents(**headers_response)
     print(f"data.news:\n{data.news}")
-#### loading stuff from file
+    #### loading stuff from file
     news = str(data.news)
     system_message = """You are a semantic content parser responsible for populating news items properties into the following structured json:
 ```json
@@ -208,28 +222,35 @@ you must not add apostrophes "'" to any field."""
                 "content": user_message,
             },
         ],
-        **openai_settings
+        **openai_settings,
     )
     response = chat_completion.choices[0].message.content
     response = response if response else ""
-    with open(f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_news_items_{data.date}.json", "w") as f:
+    with open(
+        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_news_items_{data.date}.json",
+        "w",
+    ) as f:
         f.write(response)
     print(f"response:\n{response}")
     return response
-#validated with mocked data
 
-async def parse_project_updates(expected_result): #pass it the result of prase_headers
-#### loading stuff from file
+
+# validated with mocked data
+
+
+async def parse_project_updates(expected_result):  # pass it the result of prase_headers
+    #### loading stuff from file
     with open(
-        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json", "r"
+        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
+        "r",
     ) as f:
         headers_response = f.read()
     headers_response = headers_response if headers_response else ""
-    #print(f"response:\n{headers_response}")
+    # print(f"response:\n{headers_response}")
     headers_response = json.loads(headers_response)
     data = HeadersAndContents(**headers_response)
     print(f"data.project_updates:\n{data.project_updates}")
-#### loading stuff from file
+    #### loading stuff from file
     project_updates = str(data.project_updates)
     system_message = """You are a semantic content parser responsible for populating news items properties into the following structured json:
 ```json
@@ -272,9 +293,7 @@ async def parse_project_updates(expected_result): #pass it the result of prase_h
 Publication Date: March 1
 Categories: ["exploit", "partnership", "token_launch", "legal", "update"]
 you must not add apostrophes "'" to any field."""
-    user_message = (
-        f"Parse the following news into json:\n{project_updates}\nPublication Date: {data.date}"
-    )
+    user_message = f"Parse the following news into json:\n{project_updates}\nPublication Date: {data.date}"
     chat_completion = await client.chat.completions.create(
         messages=[
             {
@@ -286,28 +305,37 @@ you must not add apostrophes "'" to any field."""
                 "content": user_message,
             },
         ],
-        **openai_settings
+        **openai_settings,
     )
     response = chat_completion.choices[0].message.content
     response = response if response else ""
-    with open(f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_project_updates_{data.date}.json", "w") as f:
+    with open(
+        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_project_updates_{data.date}.json",
+        "w",
+    ) as f:
         f.write(response)
     print(f"response:\n{response}")
     return response
-#validated with mocked data
 
-async def parse_threads_and_reads(expected_result): #pass it the result of prase_headers
-#### loading stuff from file
+
+# validated with mocked data
+
+
+async def parse_threads_and_reads(
+    expected_result,
+):  # pass it the result of prase_headers
+    #### loading stuff from file
     with open(
-        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json", "r"
+        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
+        "r",
     ) as f:
         headers_response = f.read()
     headers_response = headers_response if headers_response else ""
-    #print(f"response:\n{headers_response}")
+    # print(f"response:\n{headers_response}")
     headers_response = json.loads(headers_response)
     data = HeadersAndContents(**headers_response)
     print(f"data.threads_and_reads:\n{data.threads_and_reads}")
-#### loading stuff from file
+    #### loading stuff from file
     threads_and_reads = str(data.threads_and_reads)
     system_message = """You are a semantic content parser responsible for populating educational content properties into the following structured json:
 ```json
@@ -346,30 +374,35 @@ you must not add apostrophes "'" to any field.
                 "content": user_message,
             },
         ],
-        **openai_settings
+        **openai_settings,
     )
     response = chat_completion.choices[0].message.content
     response = response if response else ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_threads_and_reads_items_{data.date}.json", "w"
+        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_threads_and_reads_items_{data.date}.json",
+        "w",
     ) as f:
         f.write(response)
     print(f"response:\n{response}")
     return response
-#validated with mocked data
 
-async def parse_launches(expected_result): #pass it the result of prase_headers
-#### loading stuff from file
+
+# validated with mocked data
+
+
+async def parse_launches(expected_result):  # pass it the result of prase_headers
+    #### loading stuff from file
     with open(
-        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json", "r"
+        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
+        "r",
     ) as f:
         headers_response = f.read()
     headers_response = headers_response if headers_response else ""
-    #print(f"response:\n{headers_response}")
+    # print(f"response:\n{headers_response}")
     headers_response = json.loads(headers_response)
     data = HeadersAndContents(**headers_response)
     print(f"data.launches:\n{data.launches}")
-#### loading stuff from file
+    #### loading stuff from file
     launches = str(data.launches)
     system_message = """You are a semantic content parser responsible for populating launch content properties into the following structured json:
 ```json
@@ -429,28 +462,35 @@ you must not add apostrophes "'" to any field."""
                 "content": user_message,
             },
         ],
-        **openai_settings
+        **openai_settings,
     )
     response = chat_completion.choices[0].message.content
     response = response if response else ""
-    with open(f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_launches_items_{data.date}.json", "w") as f:
+    with open(
+        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_launches_items_{data.date}.json",
+        "w",
+    ) as f:
         f.write(response)
     print(f"response:\n{response}")
-    return response 
-#validated with mocked data
+    return response
 
-async def parse_new_projects(expected_result): #pass it the result of prase_headers
-#### loading stuff from file
+
+# validated with mocked data
+
+
+async def parse_new_projects(expected_result):  # pass it the result of prase_headers
+    #### loading stuff from file
     with open(
-        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json", "r"
+        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
+        "r",
     ) as f:
         headers_response = f.read()
     headers_response = headers_response if headers_response else ""
-    #print(f"response:\n{headers_response}")
+    # print(f"response:\n{headers_response}")
     headers_response = json.loads(headers_response)
     data = HeadersAndContents(**headers_response)
     print(f"data.new_projects:\n{data.new_projects}")
-#### loading stuff from file
+    #### loading stuff from file
     # NEW PROJECTS
     new_projects = str(data.new_projects)
     system_message = """You are a semantic content parser responsible for populating new project properties into the following structured json:
@@ -510,30 +550,33 @@ Publication Date: March 1"""
                 "content": user_message,
             },
         ],
-        **openai_settings
+        **openai_settings,
     )
     response = chat_completion.choices[0].message.content
     response = response if response else ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_new_projects_items_{data.date}.json", "w"
+        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_new_projects_items_{data.date}.json",
+        "w",
     ) as f:
         f.write(response)
-#validated with mocked data
+
+
+# validated with mocked data
 
 
 #################
-### these are the live versions of the functions plugged to passed data and not loading 
+### these are the live versions of the functions plugged to passed data and not loading
 #############################
 
 
-async def parse_news_items_live(expected_result): #pass it the result of prase_headers
+async def parse_news_items_live(expected_result):  # pass it the result of prase_headers
     headers_response = expected_result
     headers_response = headers_response if headers_response else ""
-    #print(f"response:\n{headers_response}")
+    # print(f"response:\n{headers_response}")
     headers_response = json.loads(headers_response)
     data = HeadersAndContents(**headers_response)
     print(f"data.news:\n{data.news}")
-#### loading stuff from file
+    #### loading stuff from file
     news = str(data.news)
     system_message = """You are a semantic content parser responsible for populating news items properties into the following structured json:
 ```json
@@ -590,24 +633,29 @@ you must not add apostrophes "'" to any field."""
                 "content": user_message,
             },
         ],
-        **openai_settings
+        **openai_settings,
     )
     response = chat_completion.choices[0].message.content
     response = response if response else ""
-    with open(f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_news_items_{data.date}.json", "w") as f:
+    with open(
+        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_news_items_{data.date}.json",
+        "w",
+    ) as f:
         f.write(response)
     print(f"response:\n{response}")
     return response
 
 
-async def parse_project_updates_live(expected_result): #pass it the result of prase_headers
+async def parse_project_updates_live(
+    expected_result,
+):  # pass it the result of prase_headers
     headers_response = expected_result
     headers_response = headers_response if headers_response else ""
-    #print(f"response:\n{headers_response}")
+    # print(f"response:\n{headers_response}")
     headers_response = json.loads(headers_response)
     data = HeadersAndContents(**headers_response)
     print(f"data.project_updates:\n{data.project_updates}")
-#### loading stuff from file
+    #### loading stuff from file
     project_updates = str(data.project_updates)
     system_message = """You are a semantic content parser responsible for populating news items properties into the following structured json:
 ```json
@@ -650,9 +698,7 @@ async def parse_project_updates_live(expected_result): #pass it the result of pr
 Publication Date: March 1
 Categories: ["exploit", "partnership", "token_launch", "legal", "update"]
 you must not add apostrophes "'" to any field."""
-    user_message = (
-        f"Parse the following news into json:\n{project_updates}\nPublication Date: {data.date}"
-    )
+    user_message = f"Parse the following news into json:\n{project_updates}\nPublication Date: {data.date}"
     chat_completion = await client.chat.completions.create(
         messages=[
             {
@@ -664,24 +710,29 @@ you must not add apostrophes "'" to any field."""
                 "content": user_message,
             },
         ],
-        **openai_settings
+        **openai_settings,
     )
     response = chat_completion.choices[0].message.content
     response = response if response else ""
-    with open(f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_project_updates_{data.date}.json", "w") as f:
+    with open(
+        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_project_updates_{data.date}.json",
+        "w",
+    ) as f:
         f.write(response)
     print(f"response:\n{response}")
     return response
 
 
-async def parse_threads_and_reads_live(expected_result): #pass it the result of prase_headers
+async def parse_threads_and_reads_live(
+    expected_result,
+):  # pass it the result of prase_headers
     headers_response = expected_result
     headers_response = headers_response if headers_response else ""
-    #print(f"response:\n{headers_response}")
+    # print(f"response:\n{headers_response}")
     headers_response = json.loads(headers_response)
     data = HeadersAndContents(**headers_response)
     print(f"data.threads_and_reads:\n{data.threads_and_reads}")
-#### loading stuff from file
+    #### loading stuff from file
     threads_and_reads = str(data.threads_and_reads)
     system_message = """You are a semantic content parser responsible for populating educational content properties into the following structured json:
 ```json
@@ -720,26 +771,27 @@ you must not add apostrophes "'" to any field.
                 "content": user_message,
             },
         ],
-        **openai_settings
+        **openai_settings,
     )
     response = chat_completion.choices[0].message.content
     response = response if response else ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_threads_and_reads_items_{data.date}.json", "w"
+        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_threads_and_reads_items_{data.date}.json",
+        "w",
     ) as f:
         f.write(response)
     print(f"response:\n{response}")
     return response
 
 
-async def parse_launches_live(expected_result): #pass it the result of prase_headers
+async def parse_launches_live(expected_result):  # pass it the result of prase_headers
     headers_response = expected_result
     headers_response = headers_response if headers_response else ""
-    #print(f"response:\n{headers_response}")
+    # print(f"response:\n{headers_response}")
     headers_response = json.loads(headers_response)
     data = HeadersAndContents(**headers_response)
     print(f"data.launches:\n{data.launches}")
-#### loading stuff from file
+    #### loading stuff from file
     launches = str(data.launches)
     system_message = """You are a semantic content parser responsible for populating launch content properties into the following structured json:
 ```json
@@ -799,24 +851,29 @@ you must not add apostrophes "'" to any field."""
                 "content": user_message,
             },
         ],
-        **openai_settings
+        **openai_settings,
     )
     response = chat_completion.choices[0].message.content
     response = response if response else ""
-    with open(f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_launches_items_{data.date}.json", "w") as f:
+    with open(
+        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_launches_items_{data.date}.json",
+        "w",
+    ) as f:
         f.write(response)
     print(f"response:\n{response}")
-    return response 
+    return response
 
 
-async def parse_new_projects_live(expected_result): #pass it the result of prase_headers
+async def parse_new_projects_live(
+    expected_result,
+):  # pass it the result of prase_headers
     headers_response = expected_result
     headers_response = headers_response if headers_response else ""
-    #print(f"response:\n{headers_response}")
+    # print(f"response:\n{headers_response}")
     headers_response = json.loads(headers_response)
     data = HeadersAndContents(**headers_response)
     print(f"data.new_projects:\n{data.new_projects}")
-#### loading stuff from file
+    #### loading stuff from file
     # NEW PROJECTS
     new_projects = str(data.new_projects)
     system_message = """You are a semantic content parser responsible for populating new project properties into the following structured json:
@@ -875,13 +932,12 @@ Publication Date: March 1"""
                 "content": user_message,
             },
         ],
-        **openai_settings
+        **openai_settings,
     )
     response = chat_completion.choices[0].message.content
     response = response if response else ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_new_projects_items_{data.date}.json", "w"
+        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_new_projects_items_{data.date}.json",
+        "w",
     ) as f:
         f.write(response)
-
-

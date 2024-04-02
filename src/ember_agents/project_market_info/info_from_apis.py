@@ -422,7 +422,11 @@ async def coingecko(token_id: str):
         ath = json_response["market_data"]["ath"].get("usd", None)
         price_change_24h = json_response["market_data"]["price_change_percentage_24h"]
         market_cap = json_response["market_data"]["market_cap"].get("usd", None)
-        asset_platform_id = "_Native to its own blockchain._" if json_response["asset_platform_id"] is None else json_response["asset_platform_id"]
+        asset_platform_id = (
+            "_Native to its own blockchain._"
+            if json_response["asset_platform_id"] is None
+            else json_response["asset_platform_id"]
+        )
         coingecko = CoinGecko(
             token_contract_address=token_contract_address,
             name=name,
