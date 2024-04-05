@@ -76,7 +76,7 @@ class SwapInformation(BaseModel):
 
 
 class TxPreview(BaseModel):
-    transaction_uuid: str
+    uuid: str
     from_amount: str
     to_amount: str
     duration: str
@@ -278,6 +278,29 @@ async def convert_to_json(request: str) -> str:
         "token": "uaUSDC",
         "toToken": "uaUSDC"
     }}
+
+    # Example 2
+    ## User Request
+    Change 2.3 uaUSDC of my polygon mumbai account to same token in sepolia
+    ## JSON
+    ```json
+    {{
+        "network": "polygon-mumbai",
+        "toNetwork": "sepolia",
+        "amount": "2.3",
+        "token": "uaUSDC",
+        "toToken": "uaUSDC"
+    }}
+    ```
+
+    # Example 3
+    ## User Request
+    Change 50 uaUSDC of my polygon mumbai account
+    ## JSON
+    ```json
+    {{
+        "error": "Missing information of the destination chain and token.",
+    }}
     ```
 """
 
@@ -339,8 +362,7 @@ ToToken: uaUSDC
 Amount: 0.1
 Network: sepolia
 ToNetwork: polygon-mumbai
-NEXT: interpreter
-"""
+NEXT: interpreter"""
 
 # TODO: Add new agent for showing tx preview, determining if any changes are needed, and
 #       confirming if the user will proceed or cancel. Broker might be able to handle this.
@@ -466,7 +488,7 @@ TERMINATE""",
                 [f"{k}: {v}" for k, v in self._transaction_preview.total_costs.items()]
             )
             # tx_details = self._transaction_preview.tx_details
-            response_message = f"""You are about to swap 💸 {self._transaction_preview.from_amount}  to {self._transaction_preview.to_amount}.
+            response_message = f"""You are about to swap tokens 💸.
 
 **💸 Amount in origin chain ** {self._transaction_preview.from_amount}
 **⛽️ Fees Estimation ・** {fees}
@@ -526,9 +548,7 @@ Would you like to proceed?"""
                     "TRANSACTION_SERVICE_URL", "http://firepot_chatgpt_app:3000"
                 )
                 URL = f"{TRANSACTION_SERVICE}/swap/"
-                body = ExecuteTxBody(
-                    transaction_uuid=self._transaction_preview.transaction_uuid
-                )
+                body = ExecuteTxBody(transaction_uuid=self._transaction_preview.uuid)
                 # HEADERS = {"Content-Type": "application/json"}
                 async with httpx.AsyncClient(http2=True, timeout=65) as client:
                     response = await client.post(URL, json=body.dict())
@@ -547,7 +567,7 @@ TERMINATE""",
 
             response_message = f"""Your transaction was successful! 🎉
 
-_[🔗 View on Blockchain]({response.json().block()})_
+_[🔗 View on Blockchain]({response.json()["block"]})_
 TERMINATE"""
 
             return True, {
