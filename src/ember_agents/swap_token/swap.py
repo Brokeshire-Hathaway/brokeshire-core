@@ -619,7 +619,7 @@ TERMINATE"""
             self._transaction = SwapInformation.parse_raw(json_str)
             self._transaction_request = self._transaction.to_swap_request(
                 UniversalAddress(
-                    identifier="alternochepe", platform="telegram.me", network=""
+                    identifier=self.sender_did, platform="telegram.me", network=""
                 )
             )
             return True, {
