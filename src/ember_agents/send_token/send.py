@@ -412,8 +412,7 @@ Original Intent: Send .5 Chainlink to Susan
 Recipient Address: 0x604f7cA57A338de9bbcE4ff0e2C41bAcE744Df03
 Amount: 0.5
 Token Address: 0x514910771AF9Ca656af840dff83E8264EcF986CA
-NEXT: interpreter
-"""
+NEXT: interpreter"""
 
 # TODO: Add new agent for showing tx preview, determining if any changes are needed, and
 #       confirming if the user will proceed or cancel. Broker might be able to handle this.
