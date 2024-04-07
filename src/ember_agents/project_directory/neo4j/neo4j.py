@@ -4,13 +4,14 @@ from dotenv import load_dotenv
 import os
 
 # Rest of your code
-load_dotenv('/.env')
+load_dotenv("/.env")
 
-URI=os.getenv('URI')
-AUTH=os.getenv('AUTH')
+URI = os.getenv("URI")
+AUTH = os.getenv("AUTH")
 
 with GraphDatabase.driver(URI, auth=AUTH) as driver:
     driver.verify_connectivity()
+
 
 def main():
     with GraphDatabase.driver(URI, auth=AUTH) as driver:

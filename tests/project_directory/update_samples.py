@@ -1,5 +1,3 @@
-
-
 raw_update_feb_19 = """**February 19** 
 
 Don't forget to follow my [Twitter](https://twitter.com/CJCJCJCJ_) and [C4's](https://twitter.com/C4dotgg). Here's what's happening today:
@@ -159,6 +157,7 @@ None
 If you'd like to support me, donations can be sent to c4ggregator.eth or 0x051d615289c527d09efe581ccca4018011638733"""
 
 from wsgiref import headers
+
 raw_update_feb_15 = """**February 18** 
 
 Don't forget to follow my [Twitter](https://twitter.com/CJCJCJCJ_) and [C4's](https://twitter.com/C4dotgg). Here's what's happening today:
@@ -676,14 +675,14 @@ headers_response = {
     "news": [
         "- [South Korea launches probe on Worldcoin](https://www.theblock.co/post/280331/south-korea-launches-probe-on-worldcoin)",
         "- [@Tether_To launches safeguard measures for USDT](https://tether.to/en/safeguarding-tether-tokens-a-comprehensive-approach-to-blockchain-resilience-and-user-protection/)",
-        "- [@BitdeerOfficial releases 4nm Bitcoin Mining Chip](https://twitter.com/BitdeerOfficial/status/1764493081942876446)"
+        "- [@BitdeerOfficial releases 4nm Bitcoin Mining Chip](https://twitter.com/BitdeerOfficial/status/1764493081942876446)",
     ],
     "project_updates": [
         "- [Summary of things developed by @TeamKujira by @thewolfofdefi](https://twitter.com/thewolfofdefi/status/1763503114030567704)",
         "- [@friendtech confirms entire airdrop for community](https://twitter.com/friendtech/status/1764395305225650514)",
         "- [@Shufflecom airdrop amounts sent out](https://twitter.com/noahdummett/status/1764455030781063195)",
         "- [@ensdomains tempcheck to launch on Solana](https://discuss.ens.domains/t/ep5-3-tempcheck-ens-on-solana/18860)",
-        "- [@tangibleDAO plans to launch L2 for tokenized RWAs @real_rwa](https://twitter.com/tangibleDAO/status/1764641066769404254)"
+        "- [@tangibleDAO plans to launch L2 for tokenized RWAs @real_rwa](https://twitter.com/tangibleDAO/status/1764641066769404254)",
     ],
     "threads_and_reads": [
         "- [Narratives from convos in ETH Denver by @shaaa256](https://twitter.com/shaaa256/status/1764351507456217369)"
@@ -697,7 +696,7 @@ headers_response = {
         "[Architex IDO](https://twitter.com/inscribe_app/status/1763308555451379898) | [3pm UTC, Eth]",
         "[Padre LBP](https://twitter.com/PadreApp/status/1760247310250897582) | [4pm UTC, Eth]",
         "[Alvara TGE (degen)](https://twitter.com/AlvaraProtocol/status/1762102178808729788) | [2pm UTC, Eth]",
-        "[Blastoise](https://twitter.com/BlastoiseBlast_/status/1763282812004618412) | [10pm UTC, Blast]"
+        "[Blastoise](https://twitter.com/BlastoiseBlast_/status/1763282812004618412) | [10pm UTC, Blast]",
     ],
     "new_projects": [
         "[CyberKart](https://twitter.com/The_CyberKart) | Game Fi",
@@ -712,6 +711,6 @@ headers_response = {
         "[zkLink Nova](https://twitter.com/zkLinkNova) | Dappchain, zkEVM",
         "[Hodl Industries](https://twitter.com/hodl_hq) | Ethereum | Infrastructure",
         "[Tensor AI](https://twitter.com/TensorAI_) | Memecoin, AI",
-        "[Runic](https://twitter.com/RunicLayer2) | Bitcoin | L2"
-    ]
+        "[Runic](https://twitter.com/RunicLayer2) | Bitcoin | L2",
+    ],
 }

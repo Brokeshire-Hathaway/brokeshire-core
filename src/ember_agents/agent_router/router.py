@@ -15,6 +15,7 @@ from semantic_router import Route
 from semantic_router.encoders import CohereEncoder
 from semantic_router.layer import RouteLayer
 from ember_agents.education.education import EducationAgentTeam
+from ember_agents.swap_token.swap import SwapTokenAgentTeam
 
 """tx_details = TxDetails(
     sender_did="ethereum://84738954.telegram.org",
@@ -38,6 +39,7 @@ from ember_agents.education.education import EducationAgentTeam
 TRANSACTION_SERVICE = os.environ.get(
     "TRANSACTION_SERVICE_URL", "http://firepot_chatgpt_app:3000"
 )
+
 
 async def prepare_transaction(tx_request: TxRequest):
     URL = f"{TRANSACTION_SERVICE}/transactions/prepare"
@@ -105,6 +107,19 @@ send = Route(
     ],
 )
 
+swap = Route(
+    name="swap",
+    utterances=[
+        "swap 1 uasdc from sepolia to polygon-mumbai",
+        "swap token",
+        "change me my 5 uausdc",
+        "change crypto",
+        "48.5 bitcoin to other network",
+        "1.01 from sepolia to polygon-mumbai",
+        "change some of my tokens",
+    ],
+)
+
 market = Route(
     name="market",
     utterances=[
@@ -139,7 +154,7 @@ education = Route(
     ],
 )
 
-routes = [send, market, education]
+routes = [send, market, education, swap]
 
 decision_layer = RouteLayer(encoder=encoder, routes=routes)
 
@@ -173,6 +188,8 @@ class Router:
                 )
             case "education":
                 agent_team = EducationAgentTeam(sender_did, thread_id)
+            case "swap":
+                agent_team = SwapTokenAgentTeam(sender_did, thread_id)
             case "market" | None | _:
                 agent_team = MarketAgentTeam(sender_did, thread_id)
         self._session_manager.create_session(agent_team)

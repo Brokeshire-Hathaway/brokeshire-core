@@ -2,8 +2,12 @@ from typing import List
 import re
 import json
 
-from src.ember_agents.project_directory.parse_c4_updates import Launch, NewsItem, Project, ThreadsAndReads
-
+from src.ember_agents.project_directory.parse_c4_updates import (
+    Launch,
+    NewsItem,
+    Project,
+    ThreadsAndReads,
+)
 
 
 #### news items
@@ -25,17 +29,20 @@ def generate_news_item_query(news_item: NewsItem):
     """.strip()
     return query
 
+
 def news_to_cypher(parsed_news_items: List[dict]) -> List[str]:
     list_of_news = [NewsItem(**news) for news in parsed_news_items]
     queries = [generate_news_item_query(n) for n in list_of_news]
     return queries
 
+
 def main_news_items(json_data):
     data = json.loads(json_data)
-    parsed_news_items = data.get('parsed_news_items', [])
+    parsed_news_items = data.get("parsed_news_items", [])
     queries = news_to_cypher(parsed_news_items)
     print("\n".join(queries))
     return queries
+
 
 ### project updates
 def generate_project_updates_query(project_updates: NewsItem):
@@ -56,19 +63,24 @@ def generate_project_updates_query(project_updates: NewsItem):
     """.strip()
     return query
 
+
 def project_updates_to_cypher(parsed_project_updates: List[dict]) -> List[str]:
-    list_of_news = [NewsItem(**project_update) for project_update in parsed_project_updates]
+    list_of_news = [
+        NewsItem(**project_update) for project_update in parsed_project_updates
+    ]
     queries = [generate_project_updates_query(n) for n in list_of_news]
     return queries
+
 
 def main_project_updates(json_data):
     data = json.loads(json_data)
     print(f"json_data: {json_data}")
-    parsed_project_updates = data.get('parsed_news_items', [])
+    parsed_project_updates = data.get("parsed_news_items", [])
     print(f"parsed_project_updates: {parsed_project_updates}")
     queries = news_to_cypher(parsed_project_updates)
     print("\n".join(queries))
     return queries
+
 
 #### educational content
 def generate_threads_and_reads_query(threads_and_reads: ThreadsAndReads):
@@ -92,14 +104,18 @@ def generate_threads_and_reads_query(threads_and_reads: ThreadsAndReads):
     """.strip()
     return query
 
+
 def threads_and_reads_to_cypher(parsed_threads_and_reads: List[dict]) -> List[str]:
-    list_of_threads_and_reads = [ThreadsAndReads(**educational) for educational in parsed_threads_and_reads]
+    list_of_threads_and_reads = [
+        ThreadsAndReads(**educational) for educational in parsed_threads_and_reads
+    ]
     queries = [generate_threads_and_reads_query(n) for n in list_of_threads_and_reads]
     return queries
 
+
 def main_threads_and_reads(json_data):
     data = json.loads(json_data)
-    parsed_threads_and_reads = data.get('parsed_threads_and_reads', [])
+    parsed_threads_and_reads = data.get("parsed_threads_and_reads", [])
     queries = threads_and_reads_to_cypher(parsed_threads_and_reads)
     print("\n".join(queries))
     return queries
@@ -112,7 +128,7 @@ def generate_launches_query(launch: Launch):
         launch_time = f"'{launch_time}'"
     else:
         launch_time = f"'T{launch_time}'"
-    
+
     query = f"""
         MERGE (l:Launch {{
             name: '{launch.name}',
@@ -134,22 +150,25 @@ def generate_launches_query(launch: Launch):
     """.strip()
     return query
 
+
 def launches_to_cypher(parsed_launches: List[dict]) -> List[str]:
     list_of_launches = [Launch(**launch) for launch in parsed_launches]
     queries = [generate_launches_query(n) for n in list_of_launches]
     return queries
 
+
 def main_launches(json_data):
     data = json.loads(json_data)
-    parsed_launches = data.get('parsed_launches', [])
+    parsed_launches = data.get("parsed_launches", [])
     queries = launches_to_cypher(parsed_launches)
     print("\n".join(queries))
     return queries
 
+
 #### new projects
 def generate_new_projects_query(new_project: Project):
-    network_str = ', '.join([f"'{net}'" for net in new_project.network])
-    category_str = ', '.join([f"'{cat}'" for cat in new_project.category])
+    network_str = ", ".join([f"'{net}'" for net in new_project.network])
+    category_str = ", ".join([f"'{cat}'" for cat in new_project.category])
     query = f"""
         MERGE ({new_project.name}:Project {{
             name: '{new_project.name}',
@@ -163,14 +182,16 @@ def generate_new_projects_query(new_project: Project):
     """.strip()
     return query
 
+
 def new_projects_to_cypher(parsed_new_projects: List[dict]) -> List[str]:
     list_of_new_projects = [Project(**project) for project in parsed_new_projects]
     queries = [generate_new_projects_query(n) for n in list_of_new_projects]
     return queries
 
+
 def main_new_projects(json_data):
     data = json.loads(json_data)
-    parsed_new_projects = data.get('parsed_new_projects', [])
+    parsed_new_projects = data.get("parsed_new_projects", [])
     queries = new_projects_to_cypher(parsed_new_projects)
     print("\n".join(queries))
     return queries
