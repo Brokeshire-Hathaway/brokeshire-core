@@ -27,16 +27,13 @@ client = AsyncOpenAI()
 TRANSACTION_SERVICE = os.environ.get(
     "TRANSACTION_SERVICE_URL", "http://firepot_chatgpt_app:3000"
 )
-# Base types
-Network = Literal["sepolia", "polygon-mumbai"]
-Token = Literal["ETH", "uaUSDC", "Matic"]
 
 
 class TokenSwapTo(BaseModel):
     """Request for doing cross chain swap"""
 
-    network: Network
-    token: Token
+    network: str
+    token: str
 
 
 class SwapRequest(BaseModel):
@@ -58,10 +55,10 @@ class SwapInformation(BaseModel):
     """All needed information to do a cross-chain swap."""
 
     amount: str
-    token: Token
-    network: Network
-    toNetwork: Network
-    toToken: Token
+    token: str
+    network: str
+    toNetwork: str
+    toToken: str
 
     def to_swap_request(self, address: UniversalAddress) -> SwapRequest:
         """Transforms information to request."""
@@ -78,7 +75,13 @@ class SwapInformation(BaseModel):
 class TxPreview(BaseModel):
     uuid: str
     from_amount: str
+    from_token_url: str
+    from_token_symbol: str
+    from_chain: str
     to_amount: str
+    to_chain: str
+    to_token_url: str
+    to_token_symbol: str
     duration: str
     total_costs: dict[str, str]
 
@@ -263,39 +266,52 @@ async def interpreter_reply(recipient: ConversableAgent, messages, sender, confi
 
 async def convert_to_json(request: str) -> str:
     system_message = """You are an interpreter responsible for converting a user
-    request into JSON. 'network' and `toNetwork` will always be 'sepolia' or `polygon-mumbai`.
-    'token' and 'toToken' will always be 'uaUSDC'.
+    request into JSON.
 
     # Example 1
     ## User Request
-    Swap 1 uaUSDC from my sepolia account to uaUSDC in my polygon-mumbai account.
+    Swap 1 usd-coin from my sepolia account to usd-coin in my polygon mumbai account.
     ## JSON
     ```json
     {{
         "network": "sepolia",
-        "toNetwork": "polygon-mumbai",
+        "toNetwork": "polygon mumbai",
         "amount": "1",
-        "token": "uaUSDC",
-        "toToken": "uaUSDC"
+        "token": "usd-coin",
+        "toToken": "usd-coin"
     }}
 
     # Example 2
     ## User Request
-    Change 2.3 uaUSDC of my polygon mumbai account to same token in sepolia
+    Change 2.3 ethereum from goerli to usd-coin in sepolia wallet
     ## JSON
     ```json
     {{
-        "network": "polygon-mumbai",
+        "network": "goerli",
         "toNetwork": "sepolia",
         "amount": "2.3",
-        "token": "uaUSDC",
-        "toToken": "uaUSDC"
+        "token": "ethereum",
+        "toToken": "usd-coin"
     }}
     ```
 
     # Example 3
     ## User Request
-    Change 50 uaUSDC of my polygon mumbai account
+    Change .43 ethereum from eth sepolia testnet wallet to usd-coin in my mumbai
+    ## JSON
+    ```json
+    {{
+        "network": "eth sepolia testnet",
+        "toNetwork": "mumbai",
+        "amount": "0.43",
+        "token": "ethereum",
+        "toToken": "usd-coin"
+    }}
+    ```
+
+    # Example 4
+    ## User Request
+    Change 50 matic-network of my polygon mumbai account
     ## JSON
     ```json
     {{
@@ -356,12 +372,12 @@ You are a cryptocurrency copilot responsible for gathering missing information f
 After the user has satisfied all requirements, you will send the revised intent to the interpreter on their behalf.
 Your messages to the interpreter must be in the following format:
 ---
-Original Intent: Swap .1 uaUSDC sepolia to uausdc polygon-mumbai
-Token: uaUSDC
-ToToken: uaUSDC
+Original Intent: Swap .1 usd-coin sepolia testnet to usd-coin polygon-mumbai
+Token: usd-coin
+ToToken: usd-coin
 Amount: 0.1
-Network: sepolia
-ToNetwork: polygon-mumbai
+Network: sepolia testnet
+ToNetwork: polygon mumbai
 NEXT: interpreter"""
 
 # TODO: Add new agent for showing tx preview, determining if any changes are needed, and
@@ -485,14 +501,14 @@ TERMINATE""",
                 )
 
             fees = "\n".join(
-                [f"{k}: {v}" for k, v in self._transaction_preview.total_costs.items()]
+                [f"{v} {k}" for k, v in self._transaction_preview.total_costs.items()]
             )
             # tx_details = self._transaction_preview.tx_details
             response_message = f"""You are about to swap tokens 💸.
 
-**💸 Amount in origin chain ** {self._transaction_preview.from_amount}
+**💸 Convert From ** {self._transaction_preview.from_amount} [{self._transaction_preview.from_token_symbol}]({self._transaction_preview.from_token_url}) ({self._transaction_preview.from_chain})
+**💸 Convert To ** {self._transaction_preview.to_amount} [{self._transaction_preview.to_token_symbol}]({self._transaction_preview.to_token_url}) ({self._transaction_preview.to_chain})
 **⛽️ Fees Estimation ・** {fees}
-** To Amount in Last Chain** {self._transaction_preview.to_amount}
 
 Would you like to proceed?"""
 
