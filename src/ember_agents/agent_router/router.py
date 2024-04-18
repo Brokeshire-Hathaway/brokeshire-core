@@ -115,6 +115,10 @@ swap = Route(
     utterances=[
         "swap 1 uasdc from sepolia to polygon-mumbai",
         "swap token",
+        "buy crypto",
+        "buy {token}",
+        "purchase {token}",
+        "I want to purchase crypto",
         "change me my 5 uausdc",
         "change crypto",
         "48.5 bitcoin to other network",

@@ -52,6 +52,7 @@ Help Ember AI (Ember) users with their crypto and DeFi needs, taking actions for
 - In private chats, users can talk to you directly.
 - Users can ask you for live market data and info on almost any token.
 - Users can ask you to send tokens to other users.
+- Users can ask you to buy or swap tokens.
 
 # Rules
 - Always answer truthfully and helpfully.
@@ -64,7 +65,8 @@ Help Ember AI (Ember) users with their crypto and DeFi needs, taking actions for
 - Always limit lists to 3-4 items or less and space them out.
 - Always use emojis for each list item.
 - Always format date and times in human readable format.
-- Always consider the current date and time when answering time-related questions."""
+- Always consider the current date and time when answering time-related questions.
+- If a cancel or terminate message is found, always be grateful and ask to help for something else."""
 
 
 async def education(user_request: str) -> str:

@@ -43,6 +43,7 @@ class SwapRequest(BaseModel):
     token: str
     sender: UniversalAddress
     to: TokenSwapTo
+    type: str
 
     @validator("amount")
     def amount_must_be_positive(cls, value):
@@ -59,6 +60,7 @@ class SwapInformation(BaseModel):
     network: str
     toNetwork: str
     toToken: str
+    type: str
 
     def to_swap_request(self, address: UniversalAddress) -> SwapRequest:
         """Transforms information to request."""
@@ -68,7 +70,8 @@ class SwapInformation(BaseModel):
             amount=self.amount,
             token=self.token,
             sender=address,
-            to=TokenSwapTo(network=self.toNetwork, token=self.token),
+            to=TokenSwapTo(network=self.toNetwork, token=self.toToken),
+            type=self.type,
         )
 
 
@@ -131,7 +134,14 @@ class SwapTokenGroupChat(GroupChat):
             next_speaker = selected_agent
         elif last_message:
             if "NEXT:" in last_message["content"]:
-                suggested_next = last_message["content"].split("NEXT: ")[-1].strip()
+                suggested_next = (
+                    last_message["content"]
+                    .split("NEXT: ")[-1]
+                    .strip()
+                    .strip("-")
+                    .strip()
+                )
+                print(suggested_next)
                 print(f"Extracted suggested_next = {suggested_next}")
                 try:
                     next_speaker = self.agent_by_name(suggested_next)
@@ -274,6 +284,7 @@ async def convert_to_json(request: str) -> str:
     ## JSON
     ```json
     {{
+        "type": "swap",
         "network": "sepolia",
         "toNetwork": "polygon mumbai",
         "amount": "1",
@@ -287,6 +298,7 @@ async def convert_to_json(request: str) -> str:
     ## JSON
     ```json
     {{
+        "type": "swap",
         "network": "goerli",
         "toNetwork": "sepolia",
         "amount": "2.3",
@@ -301,6 +313,7 @@ async def convert_to_json(request: str) -> str:
     ## JSON
     ```json
     {{
+        "type": "swap",
         "network": "eth sepolia testnet",
         "toNetwork": "mumbai",
         "amount": "0.43",
@@ -316,6 +329,34 @@ async def convert_to_json(request: str) -> str:
     ```json
     {{
         "error": "Missing information of the destination chain and token.",
+    }}
+
+    # Example 5
+    ## User Request
+    Buy 23 eth in sepolia from usd-coin in mumbai
+    ## JSON
+    ```json
+    {{
+        "type": "buy",
+        "amount": "23",
+        "toNetwork": "sepolia",
+        "toToken": "eth",
+        "network": "mumbai",
+        "token": "usd-coin"
+    }}
+
+    # Example 6
+    ## User Request
+    Buy 0.456345632 usd-coin in eth sepolia using matic in mumbai
+    ## JSON
+    ```json
+    {{
+        "type": "buy",
+        "amount": "0.456345632",
+        "toToken": "usd-coin",
+        "toNetwork": "eth sepolia",
+        "token": "matic",
+        "network": "mumbai"
     }}
     ```
 """
@@ -372,13 +413,27 @@ You are a cryptocurrency copilot responsible for gathering missing information f
 After the user has satisfied all requirements, you will send the revised intent to the interpreter on their behalf.
 Your messages to the interpreter must be in the following format:
 ---
+# Example 1
 Original Intent: Swap .1 usd-coin sepolia testnet to usd-coin polygon-mumbai
+Type: swap
 Token: usd-coin
 ToToken: usd-coin
 Amount: 0.1
 Network: sepolia testnet
 ToNetwork: polygon mumbai
-NEXT: interpreter"""
+NEXT: interpreter
+
+# Example 2
+---
+Original Intent: Purchase 0.456 axlusdc in bnb testnet using usd-coin in sepolia
+Type: buy
+Token: usd-coin
+ToToken: axlusdc
+Amount: 0.456
+Network: sepolia
+ToNetwork: bnb testnet
+NEXT: interpreter
+"""
 
 # TODO: Add new agent for showing tx preview, determining if any changes are needed, and
 #       confirming if the user will proceed or cancel. Broker might be able to handle this.
@@ -438,8 +493,12 @@ class SwapTokenAgentTeam(AgentTeam):
             response = await client.post(URL, json=self._transaction_request.dict())
         print(response.text)
 
+        response_json = response.json()
+        if not response_json["success"]:
+            print(response_json)
+            raise Exception(response_json["message"])
         try:
-            return TxPreview.parse_raw(response.text)
+            return TxPreview.parse_obj(response_json)
         except:
             raise Exception("Failed processing response, try again.")
 
