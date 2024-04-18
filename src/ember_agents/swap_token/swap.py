@@ -438,7 +438,10 @@ class SwapTokenAgentTeam(AgentTeam):
             response = await client.post(URL, json=self._transaction_request.dict())
         print(response.text)
 
-        return TxPreview.parse_raw(response.text)
+        try:
+            return TxPreview.parse_raw(response.text)
+        except:
+            raise Exception("Failed processing response, try again.")
 
     async def _run_conversation(self, message: str):
         user_proxy = MessagingUserProxyAgent(
@@ -568,6 +571,8 @@ Would you like to proceed?"""
                 # HEADERS = {"Content-Type": "application/json"}
                 async with httpx.AsyncClient(http2=True, timeout=65) as client:
                     response = await client.post(URL, json=body.dict())
+                    if response.json().get("block", None) is None:
+                        raise Exception("No block found.")
 
             except Exception as e:
                 error_message = str(e) if str(e) else str(type(e))
