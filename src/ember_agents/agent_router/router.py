@@ -69,8 +69,6 @@ class AgentTeamSessionManager:
 
     def create_session(self, agent_team: AgentTeam):
         session_id = self._get_session_id(agent_team.sender_did, agent_team.thread_id)
-        if session_id in self._sessions:
-            raise Exception(f"Session ID ({session_id}) already exists")
         agent_team.on_complete = self.remove_session
         self._sessions[session_id] = agent_team
 
@@ -104,6 +102,16 @@ send = Route(
         "1.25 eth to 0xC7F97cCC3b899fd0372134570A7c5404f6F887F8",
         "48.06 bob to mike",
         "22 usdc to 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+    ],
+)
+
+terminate = Route(
+    name="terminate",
+    utterances=[
+        "terminate",
+        "cancel",
+        "stop",
+        "finish",
     ],
 )
 
@@ -157,6 +165,7 @@ education = Route(
 routes = [send, market, education, swap]
 
 decision_layer = RouteLayer(encoder=encoder, routes=routes)
+terminate_layer = RouteLayer(encoder=encoder, routes=[terminate])
 
 
 class Router:
@@ -170,8 +179,9 @@ class Router:
         message: str,
         activity: Callable[[str], None] | None = None,
     ):
+        is_terminate_message = terminate_layer(message).name == "terminate"
         agent_team = self._get_agent_team_session(sender_did, thread_id)
-        if agent_team is None:
+        if is_terminate_message or agent_team is None:
             agent_team = self._create_agent_team_session(sender_did, thread_id, message)
         if activity is not None:
             agent_team.get_activity_updates(activity)
