@@ -107,12 +107,7 @@ send = Route(
 
 terminate = Route(
     name="terminate",
-    utterances=[
-        "terminate",
-        "cancel",
-        "stop",
-        "finish",
-    ],
+    utterances=["terminate session", "cancel action"],
 )
 
 swap = Route(
@@ -137,7 +132,6 @@ market = Route(
         "market cap of {token}",
         "{token} volume",
         "doland tremp",
-        "{token}",
         "tell me about {token}",
         "market info",
         "project details",
@@ -162,10 +156,8 @@ education = Route(
     ],
 )
 
-routes = [send, market, education, swap]
-
+routes = [send, market, education, swap, terminate]
 decision_layer = RouteLayer(encoder=encoder, routes=routes)
-terminate_layer = RouteLayer(encoder=encoder, routes=[terminate])
 
 
 class Router:
@@ -179,24 +171,23 @@ class Router:
         message: str,
         activity: Callable[[str], None] | None = None,
     ):
-        is_terminate_message = terminate_layer(message).name == "terminate"
+        route = decision_layer(message).name
         agent_team = self._get_agent_team_session(sender_did, thread_id)
-        if is_terminate_message or agent_team is None:
-            agent_team = self._create_agent_team_session(sender_did, thread_id, message)
+        if route == "terminate" or agent_team is None:
+            agent_team = self._create_agent_team_session(sender_did, thread_id, route)
         if activity is not None:
             agent_team.get_activity_updates(activity)
         return await agent_team.send(message)
 
     def _create_agent_team_session(
-        self, sender_did: str, thread_id: str, message: str
+        self, sender_did: str, thread_id: str, route: str | None
     ) -> AgentTeam:
-        route = decision_layer(message).name
         match route:
             case "send":
                 agent_team = SendTokenAgentTeam(
                     sender_did, thread_id, prepare_transaction, get_transaction_result
                 )
-            case "education":
+            case "education" | "terminate":
                 agent_team = EducationAgentTeam(sender_did, thread_id)
             case "swap":
                 agent_team = SwapTokenAgentTeam(sender_did, thread_id)
