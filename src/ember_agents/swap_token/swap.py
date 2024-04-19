@@ -568,8 +568,8 @@ TERMINATE""",
             # tx_details = self._transaction_preview.tx_details
             response_message = f"""You are about to swap tokens 💸.
 
-**💸 Convert From** {self._transaction_preview.from_amount} [{self._transaction_preview.from_token_symbol}]({self._transaction_preview.from_token_url}) ({self._transaction_preview.from_chain})
-**💸 Convert To** {self._transaction_preview.to_amount} [{self._transaction_preview.to_token_symbol}]({self._transaction_preview.to_token_url}) ({self._transaction_preview.to_chain})
+**💸 Convert From ・** {self._transaction_preview.from_amount} [{self._transaction_preview.from_token_symbol}]({self._transaction_preview.from_token_url}) ({self._transaction_preview.from_chain})
+**💸 Convert To ・** {self._transaction_preview.to_amount} [{self._transaction_preview.to_token_symbol}]({self._transaction_preview.to_token_url}) ({self._transaction_preview.to_chain})
 **⛽️ Fees Estimation ・** {fees}
 
 Would you like to proceed?"""
