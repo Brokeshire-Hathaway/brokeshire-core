@@ -69,6 +69,8 @@ class AgentTeamSessionManager:
 
     def create_session(self, agent_team: AgentTeam):
         session_id = self._get_session_id(agent_team.sender_did, agent_team.thread_id)
+        if session_id in self._sessions:
+            self.remove_session(agent_team.sender_did, agent_team.thread_id)
         agent_team.on_complete = self.remove_session
         self._sessions[session_id] = agent_team
 
@@ -97,6 +99,7 @@ send = Route(
     utterances=[
         "give 5 bitcoin to alice",
         "send token",
+        "send {token}",
         "send sol to bob",
         "transfer crypto",
         "1.25 eth to 0xC7F97cCC3b899fd0372134570A7c5404f6F887F8",
