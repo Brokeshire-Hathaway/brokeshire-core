@@ -18,7 +18,7 @@ from autogen import (
 from ember_agents.common.agents import AgentTeam
 from ember_agents.info_bites.info_bites import get_random_info_bite
 from openai import AsyncOpenAI
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, ValidationError, validator
 
 client = AsyncOpenAI()
 
@@ -198,7 +198,7 @@ class SendTokenGroupChat(GroupChat):
 
         next_speaker = self.agent_by_name("user")
 
-        selected_agent, agents = self._prepare_and_select_agents(last_speaker)
+        selected_agent, _, _ = self._prepare_and_select_agents(last_speaker)
         last_message = self.messages[-1] if self.messages else None
         if selected_agent:
             next_speaker = selected_agent
@@ -496,11 +496,11 @@ class SendTokenAgentTeam(AgentTeam):
 
         # No system message needed for OpenAI completion API used by Guidance agent (Metis).
         interpreter_agent = AssistantAgent("interpreter", None, llm_config=llm_config)
-        interpreter_agent.register_reply(Agent, interpreter_reply, 1)
+        interpreter_agent.register_reply(ConversableAgent, interpreter_reply, 1)
 
         # No system message needed for code based agent (Spock).
         validator = AssistantAgent("validator", None, llm_config=llm_config)
-        validator.register_reply(Agent, self._validate_request, 1)
+        validator.register_reply(ConversableAgent, self._validate_request, 1)
 
         broker = AssistantAgent(
             "broker",
@@ -564,7 +564,9 @@ Would you like to proceed?"""
             None,
             llm_config=llm_config,
         )
-        transaction_coordinator.register_reply(Agent, a_prepare_transaction, 1)
+        transaction_coordinator.register_reply(
+            ConversableAgent, a_prepare_transaction, 1
+        )
 
         # TODO: Can be converted to Metis agent.
         executor = AssistantAgent(
@@ -611,10 +613,13 @@ Would you like to proceed?"""
                 async with httpx.AsyncClient(http2=True, timeout=65) as client:
                     response = await client.post(URL, json=body.dict())
 
-                print("@@@ response.text")
-                print(response.text)
-
-                user_receipt = UserReceipt.parse_raw(response.text)
+                data = response.json()
+                try:
+                    user_receipt = UserReceipt.parse_obj(data)
+                except ValidationError:
+                    raise Exception(
+                        f"Failed sending token: {data.get('message', 'Unknown exception')}"
+                    )
 
                 if user_receipt.status == "failure":
                     raise Exception(user_receipt.reason)
@@ -652,7 +657,9 @@ TERMINATE"""
             None,
             llm_config=llm_config,
         )
-        confirmation_specialist.register_reply(Agent, a_execute_transaction, 1)
+        confirmation_specialist.register_reply(
+            ConversableAgent, a_execute_transaction, 1
+        )
 
         technician = AssistantAgent(
             "technician",

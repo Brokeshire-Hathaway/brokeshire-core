@@ -3,7 +3,7 @@ import json
 import os
 import re
 import tempfile
-from typing import Awaitable, Callable, Literal, NamedTuple, Optional
+from typing import Awaitable, Callable, Optional
 
 import httpx
 from autogen import (
@@ -128,7 +128,7 @@ class SwapTokenGroupChat(GroupChat):
 
         next_speaker = self.agent_by_name("user")
 
-        selected_agent, _ = self._prepare_and_select_agents(last_speaker)
+        selected_agent, _, _ = self._prepare_and_select_agents(last_speaker)
         last_message = self.messages[-1] if self.messages else None
         if selected_agent:
             next_speaker = selected_agent
@@ -515,11 +515,11 @@ class SwapTokenAgentTeam(AgentTeam):
 
         # No system message needed for OpenAI completion API used by Guidance agent (Metis).
         interpreter_agent = AssistantAgent("interpreter", None, llm_config=llm_config)
-        interpreter_agent.register_reply(Agent, interpreter_reply, 1)
+        interpreter_agent.register_reply(ConversableAgent, interpreter_reply, 1)
 
         # No system message needed for code based agent (Spock).
         validator = AssistantAgent("validator", None, llm_config=llm_config)
-        validator.register_reply(Agent, self._validate_request, 1)
+        validator.register_reply(ConversableAgent, self._validate_request, 1)
 
         broker = AssistantAgent(
             "broker",
@@ -586,7 +586,9 @@ Would you like to proceed?"""
             None,
             llm_config=llm_config,
         )
-        transaction_coordinator.register_reply(Agent, a_prepare_transaction, 1)
+        transaction_coordinator.register_reply(
+            ConversableAgent, a_prepare_transaction, 1
+        )
 
         # TODO: Can be converted to Metis agent.
         executor = AssistantAgent(
@@ -662,7 +664,9 @@ TERMINATE"""
             None,
             llm_config=llm_config,
         )
-        confirmation_specialist.register_reply(Agent, a_execute_transaction, 1)
+        confirmation_specialist.register_reply(
+            ConversableAgent, a_execute_transaction, 1
+        )
 
         technician = AssistantAgent(
             "technician",

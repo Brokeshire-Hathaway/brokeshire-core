@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "The Ember AI agent swarm for intent based cognition and reasoning."
 authors = [{ name = "Tom Daniel", email = "0xtomdaniel@gmail.com" }]
 dependencies = [
+    "setuptools",
     "python-dotenv>=1.0.0",
     "semantic-router>=0.0.14",
     "pydantic>=1.10.13",
@@ -17,8 +18,9 @@ dependencies = [
     "langchain>=0.1.13",
     "langchain-text-splitters>=0.0.1",
     "tiktoken>=0.6.0",
+    "numpy>=1.26.0"
 ]
-requires-python = "==3.11.*"
+requires-python = ">=3.11,<3.13"
 readme = "README.md"
 license = { text = "MIT" }
 
