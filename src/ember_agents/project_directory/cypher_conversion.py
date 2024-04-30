@@ -1,6 +1,5 @@
-from typing import List
-import re
 import json
+import re
 
 from src.ember_agents.project_directory.parse_c4_updates import (
     Launch,
@@ -30,7 +29,7 @@ def generate_news_item_query(news_item: NewsItem):
     return query
 
 
-def news_to_cypher(parsed_news_items: List[dict]) -> List[str]:
+def news_to_cypher(parsed_news_items: list[dict]) -> list[str]:
     list_of_news = [NewsItem(**news) for news in parsed_news_items]
     queries = [generate_news_item_query(n) for n in list_of_news]
     return queries
@@ -64,7 +63,7 @@ def generate_project_updates_query(project_updates: NewsItem):
     return query
 
 
-def project_updates_to_cypher(parsed_project_updates: List[dict]) -> List[str]:
+def project_updates_to_cypher(parsed_project_updates: list[dict]) -> list[str]:
     list_of_news = [
         NewsItem(**project_update) for project_update in parsed_project_updates
     ]
@@ -105,7 +104,7 @@ def generate_threads_and_reads_query(threads_and_reads: ThreadsAndReads):
     return query
 
 
-def threads_and_reads_to_cypher(parsed_threads_and_reads: List[dict]) -> List[str]:
+def threads_and_reads_to_cypher(parsed_threads_and_reads: list[dict]) -> list[str]:
     list_of_threads_and_reads = [
         ThreadsAndReads(**educational) for educational in parsed_threads_and_reads
     ]
@@ -151,7 +150,7 @@ def generate_launches_query(launch: Launch):
     return query
 
 
-def launches_to_cypher(parsed_launches: List[dict]) -> List[str]:
+def launches_to_cypher(parsed_launches: list[dict]) -> list[str]:
     list_of_launches = [Launch(**launch) for launch in parsed_launches]
     queries = [generate_launches_query(n) for n in list_of_launches]
     return queries
@@ -183,7 +182,7 @@ def generate_new_projects_query(new_project: Project):
     return query
 
 
-def new_projects_to_cypher(parsed_new_projects: List[dict]) -> List[str]:
+def new_projects_to_cypher(parsed_new_projects: list[dict]) -> list[str]:
     list_of_new_projects = [Project(**project) for project in parsed_new_projects]
     queries = [generate_new_projects_query(n) for n in list_of_new_projects]
     return queries

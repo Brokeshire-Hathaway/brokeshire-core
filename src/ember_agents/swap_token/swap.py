@@ -3,7 +3,7 @@ import json
 import os
 import re
 import tempfile
-from typing import Awaitable, Callable, Optional
+from collections.abc import Awaitable, Callable
 
 import httpx
 from autogen import (
@@ -17,10 +17,9 @@ from autogen import (
 )
 from ember_agents.common.agents import AgentTeam
 from ember_agents.info_bites.info_bites import get_random_info_bite
-from openai import AsyncOpenAI
-from pydantic import BaseModel, validator
-
 from ember_agents.send_token.send import UniversalAddress
+from openai import AsyncOpenAI
+from pydantic import BaseModel, ValidationError, validator
 
 client = AsyncOpenAI()
 
@@ -46,9 +45,10 @@ class SwapRequest(BaseModel):
     type: str
 
     @validator("amount")
-    def amount_must_be_positive(cls, value):
+    def amount_must_be_positive(self, value):
         if float(value) <= 0:
-            raise ValueError("amount must be a positive number")
+            msg = "amount must be a positive number"
+            raise ValueError(msg)
         return value
 
 
@@ -58,8 +58,8 @@ class SwapInformation(BaseModel):
     amount: str
     token: str
     network: str
-    toNetwork: str
-    toToken: str
+    to_network: str
+    to_token: str
     type: str
 
     def to_swap_request(self, address: UniversalAddress) -> SwapRequest:
@@ -70,7 +70,7 @@ class SwapInformation(BaseModel):
             amount=self.amount,
             token=self.token,
             sender=address,
-            to=TokenSwapTo(network=self.toNetwork, token=self.toToken),
+            to=TokenSwapTo(network=self.to_network, token=self.to_token),
             type=self.type,
         )
 
@@ -117,7 +117,7 @@ class SwapTokenGroupChat(GroupChat):
         agents,
         messages,
         max_round=10,
-        on_activity: Optional[Callable[[str], None]] = None,
+        on_activity: Callable[[str], None] | None = None,
     ):
         self.last_speaker = None
         self._on_activity = on_activity
@@ -203,11 +203,13 @@ class MessagingUserProxyAgent(UserProxyAgent):
     async def a_get_human_input(self, prompt: str) -> str:
         last_message = self.last_message()
         if last_message is None:
-            raise Exception("Assistant message not found")
+            msg = "Assistant message not found"
+            raise Exception(msg)
 
         message = last_message.get("content")
         if message is None:
-            raise Exception("Assistant message content not found")
+            msg = "Assistant message content not found"
+            raise Exception(msg)
 
         if self.is_termination_msg(last_message):
             self.assistant_reply(message.replace("TERMINATE", ""))
@@ -221,7 +223,8 @@ def get_last_message(recipient: ConversableAgent) -> str:
     last_message = recipient.last_message()
     content = last_message.get("content") if last_message else None
     if not isinstance(content, str):
-        raise Exception("No message content found")
+        msg = "No message content found"
+        raise Exception(msg)
     return content
 
 
@@ -381,11 +384,10 @@ async def convert_to_json(request: str) -> str:
     )
 
     if len(chat_completion.choices) > 0 and chat_completion.choices[0].message.content:
-        response = chat_completion.choices[0].message.content
-    else:
-        raise Exception("Failed to convert request to JSON. 😔")
+        return chat_completion.choices[0].message.content
 
-    return response
+    msg = "Failed to convert request to JSON. 😔"
+    raise Exception(msg)
 
 
 """
@@ -475,9 +477,9 @@ You are a technician responsible for executing tools and returning the results t
 
 
 class SwapTokenAgentTeam(AgentTeam):
-    _transaction: Optional[SwapInformation] = None
-    _transaction_request: Optional[SwapRequest] = None
-    _transaction_preview: Optional[TxPreview] = None
+    _transaction: SwapInformation | None = None
+    _transaction_request: SwapRequest | None = None
+    _transaction_preview: TxPreview | None = None
 
     def __init__(self, sender_did: str, thread_id: str):
         # TODO: Create a new protocol for the prepare_transaction and get_transaction_result functions as a separation of concerns for transactions.
@@ -488,19 +490,21 @@ class SwapTokenAgentTeam(AgentTeam):
             return None
 
         print(self._transaction_request)
-        URL = f"{TRANSACTION_SERVICE}/swap/preview"
+        url = f"{TRANSACTION_SERVICE}/swap/preview"
         async with httpx.AsyncClient(http2=True, timeout=65) as client:
-            response = await client.post(URL, json=self._transaction_request.dict())
+            response = await client.post(url, json=self._transaction_request.dict())
         print(response.text)
 
         response_json = response.json()
         if not response_json["success"]:
             print(response_json)
             raise Exception(response_json["message"])
+
         try:
             return TxPreview.parse_obj(response_json)
-        except:
-            raise Exception("Failed processing response, try again.")
+        except ValidationError as err:
+            msg = "Failed processing response, try again."
+            raise Exception(msg) from err
 
     async def _run_conversation(self, message: str):
         user_proxy = MessagingUserProxyAgent(
@@ -535,20 +539,12 @@ class SwapTokenAgentTeam(AgentTeam):
         async def a_prepare_transaction(
             recipient: ConversableAgent, messages, sender, config
         ):
-            """
-            tx_request = TxRequest(
-                sender_did="ethereum://84738954.telegram.org",
-                recipient_did="ethereum://0xc6A9f8f20d79Ae0F1ADf448A0C460178dB6655Cf",
-                receive_token_address="0x514910771AF9Ca656af840dff83E8264EcF986CA",
-                amount="0.0001",
-            )
-            return await self._prepare_transaction(tx_request)"""
-
             self._send_activity_update("Preparing transaction preview...")
 
             try:
                 if self._transaction_request is None:
-                    raise ValueError("Transaction request not found")
+                    msg = "Transaction request not found"
+                    raise ValueError(msg)
                 self._transaction_preview = await self._prepare_transaction()
                 if self._transaction_preview is None:
                     raise Exception()
@@ -617,23 +613,21 @@ Would you like to proceed?"""
 >🍬 {bite}"""
                 self._send_activity_update(message)
 
-            SECONDS = 8
-            timer_task = asyncio.create_task(repeating_task(SECONDS, send_info_bite))
+            seconds = 8
+            timer_task = asyncio.create_task(repeating_task(seconds, send_info_bite))
 
             try:
                 if self._transaction_preview is None:
-                    raise ValueError("Transaction request not found")
+                    msg = "Transaction request not found"
+                    raise ValueError(msg)
 
-                TRANSACTION_SERVICE = os.environ.get(
-                    "TRANSACTION_SERVICE_URL", "http://firepot_chatgpt_app:3000"
-                )
-                URL = f"{TRANSACTION_SERVICE}/swap/"
+                url = f"{TRANSACTION_SERVICE}/swap/"
                 body = ExecuteTxBody(transaction_uuid=self._transaction_preview.uuid)
-                # HEADERS = {"Content-Type": "application/json"}
                 async with httpx.AsyncClient(http2=True, timeout=65) as client:
-                    response = await client.post(URL, json=body.dict())
+                    response = await client.post(url, json=body.dict())
                     if response.json().get("block", None) is None:
-                        raise Exception("No block found.")
+                        msg = "No block found."
+                        raise Exception(msg)
 
             except Exception as e:
                 error_message = str(e) if str(e) else str(type(e))
@@ -711,10 +705,11 @@ TERMINATE"""
             print(f"json_str = {json_str}")
             print(type(json_str))
             if not isinstance(json_str, str):
-                raise ValueError("JSON request not found in message")
+                msg = "JSON request not found in message"
+                raise ValueError(msg)
         except Exception as e:
             return True, {
-                "content": f"{str(e)}\n\nTERMINATE",
+                "content": f"{e!s}\n\nTERMINATE",
                 "name": "interpreter",
                 "role": "assistant",
             }
@@ -733,7 +728,7 @@ TERMINATE"""
             }
         except Exception as e:
             return True, {
-                "content": f"{str(e)}\nNEXT: broker",
+                "content": f"{e!s}\nNEXT: broker",
                 "name": "interpreter",
                 "role": "assistant",
             }

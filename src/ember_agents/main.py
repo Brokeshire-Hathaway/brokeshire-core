@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse, ServerSentEvent
 
 from ember_agents.agent_router.router import AgentTeamSessionManager, Router
+from ember_agents.bg_tasks import add_bg_task
 from ember_agents.education.education import upload_doc_memory
 
 app = FastAPI()
@@ -30,13 +31,8 @@ def read_root():
     return {"message": "Hello World"}
 
 
-# POST /v1/dids/{did}/threads
-# POST /v1/threads/{thread_id}/messages
-
 agent_team_session_manager = AgentTeamSessionManager()
-
-
-asyncio.create_task(upload_doc_memory())
+add_bg_task(asyncio.create_task(upload_doc_memory()))
 
 
 @app.post("/v1/threads/{thread_id}/messages")
@@ -64,7 +60,7 @@ async def create_message(thread_id: str, body: Message, request: Request):
         message_queue.put_nowait(response)
 
     async def event_generator():
-        asyncio.create_task(send_message())
+        add_bg_task(asyncio.create_task(send_message()))
         while True:
             if await request.is_disconnected():
                 print(

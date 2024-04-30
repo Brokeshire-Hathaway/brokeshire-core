@@ -1,11 +1,11 @@
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
+from ember_agents.common.agents import AgentTeam
 from langchain_text_splitters import CharacterTextSplitter
 from openai import AsyncOpenAI
 from pinecone import Pinecone
-from ember_agents.common.agents import AgentTeam
 
 
 class EducationAgentTeam(AgentTeam):
@@ -95,7 +95,7 @@ async def education(user_request: str) -> str:
     context = f"""# Context
 
 ## Current Date & Time
-{datetime.now(timezone.utc)}{search_results}"""
+{datetime.now(UTC)}{search_results}"""
 
     system_message = system_message_base + f"\n\n{context}"
 

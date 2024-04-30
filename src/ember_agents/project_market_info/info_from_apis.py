@@ -1,8 +1,7 @@
 import json
 import os
-from pprint import pprint
 from time import sleep
-from typing import Literal, Optional
+from typing import Literal
 
 import httpx
 from openai import AsyncOpenAI
@@ -27,35 +26,35 @@ class ResponseFormat(BaseModel):
     # coingecko
     ember_response: str
     name: str
-    description: Optional[str]
+    description: str | None
     symbol: str
-    website: Optional[str]
-    twitter_handle: Optional[str]
-    network: Optional[str]
+    website: str | None
+    twitter_handle: str | None
+    network: str | None
     price: str
     price_change_24h: str
     market_cap: str
-    liquidity: Optional[str]
+    liquidity: str | None
     # dex screener
-    token_contract_address: Optional[str]
+    token_contract_address: str | None
     # lunarcrush
-    sentiment: Optional[Sentiment]
+    sentiment: Sentiment | None
 
 
 class ProjectInfo(BaseModel):
     # coingecko
     name: str
-    description: Optional[str]
+    description: str | None
     symbol: str
-    website: Optional[str]
-    twitter_handle: Optional[str]
+    website: str | None
+    twitter_handle: str | None
     network: str
-    price: Optional[str]
-    ath: Optional[str]
-    price_change_24h: Optional[str]
-    market_cap: Optional[str]
+    price: str | None
+    ath: str | None
+    price_change_24h: str | None
+    market_cap: str | None
     liquidity: str | None = None
-    token_contract_address: Optional[str]
+    token_contract_address: str | None
     pool_address: str | None = None
     # lunarcrush
     sentiment: Sentiment | None
@@ -63,17 +62,17 @@ class ProjectInfo(BaseModel):
 
 
 class CoinGecko(BaseModel):
-    token_contract_address: Optional[str]
+    token_contract_address: str | None
     name: str
     description: str
     symbol: str
     homepage: HttpUrl  # Use only the first valid URL
     twitter_screen_name: str
     asset_platform_id: str
-    ath: Optional[str]
-    price: Optional[str]
-    price_change_24h: Optional[str]
-    market_cap: Optional[str]
+    ath: str | None
+    price: str | None
+    price_change_24h: str | None
+    market_cap: str | None
 
     class Config:
         extra = Extra.ignore
@@ -202,7 +201,7 @@ Give your take on a project in a structured JSON format.
 
 # Example
 ## User Project Input
-Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fraudulent transaction based on a set of fraud identification parameters and returns stolen funds back to the owner’s account.
+Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fraudulent transaction based on a set of fraud identification parameters and returns stolen funds back to the owner's account.
 ## JSON
 ```json
 "project_description": "Lossless is like the superhero cape for token creators, swooping in to freeze those dastardly fraudulent transactions with a flick of its mighty fraud-fighting parameters! 🦸‍♂️ With the power to hit the "undo" button on crypto theft, it's bringing a little peace of mind to the Wild West of tokenomics. 📚✨",
@@ -228,14 +227,7 @@ Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fr
     )
     response = chat_completion.choices[0].message.content
     json_response = json.loads(response)
-    EmbersTake = EmberOnProject(**json_response)
-    return EmbersTake
-
-
-"""
-## Input
-Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fraudulent transaction based on a set of fraud identification parameters and returns stolen funds back to the owner’s account.
-"project_description": "Lossless is an innovative solution that enhances security for token creators. 🔒 By providing a mechanism to freeze and reverse fraudulent transactions, it helps mitigate the risks associated with hacks and unauthorized transfers, potentially increasing trust and safety for participants in the DeFi ecosystem. 👍🔄","""
+    return EmberOnProject(**json_response)
 
 
 #### Extracts the token name or address for user message
@@ -293,17 +285,19 @@ async def info_from_apis(token_queried: TokenQueried):
         return project_details
 
     if token_queried.token_name_or_symbol in (None, ""):
-        raise ValueError("Token name could not be parsed out.")
+        msg = "Token name could not be parsed out."
+        raise ValueError()
 
     coingeckoid = await getidfromcoingecko(token_queried.token_name_or_symbol)
     if coingeckoid is None:
-        raise ValueError("Token not found, please use Contract Address")
+        msg = "Token not found, please use Contract Address"
+        raise ValueError(msg)
     return await coingecko_and_lunarcrush(coingeckoid)
 
 
 #### orchestrate cg and lc
-async def coingecko_and_lunarcrush(input: str) -> ProjectInfo:
-    cg_response = await coingecko(input)
+async def coingecko_and_lunarcrush(search: str) -> ProjectInfo:
+    cg_response = await coingecko(search)
     lc_response = await lunarcrush(cg_response.symbol)
     return ProjectInfo(
         token_contract_address=cg_response.token_contract_address,
@@ -323,11 +317,11 @@ async def coingecko_and_lunarcrush(input: str) -> ProjectInfo:
 
 #### coingecko search for id
 async def getidfromcoingecko(searchterm: str):
-    URL = f"https://api.coingecko.com/api/v3/search?query={searchterm}"
+    url = f"https://api.coingecko.com/api/v3/search?query={searchterm}"
     async with httpx.AsyncClient(http2=True) as client:
-        response = await client.get(URL)
+        response = await client.get(url)
 
-    if response.status_code != 200:
+    if response.is_success:
         msg = "Failed finding ID of token"
         raise ValueError(msg)
 
@@ -340,11 +334,11 @@ async def getidfromcoingecko(searchterm: str):
 #### coingecko info from id
 async def coingecko(token_id: str):
     sleep(0.1)
-    URL = f"https://api.coingecko.com/api/v3/coins/{token_id}?symbols=false&market_data=true&community_data=false&developer_data=false&sparkline=false"
+    url = f"https://api.coingecko.com/api/v3/coins/{token_id}?symbols=false&market_data=true&community_data=false&developer_data=false&sparkline=false"
     async with httpx.AsyncClient(http2=True) as client:
-        response = await client.get(URL)
+        response = await client.get(url)
 
-    if response.status_code != 200:
+    if response.is_success:
         msg = "Failed finding information of coin"
         raise ValueError(msg)
 
@@ -387,12 +381,12 @@ async def coingecko(token_id: str):
 
 #### lunarcrush info
 async def lunarcrush(symbol: str):
-    URL = f"https://lunarcrush.com/api4/public/coins/{symbol}/time-series/v2"
-    HEADERS = {"Authorization": "Bearer 10yzku3g0fh5ok48wvq65p1r7plt360axtmw7ec0z"}
+    url = f"https://lunarcrush.com/api4/public/coins/{symbol}/time-series/v2"
+    headers = {"Authorization": "Bearer 10yzku3g0fh5ok48wvq65p1r7plt360axtmw7ec0z"}
     async with httpx.AsyncClient(http2=True) as client:
-        response = await client.get(URL, headers=HEADERS)
+        response = await client.get(url, headers=headers)
 
-    if response.status_code != 200:
+    if response.is_success:
         return LunarCrush(sentiment="unknown", galaxy_score="unknown")
 
     json = response.json()
@@ -410,26 +404,30 @@ async def lunarcrush(symbol: str):
 
 
 #### map lunarcursh sentiment to literal
+POSITIVE_SENTIMENT = 88
+NEUTRAL_SENTIMENT = 50
+
+
 def map_sentiment_to_literal(sentiment_score: int) -> Sentiment:
-    if sentiment_score > 88:
+    if sentiment_score > POSITIVE_SENTIMENT:
         return "positive"
-    elif sentiment_score > 50:
+    if sentiment_score > NEUTRAL_SENTIMENT:
         return "neutral"
-    elif sentiment_score > 0:
+    if sentiment_score > 0:
         return "negative"
-    else:
-        return "unknown"
+    return "unknown"
 
 
 #### get dexscreener info of token contract
 async def dexscreener(token_contract_address: str):
     # catch if its a contract address
-    URL = f"https://api.dexscreener.com/latest/dex/search/?q={token_contract_address}"
+    url = f"https://api.dexscreener.com/latest/dex/search/?q={token_contract_address}"
     async with httpx.AsyncClient(http2=True) as client:
-        response = await client.get(URL)
+        response = await client.get(url)
     jsonresp = get_largest_by_volume_24h(response.json())
     if jsonresp is None:
-        raise ValueError("Could not find token address info")
+        msg = "Could not find token address info"
+        raise ValueError(msg)
     return ProjectInfo(
         token_contract_address=token_contract_address,
         name=jsonresp.get("baseToken", {}).get("name"),
@@ -472,35 +470,9 @@ def get_largest_by_volume_24h(data):
 
     # Iterate through each entry in "pairs"
     for entry in data["pairs"]:
-        quoteToken = entry.get("quoteToken")
-        baseToken = entry.get("baseToken")
-        #        print(
-        #            "================================================================= symbol ================================================================="
-        #        )
-        # print("---entry---")
-        # print(entry)
-        #        print(
-        #            "================================================================= quote/basetokensymbol ================================================================="
-        #        )
-        #        print(str(baseToken.get("symbol")))
-        #        print(str(quoteToken.get("symbol")))
-        #        print(entry.get("volume", {}).get("h24"))
 
         # Check if the current entry has a "volume" key and "h24" key within it
-        if (
-            "volume" in entry
-            and "h24" in entry["volume"]
-            #            and (
-            #               # matches symbol
-            #                str(baseToken.get("symbol")) == str(symbol.upper())
-            #                or str(quoteToken.get("symbol")) == str(symbol.upper())
-            #            )
-            ##            and (
-            #                # matches name
-            #                str(baseToken.get("name")) == str(project)
-            #                or str(quoteToken.get("name")) == str(project)
-            #            )
-        ):
+        if "volume" in entry and "h24" in entry["volume"]:
             #  Get the current entry's 24-hour volume
             volume = entry["volume"]["h24"]
             # Check if it's the largest encountered so far

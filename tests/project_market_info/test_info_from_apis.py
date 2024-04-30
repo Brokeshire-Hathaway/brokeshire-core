@@ -96,5 +96,5 @@ async def test_market_route(message):
 @pytest.mark.skip
 async def test_coingecko_and_lunarcrush(search):
     response = await coingecko_and_lunarcrush(search)
-    print(f"=== SUCCESS ===", flush=True)
+    print("=== SUCCESS ===", flush=True)
     print(response, flush=True)

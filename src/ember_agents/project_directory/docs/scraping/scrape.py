@@ -15,7 +15,7 @@ for chat in chats:
         "a9867f805aa7d2ef202bdb90c49bb793",
     ) as client:
         for message in client.iter_messages(
-            chat, offset_date=datetime.date.today(), reverse=True
+            chat, offset_date=datetime.datetime.now(tz=datetime.UTC), reverse=True
         ):
             print(message)
             data = {
@@ -33,4 +33,4 @@ df = pd.DataFrame(data_list)
 
 df["date"] = df["date"].dt.tz_localize(None)
 
-df.to_csv("./data_{}.csv".format(datetime.date.today()), index=False)
+df.to_csv(f"./data_{datetime.datetime.now(tz=datetime.UTC):%Y-%m-%d}.csv", index=False)

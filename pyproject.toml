@@ -51,6 +51,7 @@ skip-string-normalization = true
 [tool.ruff]
 target-version = "py311"
 line-length = 88
+extend-exclude = ["src/ember_agents/project_directory", "tests"]
 
 [tool.ruff.lint]
 select = [

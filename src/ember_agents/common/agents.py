@@ -1,6 +1,9 @@
 import asyncio
 from asyncio import Future, InvalidStateError, Queue
-from typing import Callable, Protocol
+from collections.abc import Callable
+from typing import Protocol
+
+from ember_agents.bg_tasks import add_bg_task
 
 
 class AgentTeam(Protocol):
@@ -71,8 +74,7 @@ class AgentTeam(Protocol):
             if self.on_complete is not None:
                 self.on_complete(self.sender_did, self.thread_id)
 
-        asyncio.create_task(task())
-
+        add_bg_task(asyncio.create_task(task()))
         self._is_initialized = True
 
     def _send_activity_update(self, message: str):

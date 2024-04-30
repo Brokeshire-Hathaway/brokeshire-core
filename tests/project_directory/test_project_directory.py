@@ -1,6 +1,16 @@
 from unittest import result
-from numpy import full
+
 import pytest
+from numpy import full
+from update_samples import (
+    headers_response,
+    raw_update_feb_19,
+    raw_update_full,
+    raw_update_full_2,
+    raw_update_full_3,
+    raw_update_simple,
+)
+
 from src.ember_agents.project_directory.parse_c4_updates import (
     parse_launches,
     parse_new_projects,
@@ -12,14 +22,6 @@ from src.ember_agents.project_directory.run_workflow import (
     run_all_things,
     run_workflow_live,
     run_workflow_saved,
-)
-from update_samples import (
-    raw_update_full,
-    raw_update_full_2,
-    raw_update_full_3,
-    raw_update_feb_19,
-    raw_update_simple,
-    headers_response,
 )
 
 
