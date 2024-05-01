@@ -117,7 +117,13 @@ class SendTokenGroupChat(GroupChat):
             next_speaker = selected_agent
         elif last_message:
             if "NEXT:" in last_message["content"]:
-                suggested_next = last_message["content"].split("NEXT: ")[-1].strip()
+                suggested_next = (
+                    last_message["content"]
+                    .split("NEXT: ")[-1]
+                    .strip()
+                    .strip("-")
+                    .strip()
+                )
                 print(f"Extracted suggested_next = {suggested_next}")
                 try:
                     next_speaker = self.agent_by_name(suggested_next)
