@@ -11,6 +11,7 @@ from ember_agents.send_token.send import (
     TxRequest,
 )
 from ember_agents.swap_token.swap import SwapTokenAgentTeam
+from pydantic import ValidationError
 from semantic_router import Route
 from semantic_router.encoders import CohereEncoder
 from semantic_router.layer import RouteLayer
@@ -44,7 +45,11 @@ async def prepare_transaction(tx_request: TxRequest):
     async with httpx.AsyncClient(http2=True, timeout=65) as client:
         response = await client.post(url, json=tx_request.dict())
 
-    return TxPreview.parse_raw(response.text)
+    response_json = response.json()
+    try:
+        return TxPreview.parse_obj(response_json)
+    except ValidationError as err:
+        raise ValueError(response_json.get("message", "Failed sending token")) from err
 
 
 class AgentTeamSessionManager:
