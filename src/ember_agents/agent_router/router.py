@@ -1,4 +1,3 @@
-import asyncio
 import os
 from collections.abc import Callable
 
@@ -8,7 +7,6 @@ from ember_agents.education.education import EducationAgentTeam
 from ember_agents.project_market_info.market_agent_team import MarketAgentTeam
 from ember_agents.send_token.send import (
     SendTokenAgentTeam,
-    TxIdStatus,
     TxPreview,
     TxRequest,
 )
@@ -47,20 +45,6 @@ async def prepare_transaction(tx_request: TxRequest):
         response = await client.post(url, json=tx_request.dict())
 
     return TxPreview.parse_raw(response.text)
-
-
-async def get_transaction_result(tx_id: str):
-    print(f"getting update for transaction id: {tx_id}")
-    await asyncio.sleep(1)
-    tx_status = TxIdStatus(
-        tx_id,
-        tx_hash="0xeef10fc5170f669b86c4cd0444882a96087221325f8bf2f55d6188633aa7be7c",
-        explorer_link="https://etherscan.io/tx/0xeef10fc5170f669b86c4cd0444882a96087221325f8bf2f55d6188633aa7be7c",
-        confirmations=6,
-        status="finalized",
-        # final_tx_details=tx_details,
-    )
-    return tx_status
 
 
 class AgentTeamSessionManager:
@@ -193,7 +177,7 @@ class Router:
         match route:
             case "send":
                 agent_team = SendTokenAgentTeam(
-                    sender_did, thread_id, prepare_transaction, get_transaction_result
+                    sender_did, thread_id, prepare_transaction
                 )
             case "education" | "terminate":
                 agent_team = EducationAgentTeam(sender_did, thread_id)

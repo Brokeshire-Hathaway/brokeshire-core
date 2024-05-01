@@ -4,7 +4,6 @@ import os
 import re
 import tempfile
 from collections.abc import Awaitable, Callable
-from typing import Literal, NamedTuple
 
 import httpx
 from autogen import (
@@ -30,70 +29,18 @@ class UniversalAddress(BaseModel):
     network: str
 
 
-# NOTE: I can use this as a universal format for single user swaps and sending between users.
 class TxRequest(BaseModel):
-    # NOTE: Employ a Universal Money Address(UMA) or Decentralized ID (DID) scheme for
-    #       sender and recipient.
-    #
-    #       TODO: Still running into issues parsing between an email and other UID+platform combinations.
-    #
-    #       It must include the following:
-    #           - UID
-    #           - Platform
-    #           - Network/Protocol
-    #           - (MAYBE) Token Symbol
-    #
-    #       EXAMPLES:
-    #           ethereum://0x2D6c1025994dB45c7618571d6cB49B064DA9881B
-    #           ethereum:0x2D6c1025994dB45c7618571d6cB49B064DA9881B
-    #           ethereum://@alice.telegram.org
-    #           ethereum://alice@telegram.org
-    #           bitcoin://@84738954.telegram.org
-    #           solana://+1234567890
-    #           solana:+1234567890/$SOL
-
     sender_address: UniversalAddress
-    recipient_address: UniversalAddress
-    is_receive_native_token: bool
-    receive_token_address: str | None
+    recipient_address: str
+    token: str
     amount: str
-    send_token_address: str | None = None
-    # NOTE: I might be able to have an abstract trigger for limit orders and other varous automations.
-
-
-"""class TxDetails(NamedTuple):
-    sender_did: str
-    recipient_did: str
-    receive_token_address: str
-    receive_token_name: str
-    receive_token_symbol: str
-    display_currency_symbol: str
-    amount: str
-    amount_in_display_currency: str
-    gas_fee: str
-    gas_fee_in_display_currency: str
-    service_fee: str
-    service_fee_in_display_currency: str
-    total_fee: str
-    total_fee_in_display_currency: str
-    total_amount: str
-    total_amount_in_display_currency: str
-    send_token_address: str | None = None
-    send_token_name: str | None = None
-    send_token_symbol: str | None = None
-    exchange_rate: str | None = None
-
-
-class TxPreview(NamedTuple):
-    tx_id: str
-    tx_details: TxDetails
-    signature_link: str"""
 
 
 class TxPreview(BaseModel):
     recipient: str
     amount: str
     token_symbol: str
+    token_url: str
     gas_fee: str
     total_amount: str
     transaction_uuid: str
@@ -104,13 +51,10 @@ class ExecuteTxBody(BaseModel):
 
 
 class Transaction(BaseModel):
-    recipient_name: str | None = None
     recipient_address: str
     network: str
     amount: str
-    token_name: str | None = None
-    is_native_token: bool
-    token_address: str | None = None
+    token: str
 
     # Custom validator to ensure amount is a positive value
     @validator("amount")
@@ -121,51 +65,15 @@ class Transaction(BaseModel):
             raise ValueError(msg)
         return value
 
-    # Custom validator to ensure token_address is provided when is_native_token is False
-    @validator("token_address", always=True)
-    @classmethod
-    def token_address_required_for_non_native_tokens(cls, v, values):
-        if not values.get("is_native_token") and not v:
-            msg = "token_address is required for non-native tokens"
-            raise ValueError(msg)
-        return v
-
-
-"""
-class TxStatus(Enum):
-    PENDING = 0  # The transaction is in the mempool, meaning it has been broadcasted to the network but not yet included in a block.
-    UNCONFIRMED = 1  # The transaction is included in a block, but this block has not yet been confirmed by subsequent blocks.
-    FINALIZED = 2  # The transaction has received many confirmations, making it extremely unlikely to be reversed. It is permanently recorded in the blockchain.
-    CANCELLED = 3  # The transaction was cancelled by the sender before it was processed by the network.
-    FAILED = 4  # The transaction failed or was rejected by the network.
-"""
-
-TxStatus = Literal["pending", "unconfirmed", "finalized", "cancelled", "failed"]
-
-
-class TxIdStatus(NamedTuple):
-    tx_id: str
-    tx_hash: str
-    explorer_link: str
-    confirmations: int
-    status: TxStatus
-    # final_tx_details: TxDetails | None = None
-    error_message: str | None = None
-
-
-UserReceiptTxStatus = Literal["pending", "success", "failure"]
-
 
 class UserReceipt(BaseModel):
-    status: UserReceiptTxStatus
+    success: bool
     recipient: str
     amount: str
     token_symbol: str
-    gas_fee: str
-    total_amount: str
-    transaction_hash: str
-    transaction_uuid: str
-    reason: str | None = None
+    gas_fee: str | None
+    total_amount: str | None
+    transaction_block: str
 
 
 OAI_CONFIG_LIST = [
@@ -346,21 +254,19 @@ async def interpreter_reply(recipient: ConversableAgent, messages, sender, confi
 
 
 async def convert_to_json(request: str) -> str:
-    system_message = """You are an interpreter responsible for converting a user request into JSON. 'network' will always be 'sepolia' for now.
+    system_message = """You are an interpreter responsible for converting a user request into JSON.
 
 # Example
 ## User Request
-Send 1 eth to 0x2D6c1025994dB45c7618571d6cB49B064DA9881B
+Send 1 eth to 0x2D6c1025994dB45c7618571d6cB49B064DA9881B in ethereum chain
 ## JSON
 ```json
 {{
-    "recipient_name": null,
+
     "recipient_address": "0x2D6c1025994dB45c7618571d6cB49B064DA9881B",
-    "network": "sepolia",
+    "network": "ethereum chain",
     "amount": "1",
-    "token_name": "eth",
-    "is_native_token": true,
-    "token_address": null
+    "token": "eth"
 }}
 ```"""
 
@@ -415,10 +321,11 @@ You are a cryptocurrency copilot responsible for gathering missing information f
 After the user has satisfied all requirements, you will send the revised intent to the interpreter on their behalf.
 Your messages to the interpreter must be in the following format:
 ---
-Original Intent: Send .5 Chainlink to Susan
+Original Intent: Send .5 matic to Susan in polygon
 Recipient Address: 0x604f7cA57A338de9bbcE4ff0e2C41bAcE744Df03
 Amount: 0.5
-Token Address: 0x514910771AF9Ca656af840dff83E8264EcF986CA
+Token: matic
+Network: polygon
 NEXT: interpreter"""
 
 # TODO: Add new agent for showing tx preview, determining if any changes are needed, and
@@ -483,11 +390,9 @@ class SendTokenAgentTeam(AgentTeam):
         thread_id: str,
         # on_complete: Callable[[str], None],
         prepare_transaction: Callable[[TxRequest], Awaitable[TxPreview]],
-        get_transaction_result: Callable[[str], Awaitable[TxIdStatus]],
     ):
         # TODO: Create a new protocol for the prepare_transaction and get_transaction_result functions as a separation of concerns for transactions.
         self._prepare_transaction = prepare_transaction
-        self._get_transaction_result = get_transaction_result
         super().__init__(sender_did, thread_id)
 
     async def _run_conversation(self, message: str):
@@ -554,7 +459,7 @@ TERMINATE""",
             # tx_details = self._transaction_preview.tx_details
             response_message = f"""You are about to send 💸 {self._transaction_preview.amount} {self._transaction_preview.token_symbol} to {self._transaction_preview.recipient}.
 
-**💸 Subtotal ・** {self._transaction_preview.amount} {self._transaction_preview.token_symbol}
+**💸 Subtotal ・** {self._transaction_preview.amount} [{self._transaction_preview.token_symbol}]({self._transaction_preview.token_url})
 **⛽️ Fees Estimation ・** {self._transaction_preview.gas_fee} {self._transaction_preview.token_symbol}
 **🔢 Total ・** {self._transaction_preview.total_amount} {self._transaction_preview.token_symbol}
 
@@ -629,8 +534,9 @@ Would you like to proceed?"""
                     msg = f"Failed sending token: {data.get('message', 'Unknown exception')}"
                     raise Exception(msg) from err
 
-                if user_receipt.status == "failure":
-                    raise Exception(user_receipt.reason)
+                if not user_receipt.success:
+                    msg = "Failed sending token"
+                    raise Exception(msg)
             except Exception as e:
                 error_message = str(e) if str(e) else str(type(e))
                 return (
@@ -642,15 +548,23 @@ TERMINATE""",
                 )
             finally:
                 timer_task.cancel()
-
+            fees_message = (
+                (
+                    f"\n**⛽️ Fees ・** {user_receipt.gas_fee} {user_receipt.token_symbol}\n"
+                )
+                if user_receipt.gas_fee is not None
+                else ""
+            )
+            total_message = (
+                f"\n**🔢 Total ・** {user_receipt.total_amount} {user_receipt.token_symbol}\n"
+                if user_receipt.total_amount is not None
+                else ""
+            )
             response_message = f"""Your transaction was successful! 🎉
 
 **👤 Recipient ・** {user_receipt.recipient}
-**💸 Amount Sent ・** {user_receipt.amount} {user_receipt.token_symbol}
-**⛽️ Fees ・** {user_receipt.gas_fee} {user_receipt.token_symbol}
-**🔢 Total ・** {user_receipt.total_amount} {user_receipt.token_symbol}
-
-_[🔗 View on Blockchain](https://sepolia.etherscan.io/tx/{user_receipt.transaction_hash})_
+**💸 Amount Sent ・** {user_receipt.amount} {user_receipt.token_symbol}{fees_message}{total_message}
+_[🔗 View on Blockchain]({user_receipt.transaction_block})_
 TERMINATE"""
 
             return True, {
@@ -727,16 +641,11 @@ TERMINATE"""
                 sender_address=UniversalAddress(
                     identifier=self.sender_did,
                     platform="telegram.me",
-                    network="sepolia",
+                    network=self._transaction.network,
                 ),
-                recipient_address=UniversalAddress(
-                    identifier=self._transaction.recipient_address,
-                    platform="native",
-                    network="sepolia",
-                ),
-                is_receive_native_token=self._transaction.is_native_token,
-                receive_token_address=self._transaction.token_address,
+                recipient_address=self._transaction.recipient_address,
                 amount=self._transaction.amount,
+                token=self._transaction.token,
             )
             return True, {
                 "content": "NEXT: transaction_coordinator",
