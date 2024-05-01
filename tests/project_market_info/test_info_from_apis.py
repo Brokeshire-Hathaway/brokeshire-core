@@ -4,26 +4,13 @@ from urllib import response
 import httpx
 import pytest
 from ember_agents.project_market_info.info_from_apis import (
-    coingecko_and_lunarcrush,
+    search_coingecko_with_id,
     extract_token_from_message,
     info_from_apis,
-    lunarcrush,
     market_route,
 )
 
 #    coingecko,    dexscreener,    get_largest_by_volume_24h,    lunarcrush,
-
-
-@pytest.mark.parametrize(
-    "message",
-    [
-        ("UNI"),
-    ],
-)
-@pytest.mark.skip
-async def test_lunarcrush(message):
-    response = await lunarcrush(message)
-    print(response)
 
 
 @pytest.mark.parametrize(
@@ -95,6 +82,6 @@ async def test_market_route(message):
 )
 @pytest.mark.skip
 async def test_coingecko_and_lunarcrush(search):
-    response = await coingecko_and_lunarcrush(search)
+    response = await search_coingecko_with_id(search)
     print("=== SUCCESS ===", flush=True)
     print(response, flush=True)

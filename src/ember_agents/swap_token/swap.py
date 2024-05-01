@@ -45,7 +45,8 @@ class SwapRequest(BaseModel):
     type: str
 
     @validator("amount")
-    def amount_must_be_positive(self, value):
+    @classmethod
+    def amount_must_be_positive(cls, value):
         if float(value) <= 0:
             msg = "amount must be a positive number"
             raise ValueError(msg)
@@ -289,10 +290,10 @@ async def convert_to_json(request: str) -> str:
     {{
         "type": "swap",
         "network": "sepolia",
-        "toNetwork": "polygon mumbai",
+        "to_network": "polygon mumbai",
         "amount": "1",
         "token": "usd-coin",
-        "toToken": "usd-coin"
+        "to_token": "usd-coin"
     }}
 
     # Example 2
@@ -303,10 +304,10 @@ async def convert_to_json(request: str) -> str:
     {{
         "type": "swap",
         "network": "goerli",
-        "toNetwork": "sepolia",
+        "to_network": "sepolia",
         "amount": "2.3",
         "token": "ethereum",
-        "toToken": "usd-coin"
+        "to_token": "usd-coin"
     }}
     ```
 
@@ -318,10 +319,10 @@ async def convert_to_json(request: str) -> str:
     {{
         "type": "swap",
         "network": "eth sepolia testnet",
-        "toNetwork": "mumbai",
+        "to_network": "mumbai",
         "amount": "0.43",
         "token": "ethereum",
-        "toToken": "usd-coin"
+        "to_token": "usd-coin"
     }}
     ```
 
@@ -342,8 +343,8 @@ async def convert_to_json(request: str) -> str:
     {{
         "type": "buy",
         "amount": "23",
-        "toNetwork": "sepolia",
-        "toToken": "eth",
+        "to_network": "sepolia",
+        "to_token": "eth",
         "network": "mumbai",
         "token": "usd-coin"
     }}
@@ -356,8 +357,8 @@ async def convert_to_json(request: str) -> str:
     {{
         "type": "buy",
         "amount": "0.456345632",
-        "toToken": "usd-coin",
-        "toNetwork": "eth sepolia",
+        "to_token": "usd-coin",
+        "to_network": "eth sepolia",
         "token": "matic",
         "network": "mumbai"
     }}
@@ -413,16 +414,16 @@ async def convert_to_json(request: str) -> str:
 broker_system_message = """
 You are a cryptocurrency copilot responsible for gathering missing information from the user necessary to complete their request.
 After the user has satisfied all requirements, you will send the revised intent to the interpreter on their behalf.
-Your messages to the interpreter must be in the following format:
+Your messages to the interpreter must be in the following format (the NEXT value will always be interpeter):
 ---
 # Example 1
 Original Intent: Swap .1 usd-coin sepolia testnet to usd-coin polygon-mumbai
 Type: swap
 Token: usd-coin
-ToToken: usd-coin
+to_token: usd-coin
 Amount: 0.1
 Network: sepolia testnet
-ToNetwork: polygon mumbai
+to_network: polygon mumbai
 NEXT: interpreter
 
 # Example 2
@@ -430,10 +431,10 @@ NEXT: interpreter
 Original Intent: Purchase 0.456 axlusdc in bnb testnet using usd-coin in sepolia
 Type: buy
 Token: usd-coin
-ToToken: axlusdc
+to_token: axlusdc
 Amount: 0.456
 Network: sepolia
-ToNetwork: bnb testnet
+to_network: bnb testnet
 NEXT: interpreter
 """
 

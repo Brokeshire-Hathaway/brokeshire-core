@@ -114,7 +114,8 @@ class Transaction(BaseModel):
 
     # Custom validator to ensure amount is a positive value
     @validator("amount")
-    def amount_must_be_positive(self, value):
+    @classmethod
+    def amount_must_be_positive(cls, value):
         if float(value) <= 0:
             msg = "amount must be a positive number"
             raise ValueError(msg)
@@ -122,7 +123,8 @@ class Transaction(BaseModel):
 
     # Custom validator to ensure token_address is provided when is_native_token is False
     @validator("token_address", always=True)
-    def token_address_required_for_non_native_tokens(self, v, values):
+    @classmethod
+    def token_address_required_for_non_native_tokens(cls, v, values):
         if not values.get("is_native_token") and not v:
             msg = "token_address is required for non-native tokens"
             raise ValueError(msg)

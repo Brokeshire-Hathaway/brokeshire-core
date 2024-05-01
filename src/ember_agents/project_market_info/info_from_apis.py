@@ -37,8 +37,6 @@ class ResponseFormat(BaseModel):
     liquidity: str | None
     # dex screener
     token_contract_address: str | None
-    # lunarcrush
-    sentiment: Sentiment | None
 
 
 class ProjectInfo(BaseModel):
@@ -56,8 +54,6 @@ class ProjectInfo(BaseModel):
     liquidity: str | None = None
     token_contract_address: str | None
     pool_address: str | None = None
-    # lunarcrush
-    sentiment: Sentiment | None
     # goplus
 
 
@@ -73,14 +69,6 @@ class CoinGecko(BaseModel):
     price: str | None
     price_change_24h: str | None
     market_cap: str | None
-
-    class Config:
-        extra = Extra.ignore
-
-
-class LunarCrush(BaseModel):
-    sentiment: Sentiment
-    galaxy_score: str
 
     class Config:
         extra = Extra.ignore
@@ -139,7 +127,8 @@ async def market_route(message: str) -> str:
     ath = info_of_token.ath if info_of_token.ath else None
     liquidity = info_of_token.liquidity if info_of_token.liquidity else None
     ath_delta = (
-        f"{((float(info_of_token.price) - float(info_of_token.ath)) / float(info_of_token.ath)):.2%}"
+        (float(info_of_token.price) - float(info_of_token.ath))
+        / float(info_of_token.ath)
         if info_of_token.ath and info_of_token.price is not None
         else None
     )
@@ -148,7 +137,7 @@ async def market_route(message: str) -> str:
 **| {info_of_token.name} (${token_ticker}) |**
 
 **🔗 Network ・** {network}
-**💵 Price ・** ${price} (24hr {info_of_token.price_change_24h}%)
+**💵 Price ・** ${price} (24hr {info_of_token.price_change_24h})
 **💰 Market Cap ・** ${market_cap}
 **💧 Liquidity ・** {liquidity}
 **🔖 Token Contract Address ・** {info_of_token.token_contract_address}
@@ -159,7 +148,7 @@ _Always do your own research_ 🧐💡🚀
     desc = embers_description.project_description
     emoji = embers_description.project_emoji
     price_header = (
-        f"\n**💵 Price ・** ${price} (24hΔ: {info_of_token.price_change_24h}%)\n(ATH: ${ath} Δ: {ath_delta}%)"
+        f"\n**💵 Price ・** ${price} (24hΔ: {info_of_token.price_change_24h}%)\n(ATH: ${ath} Δ: {ath_delta:.2%})"
         if price
         else ""
     )
@@ -292,13 +281,12 @@ async def info_from_apis(token_queried: TokenQueried):
     if coingeckoid is None:
         msg = "Token not found, please use Contract Address"
         raise ValueError(msg)
-    return await coingecko_and_lunarcrush(coingeckoid)
+    return await search_coingecko_with_id(coingeckoid)
 
 
 #### orchestrate cg and lc
-async def coingecko_and_lunarcrush(search: str) -> ProjectInfo:
+async def search_coingecko_with_id(search: str) -> ProjectInfo:
     cg_response = await coingecko(search)
-    lc_response = await lunarcrush(cg_response.symbol)
     return ProjectInfo(
         token_contract_address=cg_response.token_contract_address,
         name=cg_response.name,
@@ -311,7 +299,6 @@ async def coingecko_and_lunarcrush(search: str) -> ProjectInfo:
         price=cg_response.price,
         price_change_24h=cg_response.price_change_24h,
         market_cap=cg_response.market_cap,
-        sentiment=lc_response.sentiment,
     )
 
 
@@ -321,7 +308,7 @@ async def getidfromcoingecko(searchterm: str):
     async with httpx.AsyncClient(http2=True) as client:
         response = await client.get(url)
 
-    if response.is_success:
+    if not response.is_success:
         msg = "Failed finding ID of token"
         raise ValueError(msg)
 
@@ -338,7 +325,7 @@ async def coingecko(token_id: str):
     async with httpx.AsyncClient(http2=True) as client:
         response = await client.get(url)
 
-    if response.is_success:
+    if not response.is_success:
         msg = "Failed finding information of coin"
         raise ValueError(msg)
 
@@ -379,30 +366,6 @@ async def coingecko(token_id: str):
     return coingecko
 
 
-#### lunarcrush info
-async def lunarcrush(symbol: str):
-    url = f"https://lunarcrush.com/api4/public/coins/{symbol}/time-series/v2"
-    headers = {"Authorization": "Bearer 10yzku3g0fh5ok48wvq65p1r7plt360axtmw7ec0z"}
-    async with httpx.AsyncClient(http2=True) as client:
-        response = await client.get(url, headers=headers)
-
-    if response.is_success:
-        return LunarCrush(sentiment="unknown", galaxy_score="unknown")
-
-    json = response.json()
-    if len(json.get("data", [])) == 0:
-        return LunarCrush(
-            sentiment="unknown",
-            galaxy_score="unknown",
-        )
-
-    mapped_sentiment, gscore = "unknown", "unknown"
-    gscore = json["data"][0].get("galaxy_score", "unknown")
-    if "sentiment" in json["data"][0]:
-        mapped_sentiment = map_sentiment_to_literal(json["data"][0]["sentiment"])
-    return LunarCrush(sentiment=mapped_sentiment, galaxy_score=gscore)
-
-
 #### map lunarcursh sentiment to literal
 POSITIVE_SENTIMENT = 88
 NEUTRAL_SENTIMENT = 50
@@ -436,7 +399,6 @@ async def dexscreener(token_contract_address: str):
         ath=None,
         network=jsonresp.get("chainId"),
         twitter_handle=None,
-        sentiment=None,
         symbol=jsonresp.get("baseToken", {}).get("symbol"),
         price=jsonresp.get("priceUsd"),
         price_change_24h=str(jsonresp.get("priceChange", {}).get("h24")),
