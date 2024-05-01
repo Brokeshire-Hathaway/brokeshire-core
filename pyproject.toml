@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "The Ember AI agent swarm for intent based cognition and reasoning."
 authors = [{ name = "Tom Daniel", email = "0xtomdaniel@gmail.com" }]
 dependencies = [
+    "setuptools",
     "python-dotenv>=1.0.0",
     "semantic-router>=0.0.14",
     "pydantic>=1.10.13",
@@ -17,8 +18,9 @@ dependencies = [
     "langchain>=0.1.13",
     "langchain-text-splitters>=0.0.1",
     "tiktoken>=0.6.0",
+    "numpy>=1.26.0",
 ]
-requires-python = "==3.11.*"
+requires-python = ">=3.11,<3.13"
 readme = "README.md"
 license = { text = "MIT" }
 
@@ -35,7 +37,7 @@ start = "uvicorn --app-dir src ember_agents.main:app --host 0.0.0.0 --port 8101"
 dev = "uvicorn --app-dir src ember_agents.main:app --host 0.0.0.0 --port 8101 --reload"
 test = "pytest -s"
 error = "bash -c 'sleep 2 && echo 'exiting with error...' && exit 1'"
-lint = "bash -c 'black . && ruff format'"
+lint = "bash -c 'black . && ruff check --fix .'"
 
 [tool.pdm.dev-dependencies]
 test = ["pytest>=7.4.4", "pytest-asyncio>=0.23.3"]
@@ -49,6 +51,7 @@ skip-string-normalization = true
 [tool.ruff]
 target-version = "py311"
 line-length = 88
+extend-exclude = ["src/ember_agents/project_directory", "tests"]
 
 [tool.ruff.lint]
 select = [

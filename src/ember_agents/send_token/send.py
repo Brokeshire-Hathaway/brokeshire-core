@@ -3,7 +3,8 @@ import json
 import os
 import re
 import tempfile
-from typing import Awaitable, Callable, Literal, NamedTuple, Optional
+from collections.abc import Awaitable, Callable
+from typing import Literal, NamedTuple
 
 import httpx
 from autogen import (
@@ -18,7 +19,7 @@ from autogen import (
 from ember_agents.common.agents import AgentTeam
 from ember_agents.info_bites.info_bites import get_random_info_bite
 from openai import AsyncOpenAI
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, ValidationError, validator
 
 client = AsyncOpenAI()
 
@@ -103,26 +104,30 @@ class ExecuteTxBody(BaseModel):
 
 
 class Transaction(BaseModel):
-    recipient_name: Optional[str] = None
+    recipient_name: str | None = None
     recipient_address: str
     network: str
     amount: str
-    token_name: Optional[str] = None
+    token_name: str | None = None
     is_native_token: bool
-    token_address: Optional[str] = None
+    token_address: str | None = None
 
     # Custom validator to ensure amount is a positive value
     @validator("amount")
+    @classmethod
     def amount_must_be_positive(cls, value):
         if float(value) <= 0:
-            raise ValueError("amount must be a positive number")
+            msg = "amount must be a positive number"
+            raise ValueError(msg)
         return value
 
     # Custom validator to ensure token_address is provided when is_native_token is False
     @validator("token_address", always=True)
+    @classmethod
     def token_address_required_for_non_native_tokens(cls, v, values):
         if not values.get("is_native_token") and not v:
-            raise ValueError("token_address is required for non-native tokens")
+            msg = "token_address is required for non-native tokens"
+            raise ValueError(msg)
         return v
 
 
@@ -160,7 +165,7 @@ class UserReceipt(BaseModel):
     total_amount: str
     transaction_hash: str
     transaction_uuid: str
-    reason: Optional[str] = None
+    reason: str | None = None
 
 
 OAI_CONFIG_LIST = [
@@ -187,7 +192,7 @@ class SendTokenGroupChat(GroupChat):
         agents,
         messages,
         max_round=10,
-        on_activity: Optional[Callable[[str], None]] = None,
+        on_activity: Callable[[str], None] | None = None,
     ):
         self.last_speaker = None
         self._on_activity = on_activity
@@ -198,7 +203,7 @@ class SendTokenGroupChat(GroupChat):
 
         next_speaker = self.agent_by_name("user")
 
-        selected_agent, agents = self._prepare_and_select_agents(last_speaker)
+        selected_agent, _, _ = self._prepare_and_select_agents(last_speaker)
         last_message = self.messages[-1] if self.messages else None
         if selected_agent:
             next_speaker = selected_agent
@@ -266,11 +271,13 @@ class MessagingUserProxyAgent(UserProxyAgent):
     async def a_get_human_input(self, prompt: str) -> str:
         last_message = self.last_message()
         if last_message is None:
-            raise Exception("Assistant message not found")
+            msg = "Assistant message not found"
+            raise Exception(msg)
 
         message = last_message.get("content")
         if message is None:
-            raise Exception("Assistant message content not found")
+            msg = "Assistant message content not found"
+            raise Exception(msg)
 
         if self.is_termination_msg(last_message):
             self.assistant_reply(message.replace("TERMINATE", ""))
@@ -284,7 +291,8 @@ def get_last_message(recipient: ConversableAgent) -> str:
     last_message = recipient.last_message()
     content = last_message.get("content") if last_message else None
     if not isinstance(content, str):
-        raise Exception("No message content found")
+        msg = "No message content found"
+        raise Exception(msg)
     return content
 
 
@@ -376,11 +384,10 @@ Send 1 eth to 0x2D6c1025994dB45c7618571d6cB49B064DA9881B
     )
 
     if len(chat_completion.choices) > 0 and chat_completion.choices[0].message.content:
-        response = chat_completion.choices[0].message.content
-    else:
-        raise Exception("Failed to convert request to JSON. 😔")
+        return chat_completion.choices[0].message.content
 
-    return response
+    msg = "Failed to convert request to JSON. 😔"
+    raise Exception(msg)
 
 
 """
@@ -466,9 +473,9 @@ You must use the "a_prepare_transaction" function to prepare the transaction and
 
 
 class SendTokenAgentTeam(AgentTeam):
-    _transaction: Optional[Transaction] = None
-    _transaction_request: Optional[TxRequest] = None
-    _transaction_preview: Optional[TxPreview] = None
+    _transaction: Transaction | None = None
+    _transaction_request: TxRequest | None = None
+    _transaction_preview: TxPreview | None = None
 
     def __init__(
         self,
@@ -496,11 +503,11 @@ class SendTokenAgentTeam(AgentTeam):
 
         # No system message needed for OpenAI completion API used by Guidance agent (Metis).
         interpreter_agent = AssistantAgent("interpreter", None, llm_config=llm_config)
-        interpreter_agent.register_reply(Agent, interpreter_reply, 1)
+        interpreter_agent.register_reply(ConversableAgent, interpreter_reply, 1)
 
         # No system message needed for code based agent (Spock).
         validator = AssistantAgent("validator", None, llm_config=llm_config)
-        validator.register_reply(Agent, self._validate_request, 1)
+        validator.register_reply(ConversableAgent, self._validate_request, 1)
 
         broker = AssistantAgent(
             "broker",
@@ -529,7 +536,8 @@ class SendTokenAgentTeam(AgentTeam):
 
             try:
                 if self._transaction_request is None:
-                    raise ValueError("Transaction request not found")
+                    msg = "Transaction request not found"
+                    raise ValueError(msg)
                 self._transaction_preview = await self._prepare_transaction(
                     self._transaction_request
                 )
@@ -564,7 +572,9 @@ Would you like to proceed?"""
             None,
             llm_config=llm_config,
         )
-        transaction_coordinator.register_reply(Agent, a_prepare_transaction, 1)
+        transaction_coordinator.register_reply(
+            ConversableAgent, a_prepare_transaction, 1
+        )
 
         # TODO: Can be converted to Metis agent.
         executor = AssistantAgent(
@@ -593,28 +603,31 @@ Would you like to proceed?"""
 >🍬 {bite}"""
                 self._send_activity_update(message)
 
-            SECONDS = 8
-            timer_task = asyncio.create_task(repeating_task(SECONDS, send_info_bite))
+            seconds = 8
+            timer_task = asyncio.create_task(repeating_task(seconds, send_info_bite))
 
             try:
                 if self._transaction_preview is None:
-                    raise ValueError("Transaction request not found")
+                    msg = "Transaction request not found"
+                    raise ValueError(msg)
 
-                TRANSACTION_SERVICE = os.environ.get(
+                transaction_service = os.environ.get(
                     "TRANSACTION_SERVICE_URL", "http://firepot_chatgpt_app:3000"
                 )
-                URL = f"{TRANSACTION_SERVICE}/transactions/send"
+                url = f"{transaction_service}/transactions/send"
                 body = ExecuteTxBody(
                     transaction_uuid=self._transaction_preview.transaction_uuid
                 )
                 # HEADERS = {"Content-Type": "application/json"}
                 async with httpx.AsyncClient(http2=True, timeout=65) as client:
-                    response = await client.post(URL, json=body.dict())
+                    response = await client.post(url, json=body.dict())
 
-                print("@@@ response.text")
-                print(response.text)
-
-                user_receipt = UserReceipt.parse_raw(response.text)
+                data = response.json()
+                try:
+                    user_receipt = UserReceipt.parse_obj(data)
+                except ValidationError as err:
+                    msg = f"Failed sending token: {data.get('message', 'Unknown exception')}"
+                    raise Exception(msg) from err
 
                 if user_receipt.status == "failure":
                     raise Exception(user_receipt.reason)
@@ -652,7 +665,9 @@ TERMINATE"""
             None,
             llm_config=llm_config,
         )
-        confirmation_specialist.register_reply(Agent, a_execute_transaction, 1)
+        confirmation_specialist.register_reply(
+            ConversableAgent, a_execute_transaction, 1
+        )
 
         technician = AssistantAgent(
             "technician",
@@ -697,10 +712,11 @@ TERMINATE"""
             print(f"json_str = {json_str}")
             print(type(json_str))
             if not isinstance(json_str, str):
-                raise ValueError("JSON request not found in message")
+                msg = "JSON request not found in message"
+                raise ValueError(msg)
         except Exception as e:
             return True, {
-                "content": f"{str(e)}\n\nTERMINATE",
+                "content": f"{e!s}\n\nTERMINATE",
                 "name": "interpreter",
                 "role": "assistant",
             }
@@ -729,7 +745,7 @@ TERMINATE"""
             }
         except Exception as e:
             return True, {
-                "content": f"{str(e)}\nNEXT: broker",
+                "content": f"{e!s}\nNEXT: broker",
                 "name": "interpreter",
                 "role": "assistant",
             }

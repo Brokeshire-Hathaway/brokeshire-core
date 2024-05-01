@@ -35,4 +35,4 @@ bites_list = [
 
 
 def get_random_info_bite():
-    return random.choice(bites_list)
+    return random.choice(bites_list)  # noqa: S311

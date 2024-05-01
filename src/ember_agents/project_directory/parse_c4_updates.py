@@ -1,7 +1,7 @@
 import json
 import os
-
 from typing import List, Literal, Optional
+
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 from regex import R
@@ -41,7 +41,7 @@ class NewsItem(BaseModel):
     source_link: str
     author: str
     category: str
-    organization: List[str]
+    organization: list[str]
 
 
 class ThreadsAndReads(BaseModel):
@@ -61,7 +61,7 @@ class Launch(BaseModel):
     launch_time: str
     network: str
     source_link: str
-    author: Optional[str]
+    author: str | None
     website: str
     category: str
     organization: list[str]
@@ -70,9 +70,9 @@ class Launch(BaseModel):
 class Project(BaseModel):
     name: str
     publication_date: str
-    launch_quarter: Optional[str]
-    description: Optional[str]
-    symbol: Optional[str]
+    launch_quarter: str | None
+    description: str | None
+    symbol: str | None
     network: list[str]
     category: list[str]
     x_handle: str
@@ -156,7 +156,6 @@ async def parse_news_items(expected_result):  # pass it the result of prase_head
     #### loading stuff from file
     with open(
         "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
-        "r",
     ) as f:
         headers_response = f.read()
 
@@ -242,7 +241,6 @@ async def parse_project_updates(expected_result):  # pass it the result of prase
     #### loading stuff from file
     with open(
         "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
-        "r",
     ) as f:
         headers_response = f.read()
     headers_response = headers_response if headers_response else ""
@@ -327,7 +325,6 @@ async def parse_threads_and_reads(
     #### loading stuff from file
     with open(
         "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
-        "r",
     ) as f:
         headers_response = f.read()
     headers_response = headers_response if headers_response else ""
@@ -394,7 +391,6 @@ async def parse_launches(expected_result):  # pass it the result of prase_header
     #### loading stuff from file
     with open(
         "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
-        "r",
     ) as f:
         headers_response = f.read()
     headers_response = headers_response if headers_response else ""
@@ -482,7 +478,6 @@ async def parse_new_projects(expected_result):  # pass it the result of prase_he
     #### loading stuff from file
     with open(
         "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
-        "r",
     ) as f:
         headers_response = f.read()
     headers_response = headers_response if headers_response else ""

@@ -1,9 +1,10 @@
 import asyncio
 import os
-from typing import Callable
+from collections.abc import Callable
 
 import httpx
 from ember_agents.common.agents import AgentTeam
+from ember_agents.education.education import EducationAgentTeam
 from ember_agents.project_market_info.market_agent_team import MarketAgentTeam
 from ember_agents.send_token.send import (
     SendTokenAgentTeam,
@@ -11,11 +12,10 @@ from ember_agents.send_token.send import (
     TxPreview,
     TxRequest,
 )
+from ember_agents.swap_token.swap import SwapTokenAgentTeam
 from semantic_router import Route
 from semantic_router.encoders import CohereEncoder
 from semantic_router.layer import RouteLayer
-from ember_agents.education.education import EducationAgentTeam
-from ember_agents.swap_token.swap import SwapTokenAgentTeam
 
 """tx_details = TxDetails(
     sender_did="ethereum://84738954.telegram.org",
@@ -42,9 +42,9 @@ TRANSACTION_SERVICE = os.environ.get(
 
 
 async def prepare_transaction(tx_request: TxRequest):
-    URL = f"{TRANSACTION_SERVICE}/transactions/prepare"
+    url = f"{TRANSACTION_SERVICE}/transactions/prepare"
     async with httpx.AsyncClient(http2=True, timeout=65) as client:
-        response = await client.post(URL, json=tx_request.dict())
+        response = await client.post(url, json=tx_request.dict())
 
     return TxPreview.parse_raw(response.text)
 
@@ -65,7 +65,7 @@ async def get_transaction_result(tx_id: str):
 
 class AgentTeamSessionManager:
     def __init__(self) -> None:
-        self._sessions: dict[str, AgentTeam] = dict()
+        self._sessions: dict[str, AgentTeam] = {}
 
     def create_session(self, agent_team: AgentTeam):
         session_id = self._get_session_id(agent_team.sender_did, agent_team.thread_id)
@@ -84,7 +84,8 @@ class AgentTeamSessionManager:
         if session_id in self._sessions:
             del self._sessions[session_id]
         else:
-            raise Exception(f"Session ID ({session_id}) does not exist")
+            msg = f"Session ID ({session_id}) does not exist"
+            raise Exception(msg)
 
     def _get_session_id(self, sender_did: str, thread_id: str) -> str:
         return f"{sender_did}:{thread_id}"

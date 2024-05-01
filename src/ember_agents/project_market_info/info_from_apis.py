@@ -1,8 +1,7 @@
 import json
 import os
-from pprint import pprint
 from time import sleep
-from typing import Literal, Optional
+from typing import Literal
 
 import httpx
 from openai import AsyncOpenAI
@@ -27,62 +26,49 @@ class ResponseFormat(BaseModel):
     # coingecko
     ember_response: str
     name: str
-    description: Optional[str]
+    description: str | None
     symbol: str
-    website: Optional[str]
-    twitter_handle: Optional[str]
-    network: Optional[str]
+    website: str | None
+    twitter_handle: str | None
+    network: str | None
     price: str
     price_change_24h: str
     market_cap: str
-    liquidity: Optional[str]
+    liquidity: str | None
     # dex screener
-    token_contract_address: Optional[str]
-    # lunarcrush
-    sentiment: Optional[Sentiment]
+    token_contract_address: str | None
 
 
 class ProjectInfo(BaseModel):
     # coingecko
     name: str
-    description: Optional[str]
+    description: str | None
     symbol: str
-    website: Optional[str]
-    twitter_handle: Optional[str]
+    website: str | None
+    twitter_handle: str | None
     network: str
-    price: Optional[str]
-    ath: Optional[str]
-    price_change_24h: Optional[str]
-    market_cap: Optional[str]
-    liquidity: Optional[str]
-    # dex screener
-    token_contract_address: Optional[str]
-    pool_address: Optional[str]
-    # lunarcrush
-    sentiment: Optional[Sentiment]
+    price: str | None
+    ath: str | None
+    price_change_24h: str | None
+    market_cap: str | None
+    liquidity: str | None = None
+    token_contract_address: str | None
+    pool_address: str | None = None
     # goplus
 
 
 class CoinGecko(BaseModel):
-    token_contract_address: Optional[str]
+    token_contract_address: str | None
     name: str
     description: str
     symbol: str
     homepage: HttpUrl  # Use only the first valid URL
     twitter_screen_name: str
     asset_platform_id: str
-    ath: Optional[str]
-    price: Optional[str]
-    price_change_24h: Optional[str]
-    market_cap: Optional[str]
-
-    class Config:
-        extra = Extra.ignore
-
-
-class LunarCrush(BaseModel):
-    sentiment: Sentiment
-    galaxy_score: str
+    ath: str | None
+    price: str | None
+    price_change_24h: str | None
+    market_cap: str | None
 
     class Config:
         extra = Extra.ignore
@@ -112,8 +98,8 @@ class EmberOnProject(BaseModel):
 
 
 class TokenQueried(BaseModel):
-    token_name_or_symbol: str
-    token_address: str
+    token_name_or_symbol: str | None
+    token_address: str | None
 
     class Config:
         extra = Extra.ignore
@@ -121,59 +107,37 @@ class TokenQueried(BaseModel):
 
 #### main market route function
 async def market_route(message: str) -> str:
-    print("___market_route___", flush=True)
     token_queried = await extract_token_from_message(message)
-    print("___token_queried___", flush=True)
-    print(token_queried, flush=True)
     try:
         info_of_token = await info_from_apis(token_queried)
-        if info_of_token is None:
-            print("Token not found, please use Contract Address", flush=True)
-            return "Contract Address is not valid"
     except ValueError as e:
-        print(f"ValueError: {e}", flush=True)
         return str(e)
-    print("___info_of_token___", flush=True)
-    print(info_of_token)
+
     if info_of_token is None:
-        response = "token not found"
+        return "Contract Address is not valid"
     embers_description = (
         await get_new_desc_from_ember(info_of_token.description)
         if info_of_token.description is not None
         else None
     )
     token_ticker = info_of_token.symbol.upper()
-    market_cap = (
-        format(int(info_of_token.market_cap), ",") if info_of_token.market_cap else None
-    )
-    network = info_of_token.network  # .capitalize()
-    price = (
-        format(round(float(info_of_token.price), 4), ",")
-        if info_of_token.price
-        else None
-    )
-    ath = format(float(info_of_token.ath), ",") if info_of_token.ath else None
-    liquidity = (
-        format(float(info_of_token.liquidity), ",") if info_of_token.liquidity else None
-    )
+    market_cap = float(info_of_token.market_cap) if info_of_token.market_cap else None
+    network = info_of_token.network
+    price = f"{float(info_of_token.price):.4f}" if info_of_token.price else None
+    ath = info_of_token.ath if info_of_token.ath else None
+    liquidity = info_of_token.liquidity if info_of_token.liquidity else None
     ath_delta = (
-        round(
-            (
-                (float(info_of_token.price) - float(info_of_token.ath))
-                / float(info_of_token.ath)
-            )
-            * 100,
-            2,
-        )
-        if info_of_token.ath
+        (float(info_of_token.price) - float(info_of_token.ath))
+        / float(info_of_token.ath)
+        if info_of_token.ath and info_of_token.price is not None
         else None
     )
     if embers_description is None:
-        response = f"""
+        return f"""
 **| {info_of_token.name} (${token_ticker}) |**
 
 **🔗 Network ・** {network}
-**💵 Price ・** ${price} (24hr {info_of_token.price_change_24h}%) 
+**💵 Price ・** ${price} (24hr {info_of_token.price_change_24h})
 **💰 Market Cap ・** ${market_cap}
 **💧 Liquidity ・** {liquidity}
 **🔖 Token Contract Address ・** {info_of_token.token_contract_address}
@@ -181,22 +145,15 @@ async def market_route(message: str) -> str:
 
 _Always do your own research_ 🧐💡🚀
 """
-        return response
-    else:
-        desc = embers_description.project_description
-        emoji = embers_description.project_emoji
-        # print(f"desc: {desc}")
-        # print(f"emoji: {emoji}")
-        price_header = (
-            f"\n**💵 Price ・** ${price} (24hΔ: {info_of_token.price_change_24h}%)\n(ATH: ${ath} Δ: {ath_delta}%)"
-            if price
-            else ""
-        )
-        market_cap_header = (
-            f"\n**💰 Market Cap ・** ${market_cap}" if market_cap else ""
-        )
-        # ADD SENTIMENT BACK WHEN LUNARCRUSH IS PAID FOR
-        response = f"""
+    desc = embers_description.project_description
+    emoji = embers_description.project_emoji
+    price_header = (
+        f"\n**💵 Price ・** ${price} (24hΔ: {info_of_token.price_change_24h}%)\n(ATH: ${ath} Δ: {ath_delta:.2%})"
+        if price
+        else ""
+    )
+    market_cap_header = f"\n**💰 Market Cap ・** ${market_cap}" if market_cap else ""
+    return f"""
 **| {emoji} {info_of_token.name} (${token_ticker}) |**
 
 **🔗 Network ・** {network}{price_header}{market_cap_header}
@@ -206,7 +163,6 @@ _Always do your own research_ 🧐💡🚀
 🐦・[@{info_of_token.twitter_handle}](https://twitter.com/{info_of_token.twitter_handle})
 🕸️・{info_of_token.website}
 """
-        return response
 
 
 #### get new description of token from ember
@@ -234,7 +190,7 @@ Give your take on a project in a structured JSON format.
 
 # Example
 ## User Project Input
-Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fraudulent transaction based on a set of fraud identification parameters and returns stolen funds back to the owner’s account.
+Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fraudulent transaction based on a set of fraud identification parameters and returns stolen funds back to the owner's account.
 ## JSON
 ```json
 "project_description": "Lossless is like the superhero cape for token creators, swooping in to freeze those dastardly fraudulent transactions with a flick of its mighty fraud-fighting parameters! 🦸‍♂️ With the power to hit the "undo" button on crypto theft, it's bringing a little peace of mind to the Wild West of tokenomics. 📚✨",
@@ -260,15 +216,7 @@ Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fr
     )
     response = chat_completion.choices[0].message.content
     json_response = json.loads(response)
-    EmbersTake = EmberOnProject(**json_response)
-    print(f"EmbersTake:\n{EmbersTake}")
-    return EmbersTake
-
-
-"""
-## Input
-Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fraudulent transaction based on a set of fraud identification parameters and returns stolen funds back to the owner’s account.
-"project_description": "Lossless is an innovative solution that enhances security for token creators. 🔒 By providing a mechanism to freeze and reverse fraudulent transactions, it helps mitigate the risks associated with hacks and unauthorized transfers, potentially increasing trust and safety for participants in the DeFi ecosystem. 👍🔄","""
+    return EmberOnProject(**json_response)
 
 
 #### Extracts the token name or address for user message
@@ -320,36 +268,26 @@ search 0x1234567890123456789012345678901234567890
 
 
 #### main info function
-async def info_from_apis(token_queried: TokenQueried) -> Optional[ProjectInfo]:
-    if token_queried.token_address is not (None or ""):
-        print("===0x detected===", flush=True)
-        print(token_queried.token_address)
+async def info_from_apis(token_queried: TokenQueried):
+    if token_queried.token_address not in (None, ""):
         project_details = await dexscreener(token_queried.token_address)
-        print("___project_details____", flush=True)
-        print(project_details)
-    else:
-        print("===trying coingecko===", flush=True)
-        coingeckoid = await getidfromcoingecko(token_queried.token_name_or_symbol)
-        print(f"====coingecko done - name or ticker is {coingeckoid}====", flush=True)
-        if coingeckoid is not None:
-            print("===coingecko found something===", flush=True)
-            project_details = await coingecko_and_lunarcrush(coingeckoid)
-            print("___project_details____", flush=True)
-            print(project_details, flush=True)
-        else:
-            raise ValueError("Token not found, please use Contract Address")
-    return project_details
+        return project_details
+
+    if token_queried.token_name_or_symbol in (None, ""):
+        msg = "Token name could not be parsed out."
+        raise ValueError()
+
+    coingeckoid = await getidfromcoingecko(token_queried.token_name_or_symbol)
+    if coingeckoid is None:
+        msg = "Token not found, please use Contract Address"
+        raise ValueError(msg)
+    return await search_coingecko_with_id(coingeckoid)
 
 
 #### orchestrate cg and lc
-async def coingecko_and_lunarcrush(input: str) -> ProjectInfo:
-    print(f"___coingecko_and_lunarcrush___{input}", flush=True)
-    cg_response = await coingecko(input)
-    print(f"___cg_response___{cg_response}", flush=True)
-    lc_response = await lunarcrush(cg_response.symbol)
-    print(f"___lc_response___{lc_response}", flush=True)
-
-    project_info = ProjectInfo(
+async def search_coingecko_with_id(search: str) -> ProjectInfo:
+    cg_response = await coingecko(search)
+    return ProjectInfo(
         token_contract_address=cg_response.token_contract_address,
         name=cg_response.name,
         description=cg_response.description,
@@ -361,56 +299,37 @@ async def coingecko_and_lunarcrush(input: str) -> ProjectInfo:
         price=cg_response.price,
         price_change_24h=cg_response.price_change_24h,
         market_cap=cg_response.market_cap,
-        sentiment=lc_response.sentiment,
-    )  # type: ignore
-
-    return project_info
+    )
 
 
 #### coingecko search for id
 async def getidfromcoingecko(searchterm: str):
-    print(f"___getidfromcoingecko___{searchterm}", flush=True)
-    URL = f"https://api.coingecko.com/api/v3/search?query={searchterm}"
+    url = f"https://api.coingecko.com/api/v3/search?query={searchterm}"
     async with httpx.AsyncClient(http2=True) as client:
-        response = await client.get(URL)
+        response = await client.get(url)
 
-    if response.status_code != 200:
-        raise ValueError(
-            f"Coingecko API ({URL}) returned status code {response.status_code}"
-        )
+    if not response.is_success:
+        msg = "Failed finding ID of token"
+        raise ValueError(msg)
 
-    print(f"___getidfromcoingecko_response___{response}", flush=True)
     json_response = response.json()
-    #    with open(f"{searchterm}_getidfromcoingecko.json", "w") as file:
-    #        json.dump(json_response, file, indent=4)
     if len(json_response["coins"]) == 0:
         return None
-    else:
-        return json_response["coins"][0]["id"]
+    return json_response["coins"][0]["id"]
 
 
 #### coingecko info from id
 async def coingecko(token_id: str):
     sleep(0.1)
-    print(f"___coingecko___{token_id}", flush=True)
-    URL = f"https://api.coingecko.com/api/v3/coins/{token_id}?symbols=false&market_data=true&community_data=false&developer_data=false&sparkline=false"
+    url = f"https://api.coingecko.com/api/v3/coins/{token_id}?symbols=false&market_data=true&community_data=false&developer_data=false&sparkline=false"
     async with httpx.AsyncClient(http2=True) as client:
-        response = await client.get(URL)
+        response = await client.get(url)
 
-    if response.status_code != 200:
-        raise ValueError(
-            f"Coingecko API ({URL}) returned status code {response.status_code}"
-        )
+    if not response.is_success:
+        msg = "Failed finding information of coin"
+        raise ValueError(msg)
 
-    print(f"___coingecko_response___{response}", flush=True)
     json_response = response.json()
-    pprint(f"___coingecko_response___{json_response}")
-    # Output json_response to a file
-    """with open(f"{token_id}_coingecko_response.json", "w") as file:
-        json.dump(json_response, file, indent=4)"""
-
-    #    print("____contract address___")
-    #    print(json_response["contract_address"])
     try:
         token_contract_address = json_response.get("contract_address", None)
         name = json_response["name"]
@@ -447,72 +366,31 @@ async def coingecko(token_id: str):
     return coingecko
 
 
-#### lunarcrush info
-async def lunarcrush(symbol: str):
-    URL = f"https://lunarcrush.com/api4/public/coins/{symbol}/time-series/v2"
-    HEADERS = {"Authorization": "Bearer 10yzku3g0fh5ok48wvq65p1r7plt360axtmw7ec0z"}
-    async with httpx.AsyncClient(http2=True) as client:
-        response = await client.get(URL, headers=HEADERS)
-    json = response.json()
-    print(f"___lunarcrush_response___{json}")
-    if "data" in json and len(json["data"]) > 0:
-        if "sentiment" in json["data"][0]:
-            mapped_sentiment = map_sentiment_to_literal(json["data"][0]["sentiment"])
-        else:
-            mapped_sentiment = "unknown"
-
-        if "galaxy_score" in json["data"][0]:
-            gscore = json["data"][0]["galaxy_score"]
-        else:
-            gscore = "unknown"
-    else:
-        mapped_sentiment = "unknown"
-        gscore = "unknown"
-
-    return LunarCrush(
-        sentiment=mapped_sentiment,
-        galaxy_score=gscore,
-    )
-
-
 #### map lunarcursh sentiment to literal
+POSITIVE_SENTIMENT = 88
+NEUTRAL_SENTIMENT = 50
+
+
 def map_sentiment_to_literal(sentiment_score: int) -> Sentiment:
-    if sentiment_score > 88:
+    if sentiment_score > POSITIVE_SENTIMENT:
         return "positive"
-    elif sentiment_score > 50:
+    if sentiment_score > NEUTRAL_SENTIMENT:
         return "neutral"
-    elif sentiment_score > 0:
+    if sentiment_score > 0:
         return "negative"
-    else:
-        return "unknown"
+    return "unknown"
 
 
 #### get dexscreener info of token contract
-async def dexscreener(token_contract_address: str) -> ProjectInfo | None:
+async def dexscreener(token_contract_address: str):
     # catch if its a contract address
-    URL = f"https://api.dexscreener.com/latest/dex/search/?q={token_contract_address}"
+    url = f"https://api.dexscreener.com/latest/dex/search/?q={token_contract_address}"
     async with httpx.AsyncClient(http2=True) as client:
-        response = await client.get(URL)
-    #    with open(f"{token_contract_address}_dexscreener.json", "w") as file:
-    #        json.dump(response.json(), file, indent=4)
-    # pics largest pool by volume
+        response = await client.get(url)
     jsonresp = get_largest_by_volume_24h(response.json())
-    pprint(f"___largest_pool___: {jsonresp}")
-    print("================= (all info local to this pool) =============")
     if jsonresp is None:
-        print("=====No pairs found for the given token contract address.======")
-        return None  ###how to handle this correctly?
-    print(
-        jsonresp.get("baseToken", {}).get("symbol")
-        + " / "
-        + jsonresp.get("quoteToken", {}).get("symbol")
-        + ". Volume: "
-        + str(jsonresp.get("volume", {}).get("h24"))
-        + " @ "
-        + str(jsonresp.get("pairAddress"))
-    )
-    price = jsonresp.get("priceUsd")
-    print(f"{price}")
+        msg = "Could not find token address info"
+        raise ValueError(msg)
     return ProjectInfo(
         token_contract_address=token_contract_address,
         name=jsonresp.get("baseToken", {}).get("name"),
@@ -521,7 +399,6 @@ async def dexscreener(token_contract_address: str) -> ProjectInfo | None:
         ath=None,
         network=jsonresp.get("chainId"),
         twitter_handle=None,
-        sentiment=None,
         symbol=jsonresp.get("baseToken", {}).get("symbol"),
         price=jsonresp.get("priceUsd"),
         price_change_24h=str(jsonresp.get("priceChange", {}).get("h24")),
@@ -555,34 +432,9 @@ def get_largest_by_volume_24h(data):
 
     # Iterate through each entry in "pairs"
     for entry in data["pairs"]:
-        quoteToken = entry.get("quoteToken")
-        baseToken = entry.get("baseToken")
-        #        print(
-        #            "================================================================= symbol ================================================================="
-        #        )
-        # print("---entry---")
-        # print(entry)
-        #        print(
-        #            "================================================================= quote/basetokensymbol ================================================================="
-        #        )
-        #        print(str(baseToken.get("symbol")))
-        #        print(str(quoteToken.get("symbol")))
-        #        print(entry.get("volume", {}).get("h24"))
 
         # Check if the current entry has a "volume" key and "h24" key within it
-        if (
-            "volume" in entry and "h24" in entry["volume"]
-            #            and (
-            #               # matches symbol
-            #                str(baseToken.get("symbol")) == str(symbol.upper())
-            #                or str(quoteToken.get("symbol")) == str(symbol.upper())
-            #            )
-            ##            and (
-            #                # matches name
-            #                str(baseToken.get("name")) == str(project)
-            #                or str(quoteToken.get("name")) == str(project)
-            #            )
-        ):
+        if "volume" in entry and "h24" in entry["volume"]:
             #  Get the current entry's 24-hour volume
             volume = entry["volume"]["h24"]
             # Check if it's the largest encountered so far

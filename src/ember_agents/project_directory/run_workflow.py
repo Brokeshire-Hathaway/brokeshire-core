@@ -1,40 +1,39 @@
+from ember_agents.project_directory.cypher_conversion import (
+    main_launches,
+    main_new_projects,
+    main_news_items,
+    main_project_updates,
+    main_threads_and_reads,
+)
 from ember_agents.project_directory.parse_c4_updates import (
     parse_headers,
-    parse_new_projects,
-    parse_threads_and_reads_live,
     parse_launches_live,
+    parse_new_projects,
     parse_new_projects_live,
     parse_news_items_live,
     parse_project_updates_live,
-)
-from ember_agents.project_directory.cypher_conversion import (
-    main_news_items,
-    main_new_projects,
-    main_project_updates,
-    main_threads_and_reads,
-    main_launches,
+    parse_threads_and_reads_live,
 )
 
 ### functions here as defined to load data from a file
 
 
 async def run_workflow_saved(daily_update):
-    print(f"=====CURRENTLY running workflow; parse headers (aprox 70s)")
+    print("=====CURRENTLY running workflow; parse headers (aprox 70s)")
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
-        "r",
+        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
     ) as f:
         data = f.read()
     #  data = await parse_headers(daily_update)
-    print(f"=====CURRENTLY running workflow; parse news (aprox 30s)")
+    print("=====CURRENTLY running workflow; parse news (aprox 30s)")
     #  news = await parse_news_items(data)
-    print(f"=====CURRENTLY running workflow; parse project updates (aprox 30s)")
+    print("=====CURRENTLY running workflow; parse project updates (aprox 30s)")
     #  project_updates = await parse_project_updates(data)
-    print(f"=====CURRENTLY running workflow; parse educational content (aprox 30s)")
+    print("=====CURRENTLY running workflow; parse educational content (aprox 30s)")
     #  threads_and_reads = await parse_threads_and_reads(data)
-    print(f"=====CURRENTLY running workflow; parse launches (aprox 30s)")
+    print("=====CURRENTLY running workflow; parse launches (aprox 30s)")
     #  launches = await parse_launches(data)
-    print(f"=====CURRENTLY running workflow; parse new projects (aprox 30s)")
+    print("=====CURRENTLY running workflow; parse new projects (aprox 30s)")
     new_projects = await parse_new_projects(data)
     return "yay"
 
@@ -44,19 +43,19 @@ async def run_workflow_saved(daily_update):
 
 
 async def run_workflow_live(daily_update):
-    print(f"=====CURRENTLY running workflow; parse headers (aprox 70s)")
+    print("=====CURRENTLY running workflow; parse headers (aprox 70s)")
     data = await parse_headers(daily_update)
 
     #### level 2 of llm calls
-    print(f"=====CURRENTLY running workflow; parse news (aprox 30s)")
+    print("=====CURRENTLY running workflow; parse news (aprox 30s)")
     news = await parse_news_items_live(data)
-    print(f"=====CURRENTLY running workflow; parse project updates (aprox 30s)")
+    print("=====CURRENTLY running workflow; parse project updates (aprox 30s)")
     project_updates = await parse_project_updates_live(data)
-    print(f"=====CURRENTLY running workflow; parse educational content (aprox 30s)")
+    print("=====CURRENTLY running workflow; parse educational content (aprox 30s)")
     threads_and_reads = await parse_threads_and_reads_live(data)
-    print(f"=====CURRENTLY running workflow; parse launches (aprox 30s)")
+    print("=====CURRENTLY running workflow; parse launches (aprox 30s)")
     launches = await parse_launches_live(data)
-    print(f"=====CURRENTLY running workflow; parse new projects (aprox 30s)")
+    print("=====CURRENTLY running workflow; parse new projects (aprox 30s)")
     new_projects = await parse_new_projects_live(data)
     return f"======= parsing workflow complete ======== for {data}"
 
@@ -65,11 +64,10 @@ async def run_workflow_live(daily_update):
 ### tests the conversion to cypher queries from file
 ############
 def run_conversion(date):
-    print(f"=====CURRENTLY running conversion======")
+    print("=====CURRENTLY running conversion======")
     all_queries = ""
     with open(
         f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_news_items_{date}.json",
-        "r",
     ) as f:
         data = f.read()
         news_queries = main_news_items(data)
@@ -77,7 +75,6 @@ def run_conversion(date):
     print(f"=====CURRENTLY running conversion; news_queries: {news_queries}")
     with open(
         f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_project_updates_{date}.json",
-        "r",
     ) as f:
         data = f.read()
         project_updates_queries = main_project_updates(data)
@@ -89,7 +86,6 @@ def run_conversion(date):
     )
     with open(
         f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_threads_and_reads_items_{date}.json",
-        "r",
     ) as f:
         data = f.read()
         threads_and_reads_queries = main_threads_and_reads(data)
@@ -99,7 +95,6 @@ def run_conversion(date):
     )
     with open(
         f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_launches_items_{date}.json",
-        "r",
     ) as f:
         data = f.read()
         launches_queries = main_launches(data)
@@ -107,7 +102,6 @@ def run_conversion(date):
     print(f"=====CURRENTLY running conversion; launches_queries: {launches_queries}")
     with open(
         f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_new_projects_items_{date}.json",
-        "r",
     ) as f:
         data = f.read()
         new_project_queries = main_new_projects(data)
