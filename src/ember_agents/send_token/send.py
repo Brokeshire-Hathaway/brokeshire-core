@@ -4,7 +4,6 @@ import os
 import re
 import tempfile
 from collections.abc import Awaitable, Callable
-from typing import Literal, NamedTuple
 
 import httpx
 from autogen import (
@@ -536,7 +535,8 @@ Would you like to proceed?"""
                     raise Exception(msg) from err
 
                 if not user_receipt.success:
-                    raise Exception("Failed sending token")
+                    msg = "Failed sending token"
+                    raise Exception(msg)
             except Exception as e:
                 error_message = str(e) if str(e) else str(type(e))
                 return (
