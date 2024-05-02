@@ -692,7 +692,11 @@ TERMINATE"""
 
         self._send_activity_update("Understanding your request...")
 
-        await user_proxy.a_initiate_chat(manager, message=message)
+        try:
+            await user_proxy.a_initiate_chat(manager, message=message)
+        except Exception:
+            if self.on_complete is not None:
+                self.on_complete(self.sender_did, self.thread_id)
 
     def _validate_request(self, recipient: ConversableAgent, messages, sender, config):
         try:
