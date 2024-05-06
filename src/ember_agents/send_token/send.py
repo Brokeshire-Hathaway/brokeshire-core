@@ -39,10 +39,8 @@ class TxRequest(BaseModel):
 class TxPreview(BaseModel):
     recipient: str
     amount: str
-    token_symbol: str
-    token_url: str
-    gas_fee: str
-    total_amount: str
+    fees: str
+    total: str
     transaction_uuid: str
 
 
@@ -463,11 +461,11 @@ TERMINATE""",
                 )
 
             # tx_details = self._transaction_preview.tx_details
-            response_message = f"""You are about to send 💸 {self._transaction_preview.amount} {self._transaction_preview.token_symbol} to {self._transaction_preview.recipient}.
+            response_message = f"""You are about to send 💸 {self._transaction_preview.amount} to {self._transaction_preview.recipient}.
 
-**💸 Subtotal ・** {self._transaction_preview.amount} [{self._transaction_preview.token_symbol}]({self._transaction_preview.token_url})
-**⛽️ Fees Estimation ・** {self._transaction_preview.gas_fee} {self._transaction_preview.token_symbol}
-**🔢 Total ・** {self._transaction_preview.total_amount} {self._transaction_preview.token_symbol}
+**💸 Subtotal ・** {self._transaction_preview.amount}
+**⛽️ Fees Estimation ・** {self._transaction_preview.fees}
+**🔢 Total ・** {self._transaction_preview.total}
 
 Would you like to proceed?"""
 

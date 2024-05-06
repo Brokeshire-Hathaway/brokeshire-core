@@ -79,15 +79,12 @@ class SwapInformation(BaseModel):
 class TxPreview(BaseModel):
     uuid: str
     from_amount: str
-    from_token_url: str
-    from_token_symbol: str
     from_chain: str
     to_amount: str
     to_chain: str
-    to_token_url: str
-    to_token_symbol: str
     duration: str
-    total_costs: dict[str, str]
+    total_fees: str
+    total_amount: str
 
 
 class ExecuteTxBody(BaseModel):
@@ -559,15 +556,13 @@ Details: {error_message}
 TERMINATE""",
                 )
 
-            fees = "\n".join(
-                [f"{v} {k}" for k, v in self._transaction_preview.total_costs.items()]
-            )
             # tx_details = self._transaction_preview.tx_details
             response_message = f"""You are about to swap tokens 💸.
 
-**💸 Convert From ・** {self._transaction_preview.from_amount} [{self._transaction_preview.from_token_symbol}]({self._transaction_preview.from_token_url}) ({self._transaction_preview.from_chain})
-**💸 Convert To ・** {self._transaction_preview.to_amount} [{self._transaction_preview.to_token_symbol}]({self._transaction_preview.to_token_url}) ({self._transaction_preview.to_chain})
-**⛽️ Fees Estimation ・** {fees}
+**💸 Convert From ・** {self._transaction_preview.from_amount} ({self._transaction_preview.from_chain})
+**💸 Convert To ・** {self._transaction_preview.to_amount} ({self._transaction_preview.to_chain})
+**⛽️ Fees Estimation ・** {self._transaction_preview.total_fees}
+**🔢 Total ・** {self._transaction_preview.total_amount}
 
 Would you like to proceed?"""
 
