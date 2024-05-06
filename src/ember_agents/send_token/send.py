@@ -463,7 +463,7 @@ TERMINATE""",
             # tx_details = self._transaction_preview.tx_details
             response_message = f"""You are about to send 💸 {self._transaction_preview.amount} to {self._transaction_preview.recipient}.
 
-**💸 Subtotal ・** ${self._transaction_preview.amount}
+**💸 Subtotal ・** {self._transaction_preview.amount}
 **⛽️ Fees Estimation ・** {self._transaction_preview.fees}
 **🔢 Total ・** {self._transaction_preview.total}
 
