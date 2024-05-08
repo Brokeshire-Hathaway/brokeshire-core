@@ -68,9 +68,8 @@ class UserReceipt(BaseModel):
     success: bool
     recipient: str
     amount: str
-    token_symbol: str
-    gas_fee: str | None
-    total_amount: str | None
+    fees: str | None
+    total: str | None
     transaction_block: str
 
 
@@ -553,21 +552,19 @@ TERMINATE""",
             finally:
                 timer_task.cancel()
             fees_message = (
-                (
-                    f"\n**⛽️ Fees ・** {user_receipt.gas_fee} {user_receipt.token_symbol}\n"
-                )
-                if user_receipt.gas_fee is not None
+                (f"\n**⛽️ Fees ・** {user_receipt.fees}\n")
+                if user_receipt.fees is not None
                 else ""
             )
             total_message = (
-                f"\n**🔢 Total ・** {user_receipt.total_amount} {user_receipt.token_symbol}\n"
-                if user_receipt.total_amount is not None
+                f"\n**🔢 Total ・** {user_receipt.total}\n"
+                if user_receipt.total is not None
                 else ""
             )
             response_message = f"""Your transaction was successful! 🎉
 
 **👤 Recipient ・** {user_receipt.recipient}
-**💸 Amount Sent ・** {user_receipt.amount} {user_receipt.token_symbol}{fees_message}{total_message}
+**💸 Amount Sent ・** {user_receipt.amount} {fees_message}{total_message}
 _[🔗 View on Blockchain]({user_receipt.transaction_block})_
 TERMINATE"""
 
