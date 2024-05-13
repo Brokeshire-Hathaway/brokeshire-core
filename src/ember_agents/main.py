@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse, ServerSentEvent
 
 from ember_agents.agent_router.router import AgentTeamSessionManager, Router
-from ember_agents.bg_tasks import add_bg_task
+from ember_agents.bg_tasks import add_bg_task, delete_task
 from ember_agents.education.education import upload_doc_memory
 
 app = FastAPI()
@@ -33,6 +33,8 @@ def read_root():
 
 agent_team_session_manager = AgentTeamSessionManager()
 add_bg_task(asyncio.create_task(upload_doc_memory()))
+
+ONE_MINUTE_TIMEOUT = 60
 
 
 @app.post("/v1/threads/{thread_id}/messages")
@@ -60,7 +62,8 @@ async def create_message(thread_id: str, body: Message, request: Request):
         message_queue.put_nowait(response)
 
     async def event_generator():
-        add_bg_task(asyncio.create_task(send_message()))
+        task = asyncio.create_task(send_message())
+        add_bg_task(task)
         while True:
             if await request.is_disconnected():
                 print(
@@ -68,7 +71,17 @@ async def create_message(thread_id: str, body: Message, request: Request):
                     flush=True,
                 )
                 break
-            response = await message_queue.get()
+
+            try:
+                async with asyncio.timeout(ONE_MINUTE_TIMEOUT):
+                    response = await message_queue.get()
+            except TimeoutError:
+                delete_task(task)
+                agent_team_session_manager.remove_session(body.sender_uid, thread_id)
+                yield ServerSentEvent(
+                    {"message": "Operation aborted due to timeout"}, event="error"
+                )
+
             json = response.json()
             print(
                 f"[/v1/threads/{thread_id}/messages] Sending response: {json}",
