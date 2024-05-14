@@ -7,7 +7,7 @@ dependencies = [
     "setuptools",
     "python-dotenv>=1.0.0",
     "semantic-router>=0.0.14",
-    "pydantic>=1.10.13",
+    "pydantic>=2.0.0",
     "guidance>=0.1.10",
     "pyautogen>=0.2.6",
     "fastapi>=0.109.0",

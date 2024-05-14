@@ -46,9 +46,9 @@ async def prepare_transaction(tx_request: TxRequest):
     async with httpx.AsyncClient(http2=True, timeout=65) as client:
         response = await client.post(url, json=tx_request.dict())
 
-    response_json = response.json()
     try:
-        return TxPreview.parse_obj(response_json)
+        response_json = response.json()
+        return TxPreview.model_validate(response_json)
     except ValidationError as err:
         raise ValueError(response_json.get("message", "Failed sending token")) from err
 

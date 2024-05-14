@@ -71,7 +71,7 @@ class CoinGecko(BaseModel):
     market_cap: str | None
 
     class Config:
-        extra = Extra.ignore
+        extra = "allow"
 
 
 class DexScreener(BaseModel):
@@ -94,7 +94,7 @@ class EmberOnProject(BaseModel):
     project_emoji: str
 
     class Config:
-        extra = Extra.ignore
+        extra = "allow"
 
 
 class TokenQueried(BaseModel):
@@ -102,7 +102,7 @@ class TokenQueried(BaseModel):
     token_address: str | None
 
     class Config:
-        extra = Extra.ignore
+        extra = "allow"
 
 
 #### main market route function

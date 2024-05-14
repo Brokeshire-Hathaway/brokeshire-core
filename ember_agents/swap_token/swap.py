@@ -16,9 +16,10 @@ from autogen import (
     config_list_from_json,
 )
 from openai import AsyncOpenAI
-from pydantic import BaseModel, ValidationError, validator
+from pydantic import BaseModel, ValidationError
 
 from ember_agents.common.agents import AgentTeam
+from ember_agents.common.validators import PositiveAmount
 from ember_agents.info_bites.info_bites import get_random_info_bite
 from ember_agents.send_token.send import UniversalAddress
 
@@ -39,19 +40,11 @@ class TokenSwapTo(BaseModel):
 class SwapRequest(BaseModel):
     """Request for doing cross chain swap"""
 
-    amount: str
+    amount: PositiveAmount
     token: str
     sender: UniversalAddress
     to: TokenSwapTo
     type: str
-
-    @validator("amount")
-    @classmethod
-    def amount_must_be_positive(cls, value):
-        if float(value) <= 0:
-            msg = "amount must be a positive number"
-            raise ValueError(msg)
-        return value
 
 
 class SwapInformation(BaseModel):
@@ -500,7 +493,7 @@ class SwapTokenAgentTeam(AgentTeam):
             raise Exception(response_json["message"])
 
         try:
-            return TxPreview.parse_obj(response_json)
+            return TxPreview.model_validate(response_json)
         except ValidationError as err:
             msg = "Failed processing response, try again."
             raise Exception(msg) from err
@@ -716,7 +709,7 @@ TERMINATE"""
             }
 
         try:
-            self._transaction = SwapInformation.parse_raw(json_str)
+            self._transaction = SwapInformation.model_validate_json(json_str)
             self._transaction_request = self._transaction.to_swap_request(
                 UniversalAddress(
                     identifier=self.sender_did, platform="telegram.me", network=""

@@ -16,9 +16,10 @@ from autogen import (
     config_list_from_json,
 )
 from openai import AsyncOpenAI
-from pydantic import BaseModel, ValidationError, validator
+from pydantic import BaseModel, ValidationError
 
 from ember_agents.common.agents import AgentTeam
+from ember_agents.common.validators import PositiveAmount
 from ember_agents.info_bites.info_bites import get_random_info_bite
 
 client = AsyncOpenAI()
@@ -52,17 +53,8 @@ class ExecuteTxBody(BaseModel):
 class Transaction(BaseModel):
     recipient_address: str
     network: str
-    amount: str
+    amount: PositiveAmount
     token: str
-
-    # Custom validator to ensure amount is a positive value
-    @validator("amount")
-    @classmethod
-    def amount_must_be_positive(cls, value):
-        if float(value) <= 0:
-            msg = "amount must be a positive number"
-            raise ValueError(msg)
-        return value
 
 
 class UserReceipt(BaseModel):
@@ -533,7 +525,7 @@ Would you like to proceed?"""
 
                 data = response.json()
                 try:
-                    user_receipt = UserReceipt.parse_obj(data)
+                    user_receipt = UserReceipt.model_validate(data)
                 except ValidationError as err:
                     msg = f"Failed sending token: {data.get('message', 'Unknown exception')}"
                     raise Exception(msg) from err
@@ -642,7 +634,7 @@ TERMINATE"""
             }
 
         try:
-            self._transaction = Transaction.parse_raw(json_str)
+            self._transaction = Transaction.model_validate_json(json_str)
             self._transaction_request = TxRequest(
                 sender_address=UniversalAddress(
                     identifier=self.sender_did,
