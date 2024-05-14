@@ -116,8 +116,13 @@ decision_layer = RouteLayer(encoder=encoder, routes=routes)
 
 
 class Router:
-    def __init__(self, session_manager: AgentTeamSessionManager):
+    def __init__(
+        self,
+        session_manager: AgentTeamSessionManager,
+        possible_routes: list[str] | None,
+    ):
         self._session_manager = session_manager
+        self._possible_routes = possible_routes
 
     async def send(
         self,
@@ -137,6 +142,13 @@ class Router:
     def _create_agent_team_session(
         self, sender_did: str, thread_id: str, route: str | None
     ) -> AgentTeam:
+        route = (
+            route
+            if route is not None
+            and self._possible_routes is not None
+            and route in self._possible_routes
+            else None
+        )
         match route:
             case "send":
                 agent_team = SendTokenAgentTeam(sender_did, thread_id)

@@ -37,10 +37,11 @@ add_bg_task(asyncio.create_task(upload_doc_memory()))
 ONE_MINUTE_TIMEOUT = 60
 
 
-@app.post("/v1/threads/{thread_id}/messages")
-async def create_message(thread_id: str, body: Message, request: Request):
-    # DEBUG
-    print(f"[/v1/threads/{thread_id}/messages] Received message: {body}", flush=True)
+async def event_router(
+    thread_id: str, body: Message, request: Request, routes: list[str] | None = None
+):
+    """Default event router for the threads API."""
+
     message_queue: Queue[Response] = Queue()
 
     def on_activity(activity: str):
@@ -48,9 +49,7 @@ async def create_message(thread_id: str, body: Message, request: Request):
         message_queue.put_nowait(response)
 
     async def send_message():
-        print(f"Session manager: {agent_team_session_manager}", flush=True)
-        print({str(agent_team_session_manager._sessions)})
-        router = Router(agent_team_session_manager)
+        router = Router(agent_team_session_manager, routes)
         sender_did = body.sender_uid
         try:
             response_message = await router.send(
@@ -66,10 +65,6 @@ async def create_message(thread_id: str, body: Message, request: Request):
         add_bg_task(task)
         while True:
             if await request.is_disconnected():
-                print(
-                    f"[/v1/threads/{thread_id}/messages] Client disconnected",
-                    flush=True,
-                )
                 break
 
             try:
@@ -82,13 +77,7 @@ async def create_message(thread_id: str, body: Message, request: Request):
                     {"message": "Operation aborted due to timeout"}, event="error"
                 )
 
-            json = response.json()
-            print(
-                f"[/v1/threads/{thread_id}/messages] Sending response: {json}",
-                flush=True,
-            )
-            print(type(json))
-            print(json)
+            json = response.model_dump_json()
             match response.status:
                 case "done":
                     yield ServerSentEvent(json, event="done")
@@ -109,3 +98,15 @@ async def create_message(thread_id: str, body: Message, request: Request):
     # Repeat
 
     return EventSourceResponse(event_generator())
+
+
+@app.post("/v1/threads/{thread_id}/private")
+async def create_message(thread_id: str, body: Message, request: Request):
+    return event_router(thread_id, body, request)
+
+
+@app.post("/v1/threads/{thread_id}/group")
+async def create_message_group(thread_id: str, body: Message, request: Request):
+    return event_router(
+        thread_id, body, request, routes=["education", "terminate", "market"]
+    )
