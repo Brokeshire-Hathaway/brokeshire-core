@@ -32,11 +32,9 @@ asyncio_mode = "auto"
 distribution = false
 
 [tool.pdm.scripts]
-#start = "flask run -p 54321"
-start = "uvicorn --app-dir src ember_agents.main:app --host 0.0.0.0 --port 8101"
-dev = "uvicorn --app-dir src ember_agents.main:app --host 0.0.0.0 --port 8101 --reload"
+start = "uvicorn ember_agents.main:app --host 0.0.0.0 --port 8101"
+dev = "uvicorn ember_agents.main:app --host 0.0.0.0 --port 8101 --reload"
 test = "pytest -s"
-error = "bash -c 'sleep 2 && echo 'exiting with error...' && exit 1'"
 lint = "bash -c 'black . && ruff check --fix .'"
 
 [tool.pdm.dev-dependencies]
@@ -51,7 +49,7 @@ skip-string-normalization = true
 [tool.ruff]
 target-version = "py311"
 line-length = 88
-extend-exclude = ["src/ember_agents/project_directory", "tests"]
+extend-exclude = ["ember_agents/project_directory", "tests"]
 
 [tool.ruff.lint]
 select = [

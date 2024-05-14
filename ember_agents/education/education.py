@@ -2,10 +2,11 @@ import os
 import uuid
 from datetime import UTC, datetime
 
-from ember_agents.common.agents import AgentTeam
 from langchain_text_splitters import CharacterTextSplitter
 from openai import AsyncOpenAI
 from pinecone import Pinecone
+
+from ember_agents.common.agents import AgentTeam
 
 
 class EducationAgentTeam(AgentTeam):
@@ -127,7 +128,7 @@ async def upload_doc_memory():
     ]
 
     for doc in doc_list:
-        with open(f"src/ember_agents/ember_ai_docs/{doc}") as f:
+        with open(f"ember_agents/ember_ai_docs/{doc}") as f:
             doc_text = f.read()
 
             text_splitter = CharacterTextSplitter.from_tiktoken_encoder(

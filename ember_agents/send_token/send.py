@@ -15,10 +15,11 @@ from autogen import (
     UserProxyAgent,
     config_list_from_json,
 )
-from ember_agents.common.agents import AgentTeam
-from ember_agents.info_bites.info_bites import get_random_info_bite
 from openai import AsyncOpenAI
 from pydantic import BaseModel, ValidationError, validator
+
+from ember_agents.common.agents import AgentTeam
+from ember_agents.info_bites.info_bites import get_random_info_bite
 
 client = AsyncOpenAI()
 

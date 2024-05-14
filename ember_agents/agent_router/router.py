@@ -2,6 +2,11 @@ import os
 from collections.abc import Callable
 
 import httpx
+from pydantic import ValidationError
+from semantic_router import Route
+from semantic_router.encoders import CohereEncoder
+from semantic_router.layer import RouteLayer
+
 from ember_agents.common.agents import AgentTeam
 from ember_agents.education.education import EducationAgentTeam
 from ember_agents.project_market_info.market_agent_team import MarketAgentTeam
@@ -11,10 +16,6 @@ from ember_agents.send_token.send import (
     TxRequest,
 )
 from ember_agents.swap_token.swap import SwapTokenAgentTeam
-from pydantic import ValidationError
-from semantic_router import Route
-from semantic_router.encoders import CohereEncoder
-from semantic_router.layer import RouteLayer
 
 """tx_details = TxDetails(
     sender_did="ethereum://84738954.telegram.org",
