@@ -68,6 +68,19 @@ class UserReceipt(BaseModel):
 
 OAI_CONFIG_LIST = [{"model": "gpt-4-1106-preview", "api_key": SETTINGS.openai_api_key}]
 
+
+async def prepare_transaction(tx_request: TxRequest):
+    url = f"{SETTINGS.transaction_service_url}/transactions/prepare"
+    async with httpx.AsyncClient(http2=True, timeout=65) as client:
+        response = await client.post(url, json=tx_request.model_dump())
+
+    try:
+        response_json = response.json()
+        return TxPreview.model_validate(response_json)
+    except ValidationError as err:
+        raise ValueError(response_json.get("message", "Failed sending token")) from err
+
+
 # Create a temporary file
 # Write the JSON structure to a temporary file and pass it to config_list_from_json
 with tempfile.NamedTemporaryFile(mode="w+", delete=True) as temp:
@@ -378,17 +391,6 @@ class SendTokenAgentTeam(AgentTeam):
     _transaction_request: TxRequest | None = None
     _transaction_preview: TxPreview | None = None
 
-    def __init__(
-        self,
-        sender_did: str,
-        thread_id: str,
-        # on_complete: Callable[[str], None],
-        prepare_transaction: Callable[[TxRequest], Awaitable[TxPreview]],
-    ):
-        # TODO: Create a new protocol for the prepare_transaction and get_transaction_result functions as a separation of concerns for transactions.
-        self._prepare_transaction = prepare_transaction
-        super().__init__(sender_did, thread_id)
-
     async def _run_conversation(self, message: str):
         user_proxy = MessagingUserProxyAgent(
             "user",
@@ -437,7 +439,7 @@ class SendTokenAgentTeam(AgentTeam):
                 if self._transaction_request is None:
                     msg = "Transaction request not found"
                     raise ValueError(msg)
-                self._transaction_preview = await self._prepare_transaction(
+                self._transaction_preview = await prepare_transaction(
                     self._transaction_request
                 )
             except Exception as e:
@@ -516,7 +518,7 @@ Would you like to proceed?"""
                 )
                 # HEADERS = {"Content-Type": "application/json"}
                 async with httpx.AsyncClient(http2=True, timeout=65) as client:
-                    response = await client.post(url, json=body.dict())
+                    response = await client.post(url, json=body.model_dump())
 
                 data = response.json()
                 try:

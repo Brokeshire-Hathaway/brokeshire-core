@@ -7,6 +7,7 @@ from openai import AsyncOpenAI
 from pinecone import Pinecone
 
 from ember_agents.common.agents import AgentTeam
+from ember_agents.settings import SETTINGS
 
 
 class EducationAgentTeam(AgentTeam):
@@ -19,10 +20,7 @@ class EducationAgentTeam(AgentTeam):
 pc = Pinecone(os.environ.get("PINECONE_API_KEY"))
 index = pc.Index("ember")
 
-client = AsyncOpenAI(
-    # This is the default and can be omitted
-    api_key=os.environ.get("OPENAI_API_KEY"),
-)
+client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
 openai_settings = {
     "model": "gpt-4-0125-preview",

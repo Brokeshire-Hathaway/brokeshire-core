@@ -478,7 +478,9 @@ class SwapTokenAgentTeam(AgentTeam):
         print(self._transaction_request)
         url = f"{SETTINGS.transaction_service_url}/swap/preview"
         async with httpx.AsyncClient(http2=True, timeout=65) as client:
-            response = await client.post(url, json=self._transaction_request.dict())
+            response = await client.post(
+                url, json=self._transaction_request.model_dump()
+            )
         print(response.text)
 
         response_json = response.json()
@@ -608,7 +610,7 @@ Would you like to proceed?"""
                 url = f"{SETTINGS.transaction_service_url}/swap/"
                 body = ExecuteTxBody(transaction_uuid=self._transaction_preview.uuid)
                 async with httpx.AsyncClient(http2=True, timeout=65) as client:
-                    response = await client.post(url, json=body.dict())
+                    response = await client.post(url, json=body.model_dump())
                     if response.json().get("block", None) is None:
                         msg = "No block found."
                         raise Exception(msg)
