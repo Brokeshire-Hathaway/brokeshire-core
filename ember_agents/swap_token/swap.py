@@ -1,6 +1,5 @@
 import asyncio
 import json
-import os
 import re
 import tempfile
 from collections.abc import Awaitable, Callable
@@ -22,12 +21,9 @@ from ember_agents.common.agents import AgentTeam
 from ember_agents.common.validators import PositiveAmount
 from ember_agents.info_bites.info_bites import get_random_info_bite
 from ember_agents.send_token.send import UniversalAddress
+from ember_agents.settings import SETTINGS
 
 client = AsyncOpenAI()
-
-TRANSACTION_SERVICE = os.environ.get(
-    "TRANSACTION_SERVICE_URL", "http://firepot_chatgpt_app:3000"
-)
 
 
 class TokenSwapTo(BaseModel):
@@ -85,9 +81,7 @@ class ExecuteTxBody(BaseModel):
     transaction_uuid: str
 
 
-OAI_CONFIG_LIST = [
-    {"model": "gpt-4-1106-preview", "api_key": os.getenv("OPENAI_API_KEY")}
-]
+OAI_CONFIG_LIST = [{"model": "gpt-4-1106-preview", "api_key": SETTINGS.openai_api_key}]
 
 # Create a temporary file
 # Write the JSON structure to a temporary file and pass it to config_list_from_json
@@ -482,7 +476,7 @@ class SwapTokenAgentTeam(AgentTeam):
             return None
 
         print(self._transaction_request)
-        url = f"{TRANSACTION_SERVICE}/swap/preview"
+        url = f"{SETTINGS.transaction_service_url}/swap/preview"
         async with httpx.AsyncClient(http2=True, timeout=65) as client:
             response = await client.post(url, json=self._transaction_request.dict())
         print(response.text)
@@ -611,7 +605,7 @@ Would you like to proceed?"""
                     msg = "Transaction request not found"
                     raise ValueError(msg)
 
-                url = f"{TRANSACTION_SERVICE}/swap/"
+                url = f"{SETTINGS.transaction_service_url}/swap/"
                 body = ExecuteTxBody(transaction_uuid=self._transaction_preview.uuid)
                 async with httpx.AsyncClient(http2=True, timeout=65) as client:
                     response = await client.post(url, json=body.dict())

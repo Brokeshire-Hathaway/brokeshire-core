@@ -19,6 +19,7 @@ dependencies = [
     "langchain-text-splitters>=0.0.1",
     "tiktoken>=0.6.0",
     "numpy>=1.26.0",
+    "pydantic-settings>=2.2.1",
 ]
 requires-python = ">=3.11,<3.13"
 readme = "README.md"

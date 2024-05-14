@@ -1,6 +1,5 @@
 import asyncio
 import json
-import os
 import re
 import tempfile
 from collections.abc import Awaitable, Callable
@@ -21,6 +20,7 @@ from pydantic import BaseModel, ValidationError
 from ember_agents.common.agents import AgentTeam
 from ember_agents.common.validators import PositiveAmount
 from ember_agents.info_bites.info_bites import get_random_info_bite
+from ember_agents.settings import SETTINGS
 
 client = AsyncOpenAI()
 
@@ -66,9 +66,7 @@ class UserReceipt(BaseModel):
     transaction_block: str
 
 
-OAI_CONFIG_LIST = [
-    {"model": "gpt-4-1106-preview", "api_key": os.getenv("OPENAI_API_KEY")}
-]
+OAI_CONFIG_LIST = [{"model": "gpt-4-1106-preview", "api_key": SETTINGS.openai_api_key}]
 
 # Create a temporary file
 # Write the JSON structure to a temporary file and pass it to config_list_from_json
@@ -512,10 +510,7 @@ Would you like to proceed?"""
                     msg = "Transaction request not found"
                     raise ValueError(msg)
 
-                transaction_service = os.environ.get(
-                    "TRANSACTION_SERVICE_URL", "http://firepot_chatgpt_app:3000"
-                )
-                url = f"{transaction_service}/transactions/send"
+                url = f"{SETTINGS.transaction_service_url}/transactions/send"
                 body = ExecuteTxBody(
                     transaction_uuid=self._transaction_preview.transaction_uuid
                 )

@@ -15,6 +15,7 @@ from ember_agents.send_token.send import (
     TxPreview,
     TxRequest,
 )
+from ember_agents.settings import SETTINGS
 from ember_agents.swap_token.swap import SwapTokenAgentTeam
 
 """tx_details = TxDetails(
@@ -81,9 +82,7 @@ class AgentTeamSessionManager:
         return f"{sender_did}:{thread_id}"
 
 
-print("COHERE_API_KEY")
-print(os.getenv("COHERE_API_KEY"))
-encoder = CohereEncoder(cohere_api_key=os.getenv("COHERE_API_KEY"))
+encoder = CohereEncoder(cohere_api_key=SETTINGS.cohere_api_key)
 
 send = Route(
     name="send",
