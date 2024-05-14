@@ -5,7 +5,7 @@ from typing import Literal
 
 import httpx
 from openai import AsyncOpenAI
-from pydantic import BaseModel, Extra, HttpUrl
+from pydantic import BaseModel
 
 Sentiment = Literal["positive", "neutral", "negative", "unknown"]
 
@@ -62,7 +62,7 @@ class CoinGecko(BaseModel):
     name: str
     description: str
     symbol: str
-    homepage: HttpUrl  # Use only the first valid URL
+    homepage: str
     twitter_screen_name: str
     asset_platform_id: str
     ath: str | None
@@ -86,7 +86,7 @@ class DexScreener(BaseModel):
     liquidity: str
 
     class Config:
-        extra = Extra.ignore
+        extra = "allow"
 
 
 class EmberOnProject(BaseModel):
