@@ -81,6 +81,7 @@ swap = Route(
 market = Route(
     name="market",
     utterances=[
+        "info on {token}",
         "what's the price of {token}?",
         "current {token} price",
         "how much is {token}?",
@@ -149,12 +150,12 @@ class Router:
         match route:
             case "send":
                 agent_team = SendTokenAgentTeam(sender_did, thread_id)
-            case "education" | "terminate":
-                agent_team = EducationAgentTeam(sender_did, thread_id)
             case "swap":
                 agent_team = SwapTokenAgentTeam(sender_did, thread_id)
-            case "market" | None | _:
+            case "market":
                 agent_team = MarketAgentTeam(sender_did, thread_id)
+            case "education" | "terminate" | None | _:
+                agent_team = EducationAgentTeam(sender_did, thread_id)
         self._session_manager.create_session(agent_team)
         return agent_team
 
