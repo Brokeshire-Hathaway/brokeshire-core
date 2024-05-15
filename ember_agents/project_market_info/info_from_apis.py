@@ -7,12 +7,11 @@ import httpx
 from openai import AsyncOpenAI
 from pydantic import BaseModel
 
+from ember_agents.settings import SETTINGS
+
 Sentiment = Literal["positive", "neutral", "negative", "unknown"]
 
-client = AsyncOpenAI(
-    # This is the default and can be omitted
-    api_key=os.environ.get("OPENAI_API_KEY"),
-)
+client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
 openai_settings = {
     "model": "gpt-3.5-turbo-0125",

@@ -17,7 +17,7 @@ class EducationAgentTeam(AgentTeam):
         self._send_team_response(response)
 
 
-pc = Pinecone(os.environ.get("PINECONE_API_KEY"))
+pc = Pinecone(SETTINGS.pinecone_api_key)
 index = pc.Index("ember")
 
 client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
