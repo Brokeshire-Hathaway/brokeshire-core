@@ -102,11 +102,11 @@ async def event_router(
 
 @app.post("/v1/threads/{thread_id}/private")
 async def create_message(thread_id: str, body: Message, request: Request):
-    return event_router(thread_id, body, request)
+    return await event_router(thread_id, body, request)
 
 
 @app.post("/v1/threads/{thread_id}/group")
 async def create_message_group(thread_id: str, body: Message, request: Request):
-    return event_router(
+    return await event_router(
         thread_id, body, request, routes=["education", "terminate", "market"]
     )

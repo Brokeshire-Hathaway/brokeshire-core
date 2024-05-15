@@ -142,13 +142,10 @@ class Router:
     def _create_agent_team_session(
         self, sender_did: str, thread_id: str, route: str | None
     ) -> AgentTeam:
-        route = (
-            route
-            if route is not None
-            and self._possible_routes is not None
-            and route in self._possible_routes
-            else None
-        )
+        if self._possible_routes is not None:
+            route = (
+                route if route is not None and route in self._possible_routes else None
+            )
         match route:
             case "send":
                 agent_team = SendTokenAgentTeam(sender_did, thread_id)
