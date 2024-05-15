@@ -5,7 +5,7 @@
 groups = ["default", "test", "lint"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:5acacf9cee59b71bb86f05953fcc1ae4eb2b562362faacd1482e111da763970f"
+content_hash = "sha256:b7efba76ee018bbfb5ca57abf25660047bedcd519072a9d04f9fdf6915952307"
 
 [[package]]
 name = "aiohttp"
@@ -124,17 +124,6 @@ files = [
 ]
 
 [[package]]
-name = "cachetools"
-version = "5.3.2"
-requires_python = ">=3.7"
-summary = "Extensible memoizing collections and decorators"
-groups = ["default"]
-files = [
-    {file = "cachetools-5.3.2-py3-none-any.whl", hash = "sha256:861f35a13a451f94e301ce2bec7cac63e881232ccce7ed67fab9b5df4d3beaa1"},
-    {file = "cachetools-5.3.2.tar.gz", hash = "sha256:086ee420196f7b2ab9ca2db2520aca326318b68fe5ba8bc4d49cca91add450f2"},
-]
-
-[[package]]
 name = "certifi"
 version = "2023.11.17"
 requires_python = ">=3.6"
@@ -143,30 +132,6 @@ groups = ["default"]
 files = [
     {file = "certifi-2023.11.17-py3-none-any.whl", hash = "sha256:e036ab49d5b79556f99cfc2d9320b34cfbe5be05c5871b51de9329f0603b0474"},
     {file = "certifi-2023.11.17.tar.gz", hash = "sha256:9b469f3a900bf28dc19b8cfbf8019bf47f7fdd1a65a1d4ffb98fc14166beb4d1"},
-]
-
-[[package]]
-name = "cffi"
-version = "1.16.0"
-requires_python = ">=3.8"
-summary = "Foreign Function Interface for Python calling C code."
-groups = ["default"]
-dependencies = [
-    "pycparser",
-]
-files = [
-    {file = "cffi-1.16.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:b84834d0cf97e7d27dd5b7f3aca7b6e9263c56308ab9dc8aae9784abb774d404"},
-    {file = "cffi-1.16.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:1b8ebc27c014c59692bb2664c7d13ce7a6e9a629be20e54e7271fa696ff2b417"},
-    {file = "cffi-1.16.0-cp311-cp311-manylinux_2_12_i686.manylinux2010_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:ee07e47c12890ef248766a6e55bd38ebfb2bb8edd4142d56db91b21ea68b7627"},
-    {file = "cffi-1.16.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d8a9d3ebe49f084ad71f9269834ceccbf398253c9fac910c4fd7053ff1386936"},
-    {file = "cffi-1.16.0-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:e70f54f1796669ef691ca07d046cd81a29cb4deb1e5f942003f401c0c4a2695d"},
-    {file = "cffi-1.16.0-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:5bf44d66cdf9e893637896c7faa22298baebcd18d1ddb6d2626a6e39793a1d56"},
-    {file = "cffi-1.16.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7b78010e7b97fef4bee1e896df8a4bbb6712b7f05b7ef630f9d1da00f6444d2e"},
-    {file = "cffi-1.16.0-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:c6a164aa47843fb1b01e941d385aab7215563bb8816d80ff3a363a9f8448a8dc"},
-    {file = "cffi-1.16.0-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:e09f3ff613345df5e8c3667da1d918f9149bd623cd9070c983c013792a9a62eb"},
-    {file = "cffi-1.16.0-cp311-cp311-win32.whl", hash = "sha256:2c56b361916f390cd758a57f2e16233eb4f64bcbeee88a4881ea90fca14dc6ab"},
-    {file = "cffi-1.16.0-cp311-cp311-win_amd64.whl", hash = "sha256:db8e577c19c0fda0beb7e0d4e09e0ba74b1e4c092e0e40bfa12fe05b6f6d75ba"},
-    {file = "cffi-1.16.0.tar.gz", hash = "sha256:bcb3ef43e58665bbda2fb198698fcae6776483e0c4a631aa5647806c25e02cc0"},
 ]
 
 [[package]]
@@ -251,41 +216,6 @@ dependencies = [
 files = [
     {file = "colorlog-6.8.0-py3-none-any.whl", hash = "sha256:4ed23b05a1154294ac99f511fabe8c1d6d4364ec1f7fc989c7fb515ccc29d375"},
     {file = "colorlog-6.8.0.tar.gz", hash = "sha256:fbb6fdf9d5685f2517f388fb29bb27d54e8654dd31f58bc2a3b217e967a95ca6"},
-]
-
-[[package]]
-name = "cryptography"
-version = "41.0.7"
-requires_python = ">=3.7"
-summary = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
-groups = ["default"]
-dependencies = [
-    "cffi>=1.12",
-]
-files = [
-    {file = "cryptography-41.0.7-cp37-abi3-macosx_10_12_universal2.whl", hash = "sha256:3c78451b78313fa81607fa1b3f1ae0a5ddd8014c38a02d9db0616133987b9cdf"},
-    {file = "cryptography-41.0.7-cp37-abi3-macosx_10_12_x86_64.whl", hash = "sha256:928258ba5d6f8ae644e764d0f996d61a8777559f72dfeb2eea7e2fe0ad6e782d"},
-    {file = "cryptography-41.0.7-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5a1b41bc97f1ad230a41657d9155113c7521953869ae57ac39ac7f1bb471469a"},
-    {file = "cryptography-41.0.7-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:841df4caa01008bad253bce2a6f7b47f86dc9f08df4b433c404def869f590a15"},
-    {file = "cryptography-41.0.7-cp37-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:5429ec739a29df2e29e15d082f1d9ad683701f0ec7709ca479b3ff2708dae65a"},
-    {file = "cryptography-41.0.7-cp37-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:43f2552a2378b44869fe8827aa19e69512e3245a219104438692385b0ee119d1"},
-    {file = "cryptography-41.0.7-cp37-abi3-musllinux_1_1_aarch64.whl", hash = "sha256:af03b32695b24d85a75d40e1ba39ffe7db7ffcb099fe507b39fd41a565f1b157"},
-    {file = "cryptography-41.0.7-cp37-abi3-musllinux_1_1_x86_64.whl", hash = "sha256:49f0805fc0b2ac8d4882dd52f4a3b935b210935d500b6b805f321addc8177406"},
-    {file = "cryptography-41.0.7-cp37-abi3-win32.whl", hash = "sha256:f983596065a18a2183e7f79ab3fd4c475205b839e02cbc0efbbf9666c4b3083d"},
-    {file = "cryptography-41.0.7-cp37-abi3-win_amd64.whl", hash = "sha256:90452ba79b8788fa380dfb587cca692976ef4e757b194b093d845e8d99f612f2"},
-    {file = "cryptography-41.0.7-pp310-pypy310_pp73-macosx_10_12_x86_64.whl", hash = "sha256:079b85658ea2f59c4f43b70f8119a52414cdb7be34da5d019a77bf96d473b960"},
-    {file = "cryptography-41.0.7-pp310-pypy310_pp73-manylinux_2_28_aarch64.whl", hash = "sha256:b640981bf64a3e978a56167594a0e97db71c89a479da8e175d8bb5be5178c003"},
-    {file = "cryptography-41.0.7-pp310-pypy310_pp73-manylinux_2_28_x86_64.whl", hash = "sha256:e3114da6d7f95d2dee7d3f4eec16dacff819740bbab931aff8648cb13c5ff5e7"},
-    {file = "cryptography-41.0.7-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:d5ec85080cce7b0513cfd233914eb8b7bbd0633f1d1703aa28d1dd5a72f678ec"},
-    {file = "cryptography-41.0.7-pp38-pypy38_pp73-macosx_10_12_x86_64.whl", hash = "sha256:7a698cb1dac82c35fcf8fe3417a3aaba97de16a01ac914b89a0889d364d2f6be"},
-    {file = "cryptography-41.0.7-pp38-pypy38_pp73-manylinux_2_28_aarch64.whl", hash = "sha256:37a138589b12069efb424220bf78eac59ca68b95696fc622b6ccc1c0a197204a"},
-    {file = "cryptography-41.0.7-pp38-pypy38_pp73-manylinux_2_28_x86_64.whl", hash = "sha256:68a2dec79deebc5d26d617bfdf6e8aab065a4f34934b22d3b5010df3ba36612c"},
-    {file = "cryptography-41.0.7-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:09616eeaef406f99046553b8a40fbf8b1e70795a91885ba4c96a70793de5504a"},
-    {file = "cryptography-41.0.7-pp39-pypy39_pp73-macosx_10_12_x86_64.whl", hash = "sha256:48a0476626da912a44cc078f9893f292f0b3e4c739caf289268168d8f4702a39"},
-    {file = "cryptography-41.0.7-pp39-pypy39_pp73-manylinux_2_28_aarch64.whl", hash = "sha256:c7f3201ec47d5207841402594f1d7950879ef890c0c495052fa62f58283fde1a"},
-    {file = "cryptography-41.0.7-pp39-pypy39_pp73-manylinux_2_28_x86_64.whl", hash = "sha256:c5ca78485a255e03c32b513f8c2bc39fedb7f5c5f8535545bdc223a03b24f248"},
-    {file = "cryptography-41.0.7-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:d6c391c021ab1f7a82da5d8d0b3cee2f4b2c455ec86c8aebbc84837a631ff309"},
-    {file = "cryptography-41.0.7.tar.gz", hash = "sha256:13f93ce9bea8016c253b34afc6bd6a75993e5c40672ed5405a9c832f0d4a00bc"},
 ]
 
 [[package]]
@@ -415,22 +345,6 @@ files = [
 ]
 
 [[package]]
-name = "gptcache"
-version = "0.1.43"
-requires_python = ">=3.8.1"
-summary = "GPTCache, a powerful caching library that can be used to speed up and lower the cost of chat applications that rely on the LLM service. GPTCache works as a memcache for AIGC applications, similar to how Redis works for traditional applications."
-groups = ["default"]
-dependencies = [
-    "cachetools",
-    "numpy",
-    "requests",
-]
-files = [
-    {file = "gptcache-0.1.43-py3-none-any.whl", hash = "sha256:9c557ec9cc14428942a0ebf1c838520dc6d2be801d67bb6964807043fc2feaf5"},
-    {file = "gptcache-0.1.43.tar.gz", hash = "sha256:cebe7ec5e32a3347bf839e933a34e67c7fcae620deaa7cb8c6d7d276c8686f1a"},
-]
-
-[[package]]
 name = "greenlet"
 version = "3.0.3"
 requires_python = ">=3.7"
@@ -448,48 +362,6 @@ files = [
     {file = "greenlet-3.0.3-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:894393ce10ceac937e56ec00bb71c4c2f8209ad516e96033e4b3b1de270e200d"},
     {file = "greenlet-3.0.3-cp311-cp311-win_amd64.whl", hash = "sha256:1ea188d4f49089fc6fb283845ab18a2518d279c7cd9da1065d7a84e991748728"},
     {file = "greenlet-3.0.3.tar.gz", hash = "sha256:43374442353259554ce33599da8b692d5aa96f8976d567d4badf263371fbe491"},
-]
-
-[[package]]
-name = "guidance"
-version = "0.1.10"
-requires_python = ">=3.8"
-summary = "A guidance language for controlling large language models."
-groups = ["default"]
-dependencies = [
-    "aiohttp",
-    "diskcache",
-    "gptcache",
-    "msal",
-    "numpy",
-    "openai>=1.0",
-    "ordered-set",
-    "platformdirs",
-    "pyformlang",
-    "requests",
-    "tiktoken>=0.3",
-]
-files = [
-    {file = "guidance-0.1.10-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:b3d890a5f935a5cd6ba714a5a0fe6559f56d65e0378fd33fbe90cf4507ee6cfa"},
-    {file = "guidance-0.1.10-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:2f03ed0b1e86b0d6e011538d43bce67ed3c53784871c99019860d7b27631d89f"},
-    {file = "guidance-0.1.10-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:004aba30b5f02ebe20c35e358baaf5459eefb10889a7126df523118cc95c1396"},
-    {file = "guidance-0.1.10-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:544a3e25f917e865a862046fd51f840644f0cf72326d3af3838bd256f151dee1"},
-    {file = "guidance-0.1.10-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:5e9baff5c27926dcb617f4a5259115e494995ca5f0a7a368b2506e05a3e1c0b9"},
-    {file = "guidance-0.1.10-cp311-cp311-win32.whl", hash = "sha256:b8c6e4ae6e838670e2d6a48249b999a20b1de4d222b629ed9e2ee36025fb8814"},
-    {file = "guidance-0.1.10-cp311-cp311-win_amd64.whl", hash = "sha256:165f4e430179c75f6fa1ab9880bd10c76d2305210e7317883882f65d7b73bd57"},
-    {file = "guidance-0.1.10-pp310-pypy310_pp73-macosx_10_9_x86_64.whl", hash = "sha256:6b428a3738dc5caff326f6c54526d5ea740c00b69245a6afdee05b703169618b"},
-    {file = "guidance-0.1.10-pp310-pypy310_pp73-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:958f20e34d6db1b67fea56dd2e1be5463531cc3889f130ace1ea8fc2f1a72796"},
-    {file = "guidance-0.1.10-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6fb0f052ecba795a494f0d7207909f4853c06960715960ff4f03c3a9afdf4a0b"},
-    {file = "guidance-0.1.10-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:c42e5643c035bae6484cad3cc45591186f3f84fe9e42461eab046811c44dc17e"},
-    {file = "guidance-0.1.10-pp38-pypy38_pp73-macosx_10_9_x86_64.whl", hash = "sha256:12d856520d692315b2118433aab024382e08e4b389da7145cbe86772789a665f"},
-    {file = "guidance-0.1.10-pp38-pypy38_pp73-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:31f1f200915213cbbc9380775d66052ebc95b2bad39509fb3edcb74e8b4bc8d4"},
-    {file = "guidance-0.1.10-pp38-pypy38_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:de137da50a25f6004a61aea44f0401e9ee6d86c412d152eda202e5b6f6dba6b2"},
-    {file = "guidance-0.1.10-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:4118b6dea6c6e79ca19a6e4251d388264f85bc2bc4b045ebaff8c8e2f52b1eb6"},
-    {file = "guidance-0.1.10-pp39-pypy39_pp73-macosx_10_9_x86_64.whl", hash = "sha256:31f6ed612929b2b174aabca87f3cc3d05ca881d572703de091d0fdaab0d7c060"},
-    {file = "guidance-0.1.10-pp39-pypy39_pp73-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:d9bbd795982c767aa7671514883d0f9279a1efc5186e913e52f1d94e98053d68"},
-    {file = "guidance-0.1.10-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:03f2075002a0a92eb4eb0cfdf5051f3a03bdf36d1953a6a5d658af633ecea27e"},
-    {file = "guidance-0.1.10-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:0a36068fef8c5a7285937ff7f4dca83b68b94bf8cb1e37709ee20e08c11a497e"},
-    {file = "guidance-0.1.10.tar.gz", hash = "sha256:104c014f739ba671fdd38b76746d8238dc97775678db805c4a9fd04b5ea2bde7"},
 ]
 
 [[package]]
@@ -781,22 +653,6 @@ files = [
 ]
 
 [[package]]
-name = "msal"
-version = "1.26.0"
-requires_python = ">=2.7"
-summary = "The Microsoft Authentication Library (MSAL) for Python library enables your app to access the Microsoft Cloud by supporting authentication of users with Microsoft Azure Active Directory accounts (AAD) and Microsoft Accounts (MSA) using industry standard OAuth2 and OpenID Connect."
-groups = ["default"]
-dependencies = [
-    "PyJWT[crypto]<3,>=1.0.0",
-    "cryptography<44,>=0.6",
-    "requests<3,>=2.0.0",
-]
-files = [
-    {file = "msal-1.26.0-py2.py3-none-any.whl", hash = "sha256:be77ba6a8f49c9ff598bbcdc5dfcf1c9842f3044300109af738e8c3e371065b5"},
-    {file = "msal-1.26.0.tar.gz", hash = "sha256:224756079fe338be838737682b49f8ebc20a87c1c5eeaf590daae4532b83de15"},
-]
-
-[[package]]
 name = "multidict"
 version = "6.0.4"
 requires_python = ">=3.7"
@@ -830,17 +686,6 @@ groups = ["default", "lint"]
 files = [
     {file = "mypy_extensions-1.0.0-py3-none-any.whl", hash = "sha256:4392f6c0eb8a5668a69e23d168ffa70f0be9ccfd32b5cc2d26a34ae5b844552d"},
     {file = "mypy_extensions-1.0.0.tar.gz", hash = "sha256:75dbf8955dc00442a438fc4d0666508a9a97b6bd41aa2f0ffe9d2f2725af0782"},
-]
-
-[[package]]
-name = "networkx"
-version = "3.2.1"
-requires_python = ">=3.9"
-summary = "Python package for creating and manipulating graphs and networks"
-groups = ["default"]
-files = [
-    {file = "networkx-3.2.1-py3-none-any.whl", hash = "sha256:f18c69adc97877c42332c170849c96cefa91881c99a7cb3e95b7c659ebdc1ec2"},
-    {file = "networkx-3.2.1.tar.gz", hash = "sha256:9f1bb5cf3409bf324e0a722c20bdb4c20ee39bf1c30ce8ae499c8502b0b5e0c6"},
 ]
 
 [[package]]
@@ -890,17 +735,6 @@ dependencies = [
 files = [
     {file = "openai-1.20.0-py3-none-any.whl", hash = "sha256:9fcc75256b2425393800e358cd520b02b5ab1a8731921e45aa7ae6aec3ee8187"},
     {file = "openai-1.20.0.tar.gz", hash = "sha256:d7c0e824b7da3c043731943965c737595cf9631c913b7a1464c502fdf492b9a9"},
-]
-
-[[package]]
-name = "ordered-set"
-version = "4.1.0"
-requires_python = ">=3.7"
-summary = "An OrderedSet is a custom MutableSet that remembers its order, so that every"
-groups = ["default"]
-files = [
-    {file = "ordered-set-4.1.0.tar.gz", hash = "sha256:694a8e44c87657c59292ede72891eb91d34131f6531463aab3009191c77364a8"},
-    {file = "ordered_set-4.1.0-py3-none-any.whl", hash = "sha256:046e1132c71fcf3330438a539928932caf51ddbc582496833e23de611de14562"},
 ]
 
 [[package]]
@@ -968,7 +802,7 @@ name = "platformdirs"
 version = "4.1.0"
 requires_python = ">=3.8"
 summary = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
-groups = ["default", "lint"]
+groups = ["lint"]
 files = [
     {file = "platformdirs-4.1.0-py3-none-any.whl", hash = "sha256:11c8f37bcca40db96d8144522d925583bdb7a31f7b0e37e3ed4318400a8e2380"},
     {file = "platformdirs-4.1.0.tar.gz", hash = "sha256:906d548203468492d432bcb294d4bc2fff751bf84971fbb2c10918cc206ee420"},
@@ -1005,17 +839,6 @@ dependencies = [
 files = [
     {file = "pyautogen-0.2.26-py3-none-any.whl", hash = "sha256:290e606ea357edc895aefd2408a3488e60cd25285e38dae12d155738f1471a4d"},
     {file = "pyautogen-0.2.26.tar.gz", hash = "sha256:4e3079065973977161b2651ba7cc15672540e17395b510dd861df32318faa0f0"},
-]
-
-[[package]]
-name = "pycparser"
-version = "2.21"
-requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-summary = "C parser in Python"
-groups = ["default"]
-files = [
-    {file = "pycparser-2.21-py2.py3-none-any.whl", hash = "sha256:8ee45429555515e1f6b185e78100aea234072576aa43ab53aefcae078162fca9"},
-    {file = "pycparser-2.21.tar.gz", hash = "sha256:e644fdec12f7872f86c58ff790da456218b10f863970249516d60a5eaca77206"},
 ]
 
 [[package]]
@@ -1102,73 +925,6 @@ dependencies = [
 files = [
     {file = "pydantic_settings-2.2.1-py3-none-any.whl", hash = "sha256:0235391d26db4d2190cb9b31051c4b46882d28a51533f97440867f012d4da091"},
     {file = "pydantic_settings-2.2.1.tar.gz", hash = "sha256:00b9f6a5e95553590434c0fa01ead0b216c3e10bc54ae02e37f359948643c5ed"},
-]
-
-[[package]]
-name = "pydot"
-version = "2.0.0"
-requires_python = ">=3.7"
-summary = "Python interface to Graphviz's Dot"
-groups = ["default"]
-dependencies = [
-    "pyparsing>=3",
-]
-files = [
-    {file = "pydot-2.0.0-py3-none-any.whl", hash = "sha256:408a47913ea7bd5d2d34b274144880c1310c4aee901f353cf21fe2e526a4ea28"},
-    {file = "pydot-2.0.0.tar.gz", hash = "sha256:60246af215123fa062f21cd791be67dda23a6f280df09f68919e637a1e4f3235"},
-]
-
-[[package]]
-name = "pyformlang"
-version = "1.0.4"
-summary = "A python framework for formal grammars"
-groups = ["default"]
-dependencies = [
-    "networkx",
-    "numpy",
-    "pydot",
-]
-files = [
-    {file = "pyformlang-1.0.4-py3-none-any.whl", hash = "sha256:19bd167f0ac15c4d204274c85f889d690e106e43cb4094e926a12f6288dc4b2d"},
-    {file = "pyformlang-1.0.4.tar.gz", hash = "sha256:cac5fa73cab6e9b710caae8680a04ac53769d348fee32a5bde680cd9ca82981b"},
-]
-
-[[package]]
-name = "pyjwt"
-version = "2.8.0"
-requires_python = ">=3.7"
-summary = "JSON Web Token implementation in Python"
-groups = ["default"]
-files = [
-    {file = "PyJWT-2.8.0-py3-none-any.whl", hash = "sha256:59127c392cc44c2da5bb3192169a91f429924e17aff6534d70fdc02ab3e04320"},
-    {file = "PyJWT-2.8.0.tar.gz", hash = "sha256:57e28d156e3d5c10088e0c68abb90bfac3df82b40a71bd0daa20c65ccd5c23de"},
-]
-
-[[package]]
-name = "pyjwt"
-version = "2.8.0"
-extras = ["crypto"]
-requires_python = ">=3.7"
-summary = "JSON Web Token implementation in Python"
-groups = ["default"]
-dependencies = [
-    "PyJWT==2.8.0",
-    "cryptography>=3.4.0",
-]
-files = [
-    {file = "PyJWT-2.8.0-py3-none-any.whl", hash = "sha256:59127c392cc44c2da5bb3192169a91f429924e17aff6534d70fdc02ab3e04320"},
-    {file = "PyJWT-2.8.0.tar.gz", hash = "sha256:57e28d156e3d5c10088e0c68abb90bfac3df82b40a71bd0daa20c65ccd5c23de"},
-]
-
-[[package]]
-name = "pyparsing"
-version = "3.1.1"
-requires_python = ">=3.6.8"
-summary = "pyparsing module - Classes and methods to define and execute parsing grammars"
-groups = ["default"]
-files = [
-    {file = "pyparsing-3.1.1-py3-none-any.whl", hash = "sha256:32c7c0b711493c72ff18a981d24f28aaf9c1fb7ed5e9667c9e84e3db623bdbfb"},
-    {file = "pyparsing-3.1.1.tar.gz", hash = "sha256:ede28a1a32462f5a9705e07aea48001a08f7cf81a021585011deba701581a0db"},
 ]
 
 [[package]]

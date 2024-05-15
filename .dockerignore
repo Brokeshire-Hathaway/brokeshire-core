@@ -1,0 +1,7 @@
+tests
+LICENSE
+.ruff_cache
+.venv
+.vscode
+README.md
+.github
