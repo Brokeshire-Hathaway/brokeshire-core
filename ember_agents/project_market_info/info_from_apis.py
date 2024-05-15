@@ -46,10 +46,10 @@ class ProjectInfo(BaseModel):
     website: str | None
     twitter_handle: str | None
     network: str
-    price: str | None
-    ath: str | None
-    price_change_24h: str | None
-    market_cap: str | None
+    price: float | None
+    ath: float | None
+    price_change_24h: float | None
+    market_cap: float | None
     liquidity: str | None = None
     token_contract_address: str | None
     pool_address: str | None = None
@@ -64,10 +64,10 @@ class CoinGecko(BaseModel):
     homepage: str
     twitter_screen_name: str
     asset_platform_id: str
-    ath: str | None
-    price: str | None
-    price_change_24h: str | None
-    market_cap: str | None
+    ath: float | None
+    price: float | None
+    price_change_24h: float | None
+    market_cap: float | None
 
     class Config:
         extra = "allow"
@@ -120,23 +120,22 @@ async def market_route(message: str) -> str:
         else None
     )
     token_ticker = info_of_token.symbol.upper()
-    market_cap = float(info_of_token.market_cap) if info_of_token.market_cap else None
+    market_cap = info_of_token.market_cap if info_of_token.market_cap else None
     network = info_of_token.network
-    price = f"{float(info_of_token.price):.4f}" if info_of_token.price else None
+    price = f"{info_of_token.price:.4f}" if info_of_token.price else None
     ath = info_of_token.ath if info_of_token.ath else None
     liquidity = info_of_token.liquidity if info_of_token.liquidity else None
     ath_delta = (
-        (float(info_of_token.price) - float(info_of_token.ath))
-        / float(info_of_token.ath)
+        (info_of_token.price - info_of_token.ath) / info_of_token.ath
         if info_of_token.ath and info_of_token.price is not None
         else None
     )
     if embers_description is None:
         return f"""
-**| {info_of_token.name} (${token_ticker}) |**
+**\\| {info_of_token.name} \\(${token_ticker}\\) \\|**
 
 **🔗 Network ・** {network}
-**💵 Price ・** ${price} (24hr {info_of_token.price_change_24h})
+**💵 Price ・** ${price} \\(24hr {info_of_token.price_change_24h}\\)
 **💰 Market Cap ・** ${market_cap}
 **💧 Liquidity ・** {liquidity}
 **🔖 Token Contract Address ・** {info_of_token.token_contract_address}
@@ -147,13 +146,13 @@ _Always do your own research_ 🧐💡🚀
     desc = embers_description.project_description
     emoji = embers_description.project_emoji
     price_header = (
-        f"\n**💵 Price ・** ${price} (24hΔ: {info_of_token.price_change_24h}%)\n(ATH: ${ath} Δ: {ath_delta:.2%})"
+        f"\n**💵 Price ・** ${price} \\(24hΔ: {info_of_token.price_change_24h}%\\)\n\\(ATH: ${ath} Δ: {ath_delta:.2%}\\)"
         if price
         else ""
     )
     market_cap_header = f"\n**💰 Market Cap ・** ${market_cap}" if market_cap else ""
     return f"""
-**| {emoji} {info_of_token.name} (${token_ticker}) |**
+**\\| {emoji} {info_of_token.name} \\(${token_ticker}\\) \\|**
 
 **🔗 Network ・** {network}{price_header}{market_cap_header}
 
@@ -400,7 +399,7 @@ async def dexscreener(token_contract_address: str):
         twitter_handle=None,
         symbol=jsonresp.get("baseToken", {}).get("symbol"),
         price=jsonresp.get("priceUsd"),
-        price_change_24h=str(jsonresp.get("priceChange", {}).get("h24")),
+        price_change_24h=jsonresp.get("priceChange", {}).get("h24"),
         market_cap=jsonresp.get("fdv"),
         pool_address=jsonresp.get("pairAddress"),
         liquidity=jsonresp.get("liquidity").get("usd"),  #
