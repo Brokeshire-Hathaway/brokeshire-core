@@ -22,7 +22,6 @@ readme = "README.md"
 license = { text = "MIT" }
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
 asyncio_mode = "auto"
 
 [tool.pdm]
