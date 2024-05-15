@@ -37,7 +37,7 @@ add_bg_task(asyncio.create_task(upload_doc_memory()))
 ONE_MINUTE_TIMEOUT = 60
 
 
-async def event_router(
+def event_router(
     thread_id: str, body: Message, request: Request, routes: list[str] | None = None
 ):
     """Default event router for the threads API."""
@@ -102,11 +102,11 @@ async def event_router(
 
 @app.post("/v1/threads/{thread_id}/private")
 async def create_message(thread_id: str, body: Message, request: Request):
-    return await event_router(thread_id, body, request)
+    return event_router(thread_id, body, request)
 
 
 @app.post("/v1/threads/{thread_id}/group")
 async def create_message_group(thread_id: str, body: Message, request: Request):
-    return await event_router(
+    return event_router(
         thread_id, body, request, routes=["education", "terminate", "market"]
     )
