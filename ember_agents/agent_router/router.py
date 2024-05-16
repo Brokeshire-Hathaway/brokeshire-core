@@ -58,7 +58,7 @@ send = Route(
 
 terminate = Route(
     name="terminate",
-    utterances=["terminate session", "cancel action"],
+    utterances=["terminate", "cancel", "stop", "quit", "exit"],
 )
 
 swap = Route(
@@ -91,6 +91,7 @@ market = Route(
         "doland tremp",
         "tell me about {token}",
         "market info",
+        "{name} {network}",
         "project details",
         "{token} summary",
     ],
@@ -104,6 +105,7 @@ education = Route(
         "explain a smart contract",
         "tell me about yourself",
         "good morning",
+        "what is an L2 {network}?",
         "what is the difference between {protocol Y} and {protocol Z}?",
         "technology comparison of {protocol A} and {protocol B}",
         "Will the price of {token} go up?",
