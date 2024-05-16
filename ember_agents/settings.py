@@ -1,7 +1,7 @@
 import os
 from typing import Annotated
 
-from pydantic import AfterValidator, HttpUrl
+from pydantic import AfterValidator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
