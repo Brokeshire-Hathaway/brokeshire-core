@@ -264,91 +264,82 @@ async def interpreter_reply(recipient: ConversableAgent, messages, sender, confi
 
 
 async def convert_to_json(request: str) -> str:
-    system_message = """You are an interpreter responsible for converting a user
-    request into JSON.
+    system_message = """You are an interpreter responsible for converting a user request into JSON. If you are unsure, use the value `null` for missing information.
 
-    # Example 1
-    ## User Request
-    Swap 1 usd-coin from my sepolia account to usd-coin in my polygon mumbai account.
-    ## JSON
-    ```json
-    {{
-        "type": "swap",
-        "network": "sepolia",
-        "to_network": "polygon mumbai",
-        "amount": "1",
-        "token": "usd-coin",
-        "to_token": "usd-coin"
-    }}
+# Example 1
+## User Request
+Swap 1 usd-coin from my sepolia account to usd-coin in my polygon mumbai account.
+## JSON
+```json
+{{
+    "type": "swap",
+    "network": "sepolia",
+    "to_network": "polygon mumbai",
+    "amount": "1",
+    "token": "usd-coin",
+    "to_token": "usd-coin"
+}}
+```
 
-    # Example 2
-    ## User Request
-    Change 2.3 ethereum from goerli to usd-coin in sepolia wallet
-    ## JSON
-    ```json
-    {{
-        "type": "swap",
-        "network": "goerli",
-        "to_network": "sepolia",
-        "amount": "2.3",
-        "token": "ethereum",
-        "to_token": "usd-coin"
-    }}
-    ```
+# Example 2
+## User Request
+Change  ethereum from goerli to usd-coin in sepolia wallet
+## JSON
+```json
+{{
+    "type": "swap",
+    "network": "goerli",
+    "to_network": "sepolia",
+    "amount": null,
+    "token": "ethereum",
+    "to_token": "usd-coin"
+}}
+```
 
-    # Example 3
-    ## User Request
-    Change .43 ethereum from eth sepolia testnet wallet to usd-coin in my mumbai
-    ## JSON
-    ```json
-    {{
-        "type": "swap",
-        "network": "eth sepolia testnet",
-        "to_network": "mumbai",
-        "amount": "0.43",
-        "token": "ethereum",
-        "to_token": "usd-coin"
-    }}
-    ```
+# Example 3
+## User Request
+Change .43 ethereum from eth sepolia testnet wallet to usd-coin
+## JSON
+```json
+{{
+    "type": "swap",
+    "network": "eth sepolia testnet",
+    "to_network": null,
+    "amount": "0.43",
+    "token": "ethereum",
+    "to_token": "usd-coin"
+}}
+```
 
-    # Example 4
-    ## User Request
-    Change 50 matic-network of my polygon mumbai account
-    ## JSON
-    ```json
-    {{
-        "error": "Missing information of the destination chain and token.",
-    }}
+# Example 5
+## User Request
+Buy 23 eth in sepolia from usd-coin in mumbai
+## JSON
+```json
+{{
+    "type": "buy",
+    "amount": "23",
+    "to_network": "sepolia",
+    "to_token": "eth",
+    "network": "mumbai",
+    "token": "usd-coin"
+}}
+```
 
-    # Example 5
-    ## User Request
-    Buy 23 eth in sepolia from usd-coin in mumbai
-    ## JSON
-    ```json
-    {{
-        "type": "buy",
-        "amount": "23",
-        "to_network": "sepolia",
-        "to_token": "eth",
-        "network": "mumbai",
-        "token": "usd-coin"
-    }}
-
-    # Example 6
-    ## User Request
-    Buy 0.456345632 usd-coin in eth sepolia using matic in mumbai
-    ## JSON
-    ```json
-    {{
-        "type": "buy",
-        "amount": "0.456345632",
-        "to_token": "usd-coin",
-        "to_network": "eth sepolia",
-        "token": "matic",
-        "network": "mumbai"
-    }}
-    ```
-"""
+# Example 6
+## User Request
+Buy 0.456345632 usd-coin in eth sepolia using matic in mumbai
+## JSON
+```json
+{{
+    "type": "buy",
+    "amount": "0.456345632",
+    "to_token": "usd-coin",
+    "to_network": "eth sepolia",
+    "token": "matic",
+    "network": "mumbai"
+}}
+```"""
 
     user_message = f"Convert the following request into JSON.\n---\n{request}"
 
@@ -376,6 +367,17 @@ async def convert_to_json(request: str) -> str:
     raise Exception(msg)
 
 
+"""# Example 4
+## User Request
+Change 50 matic-network of my polygon mumbai account
+## JSON
+```json
+{{
+    "error": "Missing information of the destination chain and token.",
+}}
+```"""
+
+
 """
             ---
             # Example
@@ -397,31 +399,31 @@ async def convert_to_json(request: str) -> str:
 
 
 broker_system_message = """
-You are a cryptocurrency copilot responsible for gathering missing information from the user necessary to complete their request.
+You are a friendly cryptocurrency copilot responsible for gathering the missing information from the user necessary to complete their token conversion request. All other requests MUST be politely refused.
+
 After the user has satisfied all requirements, you will send the revised intent to the interpreter on their behalf.
-Your messages to the interpreter must be in the following format (the NEXT value will always be interpeter):
+
+Your messages to the interpreter must be in the following format (the NEXT value will ALWAYS be interpeter):
 ---
 # Example 1
 Original Intent: Swap .1 usd-coin sepolia testnet to usd-coin polygon-mumbai
 Type: swap
 Token: usd-coin
-to_token: usd-coin
+To Token: usd-coin
 Amount: 0.1
 Network: sepolia testnet
-to_network: polygon mumbai
+To Network: polygon mumbai
 NEXT: interpreter
-
-# Example 2
 ---
+# Example 2
 Original Intent: Purchase 0.456 axlusdc in bnb testnet using usd-coin in sepolia
 Type: buy
 Token: usd-coin
-to_token: axlusdc
+To Token: axlusdc
 Amount: 0.456
 Network: sepolia
-to_network: bnb testnet
-NEXT: interpreter
-"""
+To Network: bnb testnet
+NEXT: interpreter"""
 
 # TODO: Add new agent for showing tx preview, determining if any changes are needed, and
 #       confirming if the user will proceed or cancel. Broker might be able to handle this.
@@ -675,7 +677,7 @@ TERMINATE"""
         )
         manager = GroupChatManager(groupchat=groupchat, llm_config=llm_config)
 
-        self._send_activity_update("Understanding your request...")
+        self._send_activity_update("Understanding your convert request...")
 
         try:
             await user_proxy.a_initiate_chat(manager, message=message)

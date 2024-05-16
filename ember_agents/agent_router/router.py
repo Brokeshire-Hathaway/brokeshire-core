@@ -45,14 +45,14 @@ encoder = CohereEncoder(cohere_api_key=SETTINGS.cohere_api_key)
 send = Route(
     name="send",
     utterances=[
-        "give 5 bitcoin to alice",
+        "give 5 {token} to alice",
         "send token",
         "send {token}",
-        "send sol to bob",
+        "send {token} to bob",
         "transfer crypto",
-        "1.25 eth to 0xC7F97cCC3b899fd0372134570A7c5404f6F887F8",
-        "48.06 bob to mike",
-        "22 usdc to 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+        "1.25 {token} to 0xC7F97cCC3b899fd0372134570A7c5404f6F887F8",
+        "48.06 {token} to mike",
+        "22 {token} to 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
     ],
 )
 
@@ -64,16 +64,17 @@ terminate = Route(
 swap = Route(
     name="swap",
     utterances=[
-        "swap 1 uasdc from sepolia to polygon-mumbai",
+        "swap 1 {token} from {network} to {network}",
         "swap token",
+        "swap {token} to {token}",
         "buy crypto",
         "buy {token}",
         "purchase {token}",
         "I want to purchase crypto",
-        "change me my 5 uausdc",
+        "convert my 5 {token}",
         "change crypto",
-        "48.5 bitcoin to other network",
-        "1.01 from sepolia to polygon-mumbai",
+        "48.5 {token} to other chain",
+        "1.01 from {network} to {network}",
         "change some of my tokens",
     ],
 )
