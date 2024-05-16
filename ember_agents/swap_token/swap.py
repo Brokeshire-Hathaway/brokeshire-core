@@ -1,6 +1,5 @@
 import asyncio
 import json
-import os
 import re
 import tempfile
 from collections.abc import Awaitable, Callable
@@ -15,67 +14,74 @@ from autogen import (
     UserProxyAgent,
     config_list_from_json,
 )
-from ember_agents.common.agents import AgentTeam
-from ember_agents.info_bites.info_bites import get_random_info_bite
 from openai import AsyncOpenAI
-from pydantic import BaseModel, ValidationError, validator
+from pydantic import BaseModel, ValidationError
+
+from ember_agents.common.agents import AgentTeam
+from ember_agents.common.validators import PositiveAmount
+from ember_agents.info_bites.info_bites import get_random_info_bite
+from ember_agents.send_token.send import UniversalAddress
+from ember_agents.settings import SETTINGS
 
 client = AsyncOpenAI()
 
 
-class UniversalAddress(BaseModel):
-    identifier: str
-    platform: str
+class TokenSwapTo(BaseModel):
+    """Request for doing cross chain swap"""
+
     network: str
-
-
-class TxRequest(BaseModel):
-    sender_address: UniversalAddress
-    recipient_address: str
     token: str
+
+
+class SwapRequest(BaseModel):
+    """Request for doing cross chain swap"""
+
+    amount: PositiveAmount
+    token: str
+    sender: UniversalAddress
+    to: TokenSwapTo
+    type: str
+
+
+class SwapInformation(BaseModel):
+    """All needed information to do a cross-chain swap."""
+
     amount: str
+    token: str
+    network: str
+    to_network: str
+    to_token: str
+    type: str
+
+    def to_swap_request(self, address: UniversalAddress) -> SwapRequest:
+        """Transforms information to request."""
+
+        address.network = self.network
+        return SwapRequest(
+            amount=self.amount,
+            token=self.token,
+            sender=address,
+            to=TokenSwapTo(network=self.to_network, token=self.to_token),
+            type=self.type,
+        )
 
 
 class TxPreview(BaseModel):
-    recipient: str
-    amount: str
-    fees: str
-    total: str
-    transaction_uuid: str
+    uuid: str
+    from_amount: str
+    from_chain: str
+    to_amount: str
+    to_chain: str
+    duration: str
+    total_fees: str
+    total_amount: str
 
 
 class ExecuteTxBody(BaseModel):
     transaction_uuid: str
 
 
-class Transaction(BaseModel):
-    recipient_address: str
-    network: str
-    amount: str
-    token: str
-
-    # Custom validator to ensure amount is a positive value
-    @validator("amount")
-    @classmethod
-    def amount_must_be_positive(cls, value):
-        if float(value) <= 0:
-            msg = "amount must be a positive number"
-            raise ValueError(msg)
-        return value
-
-
-class UserReceipt(BaseModel):
-    success: bool
-    recipient: str
-    amount: str
-    fees: str | None
-    total: str | None
-    transaction_block: str
-
-
-OAI_CONFIG_LIST = [
-    {"model": "gpt-4-1106-preview", "api_key": os.getenv("OPENAI_API_KEY")}
-]
+OAI_CONFIG_LIST = [{"model": "gpt-4-1106-preview", "api_key": SETTINGS.openai_api_key}]
 
 # Create a temporary file
 # Write the JSON structure to a temporary file and pass it to config_list_from_json
@@ -91,7 +97,7 @@ with tempfile.NamedTemporaryFile(mode="w+", delete=True) as temp:
     # gpt = models.OpenAI("gpt-4", api_key=llm_config.get("api_key"))
 
 
-class SendTokenGroupChat(GroupChat):
+class SwapTokenGroupChat(GroupChat):
     def __init__(
         self,
         agents,
@@ -121,6 +127,7 @@ class SendTokenGroupChat(GroupChat):
                     .strip("-")
                     .strip()
                 )
+                print(suggested_next)
                 print(f"Extracted suggested_next = {suggested_next}")
                 try:
                     next_speaker = self.agent_by_name(suggested_next)
@@ -257,21 +264,91 @@ async def interpreter_reply(recipient: ConversableAgent, messages, sender, confi
 
 
 async def convert_to_json(request: str) -> str:
-    system_message = """You are an interpreter responsible for converting a user request into JSON.
+    system_message = """You are an interpreter responsible for converting a user
+    request into JSON.
 
-# Example
-## User Request
-Send 1 eth to 0x2D6c1025994dB45c7618571d6cB49B064DA9881B in ethereum chain
-## JSON
-```json
-{{
+    # Example 1
+    ## User Request
+    Swap 1 usd-coin from my sepolia account to usd-coin in my polygon mumbai account.
+    ## JSON
+    ```json
+    {{
+        "type": "swap",
+        "network": "sepolia",
+        "to_network": "polygon mumbai",
+        "amount": "1",
+        "token": "usd-coin",
+        "to_token": "usd-coin"
+    }}
 
-    "recipient_address": "0x2D6c1025994dB45c7618571d6cB49B064DA9881B",
-    "network": "ethereum chain",
-    "amount": "1",
-    "token": "eth"
-}}
-```"""
+    # Example 2
+    ## User Request
+    Change 2.3 ethereum from goerli to usd-coin in sepolia wallet
+    ## JSON
+    ```json
+    {{
+        "type": "swap",
+        "network": "goerli",
+        "to_network": "sepolia",
+        "amount": "2.3",
+        "token": "ethereum",
+        "to_token": "usd-coin"
+    }}
+    ```
+
+    # Example 3
+    ## User Request
+    Change .43 ethereum from eth sepolia testnet wallet to usd-coin in my mumbai
+    ## JSON
+    ```json
+    {{
+        "type": "swap",
+        "network": "eth sepolia testnet",
+        "to_network": "mumbai",
+        "amount": "0.43",
+        "token": "ethereum",
+        "to_token": "usd-coin"
+    }}
+    ```
+
+    # Example 4
+    ## User Request
+    Change 50 matic-network of my polygon mumbai account
+    ## JSON
+    ```json
+    {{
+        "error": "Missing information of the destination chain and token.",
+    }}
+
+    # Example 5
+    ## User Request
+    Buy 23 eth in sepolia from usd-coin in mumbai
+    ## JSON
+    ```json
+    {{
+        "type": "buy",
+        "amount": "23",
+        "to_network": "sepolia",
+        "to_token": "eth",
+        "network": "mumbai",
+        "token": "usd-coin"
+    }}
+
+    # Example 6
+    ## User Request
+    Buy 0.456345632 usd-coin in eth sepolia using matic in mumbai
+    ## JSON
+    ```json
+    {{
+        "type": "buy",
+        "amount": "0.456345632",
+        "to_token": "usd-coin",
+        "to_network": "eth sepolia",
+        "token": "matic",
+        "network": "mumbai"
+    }}
+    ```
+"""
 
     user_message = f"Convert the following request into JSON.\n---\n{request}"
 
@@ -322,14 +399,29 @@ Send 1 eth to 0x2D6c1025994dB45c7618571d6cB49B064DA9881B in ethereum chain
 broker_system_message = """
 You are a cryptocurrency copilot responsible for gathering missing information from the user necessary to complete their request.
 After the user has satisfied all requirements, you will send the revised intent to the interpreter on their behalf.
-Your messages to the interpreter must be in the following format:
+Your messages to the interpreter must be in the following format (the NEXT value will always be interpeter):
 ---
-Original Intent: Send .5 matic to Susan in polygon
-Recipient Address: 0x604f7cA57A338de9bbcE4ff0e2C41bAcE744Df03
-Amount: 0.5
-Token: matic
-Network: polygon
-NEXT: interpreter"""
+# Example 1
+Original Intent: Swap .1 usd-coin sepolia testnet to usd-coin polygon-mumbai
+Type: swap
+Token: usd-coin
+to_token: usd-coin
+Amount: 0.1
+Network: sepolia testnet
+to_network: polygon mumbai
+NEXT: interpreter
+
+# Example 2
+---
+Original Intent: Purchase 0.456 axlusdc in bnb testnet using usd-coin in sepolia
+Type: buy
+Token: usd-coin
+to_token: axlusdc
+Amount: 0.456
+Network: sepolia
+to_network: bnb testnet
+NEXT: interpreter
+"""
 
 # TODO: Add new agent for showing tx preview, determining if any changes are needed, and
 #       confirming if the user will proceed or cancel. Broker might be able to handle this.
@@ -341,7 +433,11 @@ NEXT: interpreter"""
 
 # TODO: Skip signature link for now and just have the user reply with proceed or cancel.
 executor_system_message = """
-You are an executor responsible for determining whether the user will proceed or cancel their transaction request. If they proceed, you must reply with \"NEXT: confirmation_specialist\" to pass the request to the confirmation specialist. If they cancel, you must reply with \"Transaction canceled\nTERMINATE\" to end the conversation.
+You are an executor responsible for determining whether the user will proceed or
+cancel their transaction request. If they proceed, you must reply with \"NEXT:
+confirmation_specialist\" to pass the request to the confirmation specialist. If
+they cancel, you must reply with \"Transaction canceled\nTERMINATE\" to end the
+conversation.
 """
 
 
@@ -365,38 +461,38 @@ technician_system_message = """
 You are a technician responsible for executing tools and returning the results to the requester.
 """
 
-# DEPRECATED PROMPTS
-#
-validator_system_message = """
-You are a validator responsible for determining if a request is valid.
-A request is only valid if it contains a Recipient Address, Amount, and Token Address.
-If the request is valid, you must use \"NEXT: executor\" to pass the request to the executor.
-If the request is invalid, list the missing information.
-Be brief and clear.
-You must append \"NEXT: broker\" to pass along your message.
-"""
 
-"""executor_system_message =
-You are an executor responsible for showing the user a preview of their transaction request and asking them to confirm if they will proceed or cancel.
-You must use the "a_prepare_transaction" function to prepare the transaction and get the preview. After getting a confirmation from the user, you must use the "get_transaction_result" function to get the outcome of the transaction and pass it along to the user. You must append \"TERMINATE\" to pass along the result and end the conversation.
-"""
-
-
-class SendTokenAgentTeam(AgentTeam):
-    _transaction: Transaction | None = None
-    _transaction_request: TxRequest | None = None
+class SwapTokenAgentTeam(AgentTeam):
+    _transaction: SwapInformation | None = None
+    _transaction_request: SwapRequest | None = None
     _transaction_preview: TxPreview | None = None
 
-    def __init__(
-        self,
-        sender_did: str,
-        thread_id: str,
-        # on_complete: Callable[[str], None],
-        prepare_transaction: Callable[[TxRequest], Awaitable[TxPreview]],
-    ):
+    def __init__(self, sender_did: str, thread_id: str):
         # TODO: Create a new protocol for the prepare_transaction and get_transaction_result functions as a separation of concerns for transactions.
-        self._prepare_transaction = prepare_transaction
         super().__init__(sender_did, thread_id)
+
+    async def _prepare_transaction(self) -> TxPreview | None:
+        if self._transaction_request is None:
+            return None
+
+        print(self._transaction_request)
+        url = f"{SETTINGS.transaction_service_url}/swap/preview"
+        async with httpx.AsyncClient(http2=True, timeout=65) as client:
+            response = await client.post(
+                url, json=self._transaction_request.model_dump()
+            )
+        print(response.text)
+
+        response_json = response.json()
+        if not response_json["success"]:
+            print(response_json)
+            raise Exception(response_json["message"])
+
+        try:
+            return TxPreview.model_validate(response_json)
+        except ValidationError as err:
+            msg = "Failed processing response, try again."
+            raise Exception(msg) from err
 
     async def _run_conversation(self, message: str):
         user_proxy = MessagingUserProxyAgent(
@@ -431,24 +527,15 @@ class SendTokenAgentTeam(AgentTeam):
         async def a_prepare_transaction(
             recipient: ConversableAgent, messages, sender, config
         ):
-            """
-            tx_request = TxRequest(
-                sender_did="ethereum://84738954.telegram.org",
-                recipient_did="ethereum://0xc6A9f8f20d79Ae0F1ADf448A0C460178dB6655Cf",
-                receive_token_address="0x514910771AF9Ca656af840dff83E8264EcF986CA",
-                amount="0.0001",
-            )
-            return await self._prepare_transaction(tx_request)"""
-
             self._send_activity_update("Preparing transaction preview...")
 
             try:
                 if self._transaction_request is None:
                     msg = "Transaction request not found"
                     raise ValueError(msg)
-                self._transaction_preview = await self._prepare_transaction(
-                    self._transaction_request
-                )
+                self._transaction_preview = await self._prepare_transaction()
+                if self._transaction_preview is None:
+                    raise Exception()
             except Exception as e:
                 error_message = str(e) if str(e) else str(type(e))
                 return (
@@ -460,11 +547,12 @@ TERMINATE""",
                 )
 
             # tx_details = self._transaction_preview.tx_details
-            response_message = f"""You are about to send 💸 {self._transaction_preview.amount} to {self._transaction_preview.recipient}.
+            response_message = f"""You are about to swap tokens 💸.
 
-**💸 Subtotal ・** {self._transaction_preview.amount}
-**⛽️ Fees Estimation ・** {self._transaction_preview.fees}
-**🔢 Total ・** {self._transaction_preview.total}
+**💸 Convert From ・** {self._transaction_preview.from_amount} ({self._transaction_preview.from_chain})
+**💸 Convert To ・** {self._transaction_preview.to_amount} ({self._transaction_preview.to_chain})
+**⛽️ Fees Estimation ・** {self._transaction_preview.total_fees}
+**🔢 Total ・** {self._transaction_preview.total_amount}
 
 Would you like to proceed?"""
 
@@ -519,27 +607,14 @@ Would you like to proceed?"""
                     msg = "Transaction request not found"
                     raise ValueError(msg)
 
-                transaction_service = os.environ.get(
-                    "TRANSACTION_SERVICE_URL", "http://firepot_chatgpt_app:3000"
-                )
-                url = f"{transaction_service}/transactions/send"
-                body = ExecuteTxBody(
-                    transaction_uuid=self._transaction_preview.transaction_uuid
-                )
-                # HEADERS = {"Content-Type": "application/json"}
+                url = f"{SETTINGS.transaction_service_url}/swap/"
+                body = ExecuteTxBody(transaction_uuid=self._transaction_preview.uuid)
                 async with httpx.AsyncClient(http2=True, timeout=65) as client:
-                    response = await client.post(url, json=body.dict())
+                    response = await client.post(url, json=body.model_dump())
+                    if response.json().get("block", None) is None:
+                        msg = "No block found."
+                        raise Exception(msg)
 
-                data = response.json()
-                try:
-                    user_receipt = UserReceipt.parse_obj(data)
-                except ValidationError as err:
-                    msg = f"Failed sending token: {data.get('message', 'Unknown exception')}"
-                    raise Exception(msg) from err
-
-                if not user_receipt.success:
-                    msg = "Failed sending token"
-                    raise Exception(msg)
             except Exception as e:
                 error_message = str(e) if str(e) else str(type(e))
                 return (
@@ -551,21 +626,10 @@ TERMINATE""",
                 )
             finally:
                 timer_task.cancel()
-            fees_message = (
-                (f"\n**⛽️ Fees ・** {user_receipt.fees}\n")
-                if user_receipt.fees is not None
-                else ""
-            )
-            total_message = (
-                f"\n**🔢 Total ・** {user_receipt.total}\n"
-                if user_receipt.total is not None
-                else ""
-            )
+
             response_message = f"""Your transaction was successful! 🎉
 
-**👤 Recipient ・** {user_receipt.recipient}
-**💸 Amount Sent ・** {user_receipt.amount} {fees_message}{total_message}
-_[🔗 View on Blockchain]({user_receipt.transaction_block})_
+_[🔗 View on Blockchain]({response.json()["block"]})_
 TERMINATE"""
 
             return True, {
@@ -595,7 +659,7 @@ TERMINATE"""
         async def a_get_transaction_result(tx_id: str):
             return await self._get_transaction_result(tx_id)"""
 
-        groupchat = SendTokenGroupChat(
+        groupchat = SwapTokenGroupChat(
             agents=[
                 user_proxy,
                 interpreter_agent,
@@ -641,16 +705,11 @@ TERMINATE"""
             }
 
         try:
-            self._transaction = Transaction.parse_raw(json_str)
-            self._transaction_request = TxRequest(
-                sender_address=UniversalAddress(
-                    identifier=self.sender_did,
-                    platform="telegram.me",
-                    network=self._transaction.network,
-                ),
-                recipient_address=self._transaction.recipient_address,
-                amount=self._transaction.amount,
-                token=self._transaction.token,
+            self._transaction = SwapInformation.model_validate_json(json_str)
+            self._transaction_request = self._transaction.to_swap_request(
+                UniversalAddress(
+                    identifier=self.sender_did, platform="telegram.me", network=""
+                )
             )
             return True, {
                 "content": "NEXT: transaction_coordinator",

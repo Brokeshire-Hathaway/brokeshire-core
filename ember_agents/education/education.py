@@ -2,10 +2,12 @@ import os
 import uuid
 from datetime import UTC, datetime
 
-from ember_agents.common.agents import AgentTeam
 from langchain_text_splitters import CharacterTextSplitter
 from openai import AsyncOpenAI
 from pinecone import Pinecone
+
+from ember_agents.common.agents import AgentTeam
+from ember_agents.settings import SETTINGS
 
 
 class EducationAgentTeam(AgentTeam):
@@ -15,13 +17,10 @@ class EducationAgentTeam(AgentTeam):
         self._send_team_response(response)
 
 
-pc = Pinecone(os.environ.get("PINECONE_API_KEY"))
+pc = Pinecone(SETTINGS.pinecone_api_key)
 index = pc.Index("ember")
 
-client = AsyncOpenAI(
-    # This is the default and can be omitted
-    api_key=os.environ.get("OPENAI_API_KEY"),
-)
+client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
 openai_settings = {
     "model": "gpt-4-0125-preview",
@@ -127,7 +126,7 @@ async def upload_doc_memory():
     ]
 
     for doc in doc_list:
-        with open(f"src/ember_agents/ember_ai_docs/{doc}") as f:
+        with open(f"ember_agents/ember_ai_docs/{doc}") as f:
             doc_text = f.read()
 
             text_splitter = CharacterTextSplitter.from_tiktoken_encoder(

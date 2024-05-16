@@ -1,0 +1,31 @@
+services:
+  ember-core:
+    build: .
+    restart: always
+    environment:
+      COHERE_API_KEY: /run/secrets/cohere_api_key
+      OPENAI_API_KEY: /run/secrets/openai_api_key
+      PINECONE_API_KEY: /run/secrets/pinecone_api_key
+      TRANSACTION_SERVICE_URL: http://firepot_chatgpt_app
+    networks:
+      - shared_network
+    secrets:
+      - cohere_api_key
+      - openai_api_key
+      - pinecone_api_key
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "1"
+
+networks:
+  shared_network:
+    name: ember-main-${ENVIRONMENT}
+
+secrets:
+  cohere_api_key:
+    environment: "COHERE_API_KEY"
+  openai_api_key:
+    environment: "OPENAI_API_KEY"
+  pinecone_api_key:
+    environment: "PINECONE_API_KEY"

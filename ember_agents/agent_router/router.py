@@ -1,55 +1,15 @@
-import os
 from collections.abc import Callable
 
-import httpx
-from ember_agents.common.agents import AgentTeam
-from ember_agents.education.education import EducationAgentTeam
-from ember_agents.project_market_info.market_agent_team import MarketAgentTeam
-from ember_agents.send_token.send import (
-    SendTokenAgentTeam,
-    TxPreview,
-    TxRequest,
-)
-from ember_agents.swap_token.swap import SwapTokenAgentTeam
-from pydantic import ValidationError
 from semantic_router import Route
 from semantic_router.encoders import CohereEncoder
 from semantic_router.layer import RouteLayer
 
-"""tx_details = TxDetails(
-    sender_did="ethereum://84738954.telegram.org",
-    recipient_did="ethereum://0xc6A9f8f20d79Ae0F1ADf448A0C460178dB6655Cf",
-    receive_token_address="0x514910771AF9Ca656af840dff83E8264EcF986CA",
-    receive_token_name="",
-    receive_token_symbol="",
-    display_currency_symbol="",
-    amount="0.0001",
-    amount_in_display_currency="",
-    gas_fee="",
-    gas_fee_in_display_currency="",
-    service_fee="",
-    service_fee_in_display_currency="",
-    total_fee="",
-    total_fee_in_display_currency="",
-    total_amount="",
-    total_amount_in_display_currency="",
-)"""
-
-TRANSACTION_SERVICE = os.environ.get(
-    "TRANSACTION_SERVICE_URL", "http://firepot_chatgpt_app:3000"
-)
-
-
-async def prepare_transaction(tx_request: TxRequest):
-    url = f"{TRANSACTION_SERVICE}/transactions/prepare"
-    async with httpx.AsyncClient(http2=True, timeout=65) as client:
-        response = await client.post(url, json=tx_request.dict())
-
-    response_json = response.json()
-    try:
-        return TxPreview.parse_obj(response_json)
-    except ValidationError as err:
-        raise ValueError(response_json.get("message", "Failed sending token")) from err
+from ember_agents.common.agents import AgentTeam
+from ember_agents.education.education import EducationAgentTeam
+from ember_agents.project_market_info.market_agent_team import MarketAgentTeam
+from ember_agents.send_token.send import SendTokenAgentTeam
+from ember_agents.settings import SETTINGS
+from ember_agents.swap_token.swap import SwapTokenAgentTeam
 
 
 class AgentTeamSessionManager:
@@ -80,9 +40,7 @@ class AgentTeamSessionManager:
         return f"{sender_did}:{thread_id}"
 
 
-print("COHERE_API_KEY")
-print(os.getenv("COHERE_API_KEY"))
-encoder = CohereEncoder(cohere_api_key=os.getenv("COHERE_API_KEY"))
+encoder = CohereEncoder(cohere_api_key=SETTINGS.cohere_api_key)
 
 send = Route(
     name="send",
@@ -123,6 +81,7 @@ swap = Route(
 market = Route(
     name="market",
     utterances=[
+        "info on {token}",
         "what's the price of {token}?",
         "current {token} price",
         "how much is {token}?",
@@ -158,8 +117,13 @@ decision_layer = RouteLayer(encoder=encoder, routes=routes)
 
 
 class Router:
-    def __init__(self, session_manager: AgentTeamSessionManager):
+    def __init__(
+        self,
+        session_manager: AgentTeamSessionManager,
+        possible_routes: list[str] | None,
+    ):
         self._session_manager = session_manager
+        self._possible_routes = possible_routes
 
     async def send(
         self,
@@ -179,17 +143,19 @@ class Router:
     def _create_agent_team_session(
         self, sender_did: str, thread_id: str, route: str | None
     ) -> AgentTeam:
+        if self._possible_routes is not None:
+            route = (
+                route if route is not None and route in self._possible_routes else None
+            )
         match route:
             case "send":
-                agent_team = SendTokenAgentTeam(
-                    sender_did, thread_id, prepare_transaction
-                )
-            case "education" | "terminate":
-                agent_team = EducationAgentTeam(sender_did, thread_id)
+                agent_team = SendTokenAgentTeam(sender_did, thread_id)
             case "swap":
                 agent_team = SwapTokenAgentTeam(sender_did, thread_id)
-            case "market" | None | _:
+            case "market":
                 agent_team = MarketAgentTeam(sender_did, thread_id)
+            case "education" | "terminate" | None | _:
+                agent_team = EducationAgentTeam(sender_did, thread_id)
         self._session_manager.create_session(agent_team)
         return agent_team
 

@@ -5,14 +5,13 @@ from typing import Literal
 
 import httpx
 from openai import AsyncOpenAI
-from pydantic import BaseModel, Extra, HttpUrl
+from pydantic import BaseModel
+
+from ember_agents.settings import SETTINGS
 
 Sentiment = Literal["positive", "neutral", "negative", "unknown"]
 
-client = AsyncOpenAI(
-    # This is the default and can be omitted
-    api_key=os.environ.get("OPENAI_API_KEY"),
-)
+client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
 openai_settings = {
     "model": "gpt-3.5-turbo-0125",
@@ -47,10 +46,10 @@ class ProjectInfo(BaseModel):
     website: str | None
     twitter_handle: str | None
     network: str
-    price: str | None
-    ath: str | None
-    price_change_24h: str | None
-    market_cap: str | None
+    price: float | None
+    ath: float | None
+    price_change_24h: float | None
+    market_cap: float | None
     liquidity: str | None = None
     token_contract_address: str | None
     pool_address: str | None = None
@@ -62,16 +61,16 @@ class CoinGecko(BaseModel):
     name: str
     description: str
     symbol: str
-    homepage: HttpUrl  # Use only the first valid URL
+    homepage: str
     twitter_screen_name: str
     asset_platform_id: str
-    ath: str | None
-    price: str | None
-    price_change_24h: str | None
-    market_cap: str | None
+    ath: float | None
+    price: float | None
+    price_change_24h: float | None
+    market_cap: float | None
 
     class Config:
-        extra = Extra.ignore
+        extra = "allow"
 
 
 class DexScreener(BaseModel):
@@ -86,7 +85,7 @@ class DexScreener(BaseModel):
     liquidity: str
 
     class Config:
-        extra = Extra.ignore
+        extra = "allow"
 
 
 class EmberOnProject(BaseModel):
@@ -94,7 +93,7 @@ class EmberOnProject(BaseModel):
     project_emoji: str
 
     class Config:
-        extra = Extra.ignore
+        extra = "allow"
 
 
 class TokenQueried(BaseModel):
@@ -102,7 +101,7 @@ class TokenQueried(BaseModel):
     token_address: str | None
 
     class Config:
-        extra = Extra.ignore
+        extra = "allow"
 
 
 #### main market route function
@@ -121,14 +120,13 @@ async def market_route(message: str) -> str:
         else None
     )
     token_ticker = info_of_token.symbol.upper()
-    market_cap = float(info_of_token.market_cap) if info_of_token.market_cap else None
+    market_cap = info_of_token.market_cap if info_of_token.market_cap else None
     network = info_of_token.network
-    price = f"{float(info_of_token.price):.4f}" if info_of_token.price else None
+    price = f"{info_of_token.price:.4f}" if info_of_token.price else None
     ath = info_of_token.ath if info_of_token.ath else None
     liquidity = info_of_token.liquidity if info_of_token.liquidity else None
     ath_delta = (
-        (float(info_of_token.price) - float(info_of_token.ath))
-        / float(info_of_token.ath)
+        (info_of_token.price - info_of_token.ath) / info_of_token.ath
         if info_of_token.ath and info_of_token.price is not None
         else None
     )
@@ -401,7 +399,7 @@ async def dexscreener(token_contract_address: str):
         twitter_handle=None,
         symbol=jsonresp.get("baseToken", {}).get("symbol"),
         price=jsonresp.get("priceUsd"),
-        price_change_24h=str(jsonresp.get("priceChange", {}).get("h24")),
+        price_change_24h=jsonresp.get("priceChange", {}).get("h24"),
         market_cap=jsonresp.get("fdv"),
         pool_address=jsonresp.get("pairAddress"),
         liquidity=jsonresp.get("liquidity").get("usd"),  #
