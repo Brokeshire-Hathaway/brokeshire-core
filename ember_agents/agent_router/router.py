@@ -32,9 +32,9 @@ class AgentTeamSessionManager:
         session_id = self._get_session_id(sender_did, thread_id)
         if session_id in self._sessions:
             del self._sessions[session_id]
-        else:
-            msg = f"Session ID ({session_id}) does not exist"
-            raise Exception(msg)
+            return
+
+        print(f"Session ID ({session_id}) does not exist")
 
     def _get_session_id(self, sender_did: str, thread_id: str) -> str:
         return f"{sender_did}:{thread_id}"
