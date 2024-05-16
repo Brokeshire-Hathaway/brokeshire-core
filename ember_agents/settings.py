@@ -23,7 +23,7 @@ class Environment(BaseSettings):
     openai_api_key: SensitiveField
     pinecone_api_key: SensitiveField
     cohere_api_key: SensitiveField
-    transaction_service_url: HttpUrl
+    transaction_service_url: str
 
 
 SETTINGS = Environment()  # type: ignore
