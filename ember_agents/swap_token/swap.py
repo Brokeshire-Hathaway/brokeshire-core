@@ -679,7 +679,8 @@ TERMINATE"""
 
         try:
             await user_proxy.a_initiate_chat(manager, message=message)
-        except Exception:
+        except Exception as error:
+            print(error)
             if self.on_complete is not None:
                 self.on_complete(self.sender_did, self.thread_id)
 
