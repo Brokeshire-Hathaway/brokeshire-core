@@ -22,7 +22,7 @@ from ember_agents.common.validators import PositiveAmount
 from ember_agents.info_bites.info_bites import get_random_info_bite
 from ember_agents.settings import SETTINGS
 
-client = AsyncOpenAI()
+client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
 
 class UniversalAddress(BaseModel):

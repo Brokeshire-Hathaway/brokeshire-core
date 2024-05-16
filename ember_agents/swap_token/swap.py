@@ -23,7 +23,7 @@ from ember_agents.info_bites.info_bites import get_random_info_bite
 from ember_agents.send_token.send import UniversalAddress
 from ember_agents.settings import SETTINGS
 
-client = AsyncOpenAI()
+client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
 
 class TokenSwapTo(BaseModel):
