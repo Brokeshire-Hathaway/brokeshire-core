@@ -19,7 +19,7 @@ SensitiveField = Annotated[str, AfterValidator(file_string)]
 class Environment(BaseSettings):
     """All environment settings for the file."""
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=".env", extra="allow")
     openai_api_key: SensitiveField
     pinecone_api_key: SensitiveField
     cohere_api_key: SensitiveField

@@ -20,6 +20,15 @@ To run your API, you need to setup three API keys:
 - [Cohere](https://cohere.com/): A Cohere key, you can also get a free one by creating an account.
 - [Pinecone](https://app.pinecone.io/): A Pinecone key, you can also get a free one by creating an account. Additionally, through the `pinecone` app, create an index call `ember`. When configuring the model select dimensions as `1024` and metric as `cosine`.
 
+Create the `.env`:
+
+```
+COHERE_API_KEY=your_cohere_api_key
+OPENAI_API_KEY="your_openai_api_key"
+PINECONE_API_KEY="your_pinecone_key"
+TRANSACTION_SERVICE_URL="http://localhost:3000"
+```
+
 After that, start the project by running:
 
 ```bash

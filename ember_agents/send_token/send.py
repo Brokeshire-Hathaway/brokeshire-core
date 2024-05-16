@@ -261,7 +261,7 @@ async def interpreter_reply(recipient: ConversableAgent, messages, sender, confi
 
 
 async def convert_to_json(request: str) -> str:
-    system_message = """You are an interpreter responsible for converting a user request into JSON.
+    system_message = """You are an interpreter responsible for converting a user request into JSON. If you are unsure, use the value `null` for missing information.
 
 # Example
 ## User Request
@@ -324,15 +324,17 @@ Send 1 eth to 0x2D6c1025994dB45c7618571d6cB49B064DA9881B in ethereum chain
 
 
 broker_system_message = """
-You are a cryptocurrency copilot responsible for gathering missing information from the user necessary to complete their request.
+You are a friendly cryptocurrency copilot responsible for gathering the missing information from the user necessary to complete their token send request. All other requests MUST be politely refused.
+
 After the user has satisfied all requirements, you will send the revised intent to the interpreter on their behalf.
+
 Your messages to the interpreter must be in the following format:
 ---
 Original Intent: Send .5 matic to Susan in polygon
-Recipient Address: 0x604f7cA57A338de9bbcE4ff0e2C41bAcE744Df03
 Amount: 0.5
 Token: matic
 Network: polygon
+Recipient Address: 0x604f7cA57A338de9bbcE4ff0e2C41bAcE744Df03
 NEXT: interpreter"""
 
 # TODO: Add new agent for showing tx preview, determining if any changes are needed, and
@@ -601,7 +603,7 @@ TERMINATE"""
         )
         manager = GroupChatManager(groupchat=groupchat, llm_config=llm_config)
 
-        self._send_activity_update("Understanding your request...")
+        self._send_activity_update("Understanding your send request...")
 
         try:
             await user_proxy.a_initiate_chat(manager, message=message)
