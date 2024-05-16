@@ -1,10 +1,8 @@
-ARG PYTHON_BASE=3.12-bullseye
+ARG PYTHON_BASE=3.11-bullseye
 
 # Building phase for dependencies
 FROM python:$PYTHON_BASE as builder
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y && \
-    pip install --upgrade pip && pip install -U pdm
-ENV PATH "/root/.cargo/bin:${PATH}"
+RUN pip install --upgrade pip && pip install -U pdm
 WORKDIR /app
 ENV PDM_CHECK_UPDATE false
 COPY pyproject.toml pdm.lock ./
