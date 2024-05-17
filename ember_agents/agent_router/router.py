@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from venv import logger
 
 from semantic_router import Route
 from semantic_router.encoders import CohereEncoder
@@ -112,6 +113,9 @@ education = Route(
         "educational content",
         "tell me a joke",
         "technical questions",
+        "yes",
+        "proceed",
+        "ok",
     ],
 )
 
@@ -136,6 +140,7 @@ class Router:
         activity: Callable[[str], None] | None = None,
     ):
         route = decision_layer(message).name
+        print(f"Route: {route}")
         agent_team = self._get_agent_team_session(sender_did, thread_id)
         if route == "terminate" or agent_team is None:
             agent_team = self._create_agent_team_session(sender_did, thread_id, route)
