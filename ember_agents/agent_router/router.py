@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 from semantic_router import Route
 from semantic_router.encoders import CohereEncoder
