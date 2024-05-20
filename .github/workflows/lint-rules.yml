@@ -1,0 +1,23 @@
+name: Lint Rules Enforcement
+
+on:
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  check_linting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Set up PDM
+        uses: pdm-project/setup-pdm@v4
+        with:
+          cache: true
+          python-version: 3.11
+
+      - name: Check if code standards are enforced
+        run: |
+          pdm sync -d -G lint
+          pdm run lint:check

@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from venv import logger
 
 from semantic_router import Route
 from semantic_router.encoders import CohereEncoder
