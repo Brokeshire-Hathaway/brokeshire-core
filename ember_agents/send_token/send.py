@@ -1,4 +1,3 @@
-import asyncio
 import json
 import re
 import tempfile
@@ -19,7 +18,6 @@ from pydantic import BaseModel, ValidationError
 
 from ember_agents.common.agents import AgentTeam
 from ember_agents.common.validators import PositiveAmount
-from ember_agents.info_bites.info_bites import get_random_info_bite
 from ember_agents.settings import SETTINGS
 
 client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
