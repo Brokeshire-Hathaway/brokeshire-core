@@ -67,18 +67,7 @@ class SwapInformation(BaseModel):
 
 
 class TxPreview(BaseModel):
-    uuid: str
-    from_amount: str
-    from_chain: str
-    to_amount: str
-    to_chain: str
-    duration: str
-    total_fees: str
-    total_amount: str
-
-
-class ExecuteTxBody(BaseModel):
-    transaction_uuid: str
+    url: str
 
 
 OAI_CONFIG_LIST = [{"model": "gpt-4-1106-preview", "api_key": SETTINGS.openai_api_key}]
@@ -151,14 +140,7 @@ class SwapTokenGroupChat(GroupChat):
                     case "transaction_coordinator":
                         next_speaker = self.agent_by_name("user")
                     case "user":
-                        if self.last_speaker.name == "transaction_coordinator":
-                            next_speaker = self.agent_by_name("executor")
-                        else:
-                            next_speaker = self.last_speaker
-                    case "executor":
-                        next_speaker = self.agent_by_name("user")
-                    case "confirmation_specialist":
-                        next_speaker = self.agent_by_name("user")
+                        next_speaker = self.last_speaker
                     case "technician":
                         next_speaker = self.last_speaker
 
@@ -428,37 +410,6 @@ NEXT: interpreter"""
 # TODO: Add new agent for showing tx preview, determining if any changes are needed, and
 #       confirming if the user will proceed or cancel. Broker might be able to handle this.
 
-# PROBLEM:  The executor expects a reply after sending the preview and signature link to the user. However, the user must sign using the URL, not by replying to the executor.
-#
-#           - Maybe the prepare transaction function should send the preview and signature link to the user and only return with a success or failure result.
-#           - Another option might be to have the human input method to check if the last message from the executor. If so, then it will reply either from the user or signing result. Whichever comes first.
-
-# TODO: Skip signature link for now and just have the user reply with proceed or cancel.
-executor_system_message = """
-You are an executor responsible for determining whether the user will proceed or
-cancel their transaction request. If they proceed, you must reply with \"NEXT:
-confirmation_specialist\" to pass the request to the confirmation specialist. If
-they cancel, you must reply with \"Transaction canceled\nTERMINATE\" to end the
-conversation.
-"""
-
-
-# NOTE: Still working out this signature link prompt.
-"""
-You are an executor responsible for showing the user a preview of their transaction request along with a signature link.
-After sending the user the preview, you must use the "get_transaction_update" function to check the status of the transaction.
-The user should open the signature link in their web browser and sign the transaction to proceed.
-You will monitor the status of the transaction and update the user as needed.
-If the transaction fails or the user decides to cancel the request, you must use \"TERMINATE\" to pass along the reason.
-"""
-
-# 1. intent -> request (user -> interpreter)
-# 2. request -> validate (interpreter -> validator)
-# 3. a. valid -> execute (validator -> executor)
-#    b. I. invalid -> ask for missing information until satisfied (validator -> broker)
-#       II. new intent -> request (broker -> interpreter)
-
-
 technician_system_message = """
 You are a technician responsible for executing tools and returning the results to the requester.
 """
@@ -491,6 +442,7 @@ class SwapTokenAgentTeam(AgentTeam):
             raise Exception(response_json["message"])
 
         try:
+            print(response_json)
             return TxPreview.model_validate(response_json)
         except ValidationError as err:
             msg = "Failed processing response, try again."
@@ -521,15 +473,10 @@ class SwapTokenAgentTeam(AgentTeam):
             llm_config=llm_config,
         )
 
-        """@technician.register_for_execution()
-        @executor.register_for_llm(
-            description="Prepare a transaction for the user to review and sign."
-        )"""
-
         async def a_prepare_transaction(
             recipient: ConversableAgent, messages, sender, config
         ):
-            self._send_activity_update("Preparing transaction preview...")
+            self._send_activity_update("Setting up swapping transaction...")
 
             try:
                 if self._transaction_request is None:
@@ -549,14 +496,10 @@ TERMINATE""",
                 )
 
             # tx_details = self._transaction_preview.tx_details
-            response_message = f"""You are about to swap tokens 💸.
+            response_message = f"""Your swapping transaction has been set up! 💸.
 
-**💸 Convert From ・** {self._transaction_preview.from_amount} ({self._transaction_preview.from_chain})
-**💸 Convert To ・** {self._transaction_preview.to_amount} ({self._transaction_preview.to_chain})
-**⛽️ Fees Estimation ・** {self._transaction_preview.total_fees}
-**🔢 Total ・** {self._transaction_preview.total_amount}
-
-Would you like to proceed?"""
+Finish your transaction [here]({self._transaction_preview.url})
+TERMINATE"""
 
             return True, {
                 "content": response_message,
@@ -574,92 +517,11 @@ Would you like to proceed?"""
             ConversableAgent, a_prepare_transaction, 1
         )
 
-        # TODO: Can be converted to Metis agent.
-        executor = AssistantAgent(
-            "executor", system_message=executor_system_message, llm_config=llm_config
-        )
-
-        """# TODO: This is a temporary method that will be replaced by the get_transaction_result method.
-        @technician.register_for_execution()
-        @executor.register_for_llm(description="Execute a transaction.")"""
-
-        async def a_execute_transaction(
-            recipient: ConversableAgent, messages, sender, config
-        ):
-            # self._send_activity_update("Executing transaction...")
-
-            async def repeating_task(seconds, task, *args):
-                while True:
-                    await task(*args)
-                    await asyncio.sleep(seconds)
-
-            async def send_info_bite():
-                bite = get_random_info_bite()
-                message = f"""Executing transaction...
-
-> **・ Fun Fact ・**
->🍬 {bite}"""
-                self._send_activity_update(message)
-
-            seconds = 8
-            timer_task = asyncio.create_task(repeating_task(seconds, send_info_bite))
-
-            try:
-                if self._transaction_preview is None:
-                    msg = "Transaction request not found"
-                    raise ValueError(msg)
-
-                url = f"{SETTINGS.transaction_service_url}/swap/"
-                body = ExecuteTxBody(transaction_uuid=self._transaction_preview.uuid)
-                async with httpx.AsyncClient(http2=True, timeout=65) as client:
-                    response = await client.post(url, json=body.model_dump())
-                    if response.json().get("block", None) is None:
-                        msg = "No block found."
-                        raise Exception(msg)
-
-            except Exception as e:
-                error_message = str(e) if str(e) else str(type(e))
-                return (
-                    True,
-                    f"""Your transaction failed. 😔
-
-Details: {error_message}
-TERMINATE""",
-                )
-            finally:
-                timer_task.cancel()
-
-            response_message = f"""Your transaction was successful! 🎉
-
-_[🔗 View on Blockchain]({response.json()["block"]})_
-TERMINATE"""
-
-            return True, {
-                "content": response_message,
-                "name": "confirmation_specialist",
-                "role": "assistant",
-            }
-
-        # (Spock)
-        confirmation_specialist = AssistantAgent(
-            "confirmation_specialist",
-            None,
-            llm_config=llm_config,
-        )
-        confirmation_specialist.register_reply(
-            ConversableAgent, a_execute_transaction, 1
-        )
-
         technician = AssistantAgent(
             "technician",
             system_message=technician_system_message,
             llm_config=llm_config,
         )
-
-        """@technician.register_for_execution()
-        @executor.register_for_llm(description="Get the results of a transaction.")
-        async def a_get_transaction_result(tx_id: str):
-            return await self._get_transaction_result(tx_id)"""
 
         groupchat = SwapTokenGroupChat(
             agents=[
@@ -668,8 +530,6 @@ TERMINATE"""
                 validator,
                 broker,
                 transaction_coordinator,
-                executor,
-                confirmation_specialist,
                 technician,
             ],
             messages=[],
