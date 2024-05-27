@@ -3,6 +3,11 @@ name: Server Deployment (Development)
 on:
   push:
     branches: [main]
+    paths:
+      - pyproject.toml
+      - pdm.lock
+      - ember_agents/**
+      - .github/workflows/deploy-dev.yml
 
 jobs:
   build_and_push:
