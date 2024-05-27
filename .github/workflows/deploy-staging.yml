@@ -1,8 +1,6 @@
 name: Server Deployment (Staging)
 
-on:
-  push:
-    branches: [main]
+on: workflow_dispatch
 
 jobs:
   build_and_push:
