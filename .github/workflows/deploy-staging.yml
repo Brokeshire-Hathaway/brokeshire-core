@@ -34,6 +34,6 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
           ENVIRONMENT: staging
-          DOCKER_HOST: ssh://${{ secrets.SSH_USERNAME }}@${{ vars.SSH_HOST }}
+          DOCKER_HOST: ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
         run: |
           docker compose -f compose.yaml -p ember-core-stage up -d --build
