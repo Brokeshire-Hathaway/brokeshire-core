@@ -1,0 +1,46 @@
+name: Server Deployment (Development)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - pyproject.toml
+      - pdm.lock
+      - ember_agents/**
+      - .github/workflows/deploy-dev.yml
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v4
+
+      - name: Set up SSH environment
+        run: |
+          mkdir -p ~/.ssh
+          echo ${{ secrets.SSH_KEY }} >> ~/.ssh/known_hosts
+
+      - name: Setup SSH private key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install Compose
+        uses: ndeloof/install-compose-action@v0.0.1
+        with:
+          version: v2.21.0
+
+      - name: Deploy containers in server
+        env:
+          COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          ENVIRONMENT: development
+          DOCKER_HOST: ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
+        run: |
+          docker compose -f compose.yaml -p ember-core-$ENVIRONMENT up -d --build

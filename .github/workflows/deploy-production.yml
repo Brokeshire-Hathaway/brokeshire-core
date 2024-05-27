@@ -1,13 +1,11 @@
-name: Server Deployment (Staging)
+name: Server Deployment (Production)
 
-on:
-  push:
-    branches: [main]
+on: workflow_dispatch
 
 jobs:
   build_and_push:
     runs-on: ubuntu-latest
-    environment: staging
+    environment: production
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -35,7 +33,7 @@ jobs:
           COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
-          ENVIRONMENT: staging
-          DOCKER_HOST: ssh://${{ secrets.SSH_USERNAME }}@${{ vars.SSH_HOST }}
+          ENVIRONMENT: production
+          DOCKER_HOST: ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
         run: |
-          docker compose -f compose.yaml -p ember-core-stage up -d --build
+          docker compose -f compose.yaml -p ember-core-$ENVIRONMENT up -d --build
