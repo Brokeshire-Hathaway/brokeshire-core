@@ -8,6 +8,7 @@ on:
       - pdm.lock
       - ember_agents/**
       - .github/workflows/deploy-dev.yml
+      - compose.yaml
 
 jobs:
   build_and_push:
