@@ -6,7 +6,7 @@ services:
       COHERE_API_KEY: /run/secrets/cohere_api_key
       OPENAI_API_KEY: /run/secrets/openai_api_key
       PINECONE_API_KEY: /run/secrets/pinecone_api_key
-      TRANSACTION_SERVICE_URL: http://firepot_chatgpt_app
+      TRANSACTION_SERVICE_URL: http://ember-engine-${ENVIRONMENT}
     networks:
       - shared_network
     secrets:
@@ -21,6 +21,7 @@ services:
 networks:
   shared_network:
     name: ember-main-${ENVIRONMENT}
+    external: true
 
 secrets:
   cohere_api_key:
