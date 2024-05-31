@@ -36,4 +36,4 @@ jobs:
           ENVIRONMENT: staging
           DOCKER_HOST: ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
         run: |
-          docker compose -f compose.yaml -p ember-core-stage up -d --build
+          docker compose -f compose.yaml -p ember-core-$ENVIRONMENT up -d --build
