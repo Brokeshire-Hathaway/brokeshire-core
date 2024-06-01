@@ -504,7 +504,7 @@ TERMINATE""",
 
             response_message = f"""Transaction *{self._transaction_preview.id}* is ready for you to sign! 💸
 
-↩️ **From ・** {self._transaction_preview.token_amount} [{self._transaction_preview.token_symbol}]({self._transaction_preview.token_explorer_url}) ({self._transaction_preview.network_name})
+↩️ **Convert From ・** {self._transaction_preview.token_amount} [{self._transaction_preview.token_symbol}]({self._transaction_preview.token_explorer_url}) ({self._transaction_preview.network_name})
 ↪️ **To ・** {self._transaction_preview.to_token_amount} [{self._transaction_preview.to_token_symbol}]({self._transaction_preview.to_token_explorer_url}) ({self._transaction_preview.to_network_name})
 
 🔏 **[Sign here]({self._transaction_preview.sign_url})** to complete your transaction.
