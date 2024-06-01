@@ -65,7 +65,16 @@ class SwapInformation(BaseModel):
 
 
 class TxPreview(BaseModel):
-    url: str
+    id: str
+    sign_url: str
+    network_name: str
+    token_amount: str
+    token_symbol: str
+    token_explorer_url: str
+    to_network_name: str
+    to_token_amount: str
+    to_token_symbol: str
+    to_token_explorer_url: str
 
 
 OAI_CONFIG_LIST = [{"model": "gpt-4-1106-preview", "api_key": SETTINGS.openai_api_key}]
@@ -474,14 +483,14 @@ class SwapTokenAgentTeam(AgentTeam):
         async def a_prepare_transaction(
             recipient: ConversableAgent, messages, sender, config
         ):
-            self._send_activity_update("Setting up swapping transaction...")
+            self._send_activity_update("Preparing convert token transaction...")
 
             try:
                 if self._transaction_request is None:
                     msg = "Transaction request not found"
                     raise ValueError(msg)
                 self._transaction_preview = await self._prepare_transaction()
-                if self._transaction_preview is None:
+                if self._transaction_preview is None or self._transaction is None:
                     raise Exception()
             except Exception as e:
                 error_message = str(e) if str(e) else str(type(e))
@@ -493,10 +502,12 @@ Details: {error_message}
 TERMINATE""",
                 )
 
-            # tx_details = self._transaction_preview.tx_details
-            response_message = f"""Your swapping transaction has been set up! 💸.
+            response_message = f"""Transaction *{self._transaction_preview.id}* is ready for you to sign! 💸
 
-Finish your transaction [here]({self._transaction_preview.url})
+↩️ **From ・** {self._transaction_preview.token_amount} [{self._transaction_preview.token_symbol}]({self._transaction_preview.token_explorer_url}) ({self._transaction_preview.network_name})
+↪️ **To ・** {self._transaction_preview.to_token_amount} [{self._transaction_preview.to_token_symbol}]({self._transaction_preview.to_token_explorer_url}) ({self._transaction_preview.to_network_name})
+
+🔏 **[Sign here]({self._transaction_preview.sign_url})** to complete your transaction.
 TERMINATE"""
 
             return True, {

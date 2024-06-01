@@ -37,7 +37,11 @@ class TxRequest(BaseModel):
 
 
 class TxPreview(BaseModel):
-    url: str
+    id: str
+    sign_url: str
+    network_name: str
+    token_symbol: str
+    token_explorer_url: str
 
 
 class Transaction(BaseModel):
@@ -355,7 +359,7 @@ class SendTokenAgentTeam(AgentTeam):
             self._send_activity_update("Setting up send transaction...")
 
             try:
-                if self._transaction_request is None:
+                if self._transaction_request is None or self._transaction is None:
                     msg = "Transaction request not found"
                     raise ValueError(msg)
 
@@ -382,11 +386,12 @@ Details: {error_message}
 TERMINATE""",
                 )
 
-            # tx_details = self._transaction_preview.tx_details
+            response_message = f"""Transaction {self._transaction_preview.id} is ready for you to sign! 💸
 
-            response_message = f"""Your send transaction has been set up! 💸.
+💸 **Send ・** {self._transaction.amount} [{self._transaction_preview.token_symbol}]({self._transaction_preview.token_explorer_url}) ({self._transaction_preview.network_name})
+🧑 **To Recipient ・** {self._transaction.recipient_address}
 
-Finish your transaction [here]({self._transaction_preview.url})
+🔏 **[Sign here]({self._transaction_preview.sign_url})** to complete your transaction.
 TERMINATE"""
 
             return True, {
