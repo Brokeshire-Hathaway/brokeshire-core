@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 from langchain_text_splitters import CharacterTextSplitter
 from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletionMessageParam
 from pinecone import Pinecone
 
 from ember_agents.common.agents import AgentTeam
@@ -11,7 +12,9 @@ from ember_agents.settings import SETTINGS
 
 
 class EducationAgentTeam(AgentTeam):
-    async def _run_conversation(self, message: str, context: str | None = None):
+    async def _run_conversation(
+        self, message: str, context: list[ChatCompletionMessageParam] | None = None
+    ):
         self._send_activity_update("💭...")
         response = await education(message, context=context)
         self._send_team_response(response)
@@ -68,7 +71,9 @@ Help Ember AI (Ember) users with their crypto and DeFi needs, taking actions for
 - If a cancel or terminate message is found, always be grateful and ask to help for something else."""
 
 
-async def education(user_request: str, context: str | None = None) -> str:
+async def education(
+    user_request: str, context: list[ChatCompletionMessageParam] | None = None
+) -> str:
     """Return an educational response to the user's request."""
 
     embedding_response = await client.embeddings.create(
@@ -91,20 +96,12 @@ async def education(user_request: str, context: str | None = None) -> str:
             + f"\n\n## Search Result {i + 1}\n```\n{context_match['metadata']['chunk']}\n```"
         )
 
-    context = f"""# Context
+    context_search = f"""# Context
 
 ## Current Date & Time
 {datetime.now(UTC)}{search_results}"""
 
-    system_message = system_message_base + f"\n\n{context}"
-    user_message = f"""
-    Previous messages:
-    {context}
-
-    Message to answer:
-    {user_request}
-    """
-
+    system_message = system_message_base + f"\n\n{context_search}"
     chat_completion = await client.chat.completions.create(
         messages=[
             {
@@ -113,8 +110,9 @@ async def education(user_request: str, context: str | None = None) -> str:
             },
             {
                 "role": "user",
-                "content": user_message,
+                "content": user_request,
             },
+            *(context or []),
         ],
         **openai_settings,
     )

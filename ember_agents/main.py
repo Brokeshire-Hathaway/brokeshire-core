@@ -1,8 +1,9 @@
 import asyncio
 from asyncio import Queue
-from typing import Literal
+from typing import Literal, cast
 
 from fastapi import FastAPI, Request
+from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse, ServerSentEvent
 
@@ -13,10 +14,27 @@ from ember_agents.education.education import upload_doc_memory
 app = FastAPI()
 
 
+class MessageContext(BaseModel):
+    is_response: bool
+    message: str
+
+
 class Message(BaseModel):
     sender_uid: str
     message: str
-    context: str | None
+    context: list[MessageContext]
+
+
+def context_to_messages(
+    context: list[MessageContext],
+):
+    return [
+        cast(
+            ChatCompletionMessageParam,
+            {"role": "assistant" if m.is_response else "user", "content": m.message},
+        )
+        for m in context
+    ]
 
 
 ResponseStatus = Literal["done", "processing", "error"]
@@ -54,7 +72,11 @@ def event_router(
         sender_did = body.sender_uid
         try:
             response_message = await router.send(
-                sender_did, thread_id, body.message, on_activity, context=body.context
+                sender_did,
+                thread_id,
+                body.message,
+                on_activity,
+                context=context_to_messages(body.context),
             )
             response = Response(status="done", message=response_message)
         except Exception as e:

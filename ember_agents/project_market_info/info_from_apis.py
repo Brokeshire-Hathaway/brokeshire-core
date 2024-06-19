@@ -4,6 +4,7 @@ from typing import Literal
 
 import httpx
 from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel
 
 from ember_agents.settings import SETTINGS
@@ -104,7 +105,9 @@ class TokenQueried(BaseModel):
 
 
 #### main market route function
-async def market_route(message: str, context: str | None = None) -> str:
+async def market_route(
+    message: str, context: list[ChatCompletionMessageParam] | None = None
+) -> str:
     token_queried = await extract_token_from_message(message, context=context)
     try:
         info_of_token = await info_from_apis(token_queried)
@@ -218,7 +221,7 @@ Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fr
 
 #### Extracts the token name or address for user message
 async def extract_token_from_message(
-    message: str, context: str | None = None
+    message: str, context: list[ChatCompletionMessageParam] | None = None
 ) -> TokenQueried:
     system_message = """You are a crypto token research expert responsible for returning the single word token referenced in a message in the following structured json format:
 # Examples
@@ -241,11 +244,7 @@ search 0x1234567890123456789012345678901234567890
 }
 ```
 """
-    user_message = f"""
-    User previous messages:
-    {context}
-
-    Extract the singular crypto token or contract address the user is referencing:\n{message}"""
+    user_message = f"Extract the singular crypto token or contract address the user is referencing:\n{message}"
     try:
         chat_completion = await client.chat.completions.create(
             messages=[
@@ -257,6 +256,7 @@ search 0x1234567890123456789012345678901234567890
                     "role": "user",
                     "content": user_message,
                 },
+                *(context or []),
             ],
             **openai_settings,
         )

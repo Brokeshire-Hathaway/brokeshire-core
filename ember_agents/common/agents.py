@@ -1,7 +1,9 @@
 import asyncio
 from asyncio import Future, InvalidStateError, Queue
 from collections.abc import Callable
-from typing import Protocol
+from typing import Any, Protocol
+
+from openai.types.chat import ChatCompletionMessageParam
 
 from ember_agents.bg_tasks import add_bg_task
 
@@ -9,7 +11,7 @@ from ember_agents.bg_tasks import add_bg_task
 class AgentTeam(Protocol):
     _is_initialized: bool = False
     _on_activity: Callable[[str], None] | None = None
-    _user_message_queue: Queue[dict[str, str]]
+    _user_message_queue: Queue[dict[str, Any]]
     # TODO: might update to be a queue in case of an API reconnection
     _agent_team_response: Future[str]
     on_complete: Callable[[str, str], None] | None = None
@@ -21,7 +23,9 @@ class AgentTeam(Protocol):
         self.thread_id = thread_id
         self._user_message_queue = Queue()
 
-    async def _run_conversation(self, message: str, context: str | None = None):
+    async def _run_conversation(
+        self, message: str, context: list[ChatCompletionMessageParam] | None = None
+    ):
         ...
         # a_initiate_chat()
         # user_reply: Callable[[], Awaitable[str]]
@@ -65,7 +69,9 @@ class AgentTeam(Protocol):
 
         return "\n\n".join(messages)
 
-    def _init_conversation(self, message: str, context: str | None = None):
+    def _init_conversation(
+        self, message: str, context: list[ChatCompletionMessageParam] | None = None
+    ):
         # NOTE: self._run_conversation does not return until the entire team conversation is complete
 
         # TODO: Probably should first have a setup method, then execute a run method
@@ -84,7 +90,9 @@ class AgentTeam(Protocol):
     def get_activity_updates(self, on_activity: Callable[[str], None]):
         self._on_activity = on_activity
 
-    async def send(self, message: str, context: str | None = None):
+    async def send(
+        self, message: str, context: list[ChatCompletionMessageParam] | None = None
+    ):
         # send message to human proxy agent
         # await and return response
 
@@ -95,7 +103,7 @@ class AgentTeam(Protocol):
             self._init_conversation(message, context=context)
         else:
             self._user_message_queue.put_nowait(
-                {"message": message, "context": context or ""}
+                {"message": message, "context": context}
             )
 
         return await self._on_team_response()

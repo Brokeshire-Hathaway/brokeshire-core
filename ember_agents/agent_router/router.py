@@ -1,5 +1,6 @@
 from collections.abc import Callable
 
+from openai.types.chat import ChatCompletionMessageParam
 from semantic_router import Route
 from semantic_router.encoders import CohereEncoder
 from semantic_router.layer import RouteLayer
@@ -137,7 +138,7 @@ class Router:
         thread_id: str,
         message: str,
         activity: Callable[[str], None] | None = None,
-        context: str | None = None,
+        context: list[ChatCompletionMessageParam] | None = None,
     ):
         route = decision_layer(message).name
         print(f"Route: {route}")
