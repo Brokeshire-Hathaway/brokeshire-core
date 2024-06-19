@@ -108,11 +108,11 @@ async def education(
                 "role": "system",
                 "content": system_message,
             },
+            *(context or []),
             {
                 "role": "user",
                 "content": user_request,
             },
-            *(context or []),
         ],
         **openai_settings,
     )

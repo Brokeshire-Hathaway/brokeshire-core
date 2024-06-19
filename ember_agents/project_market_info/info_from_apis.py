@@ -252,11 +252,11 @@ search 0x1234567890123456789012345678901234567890
                     "role": "system",
                     "content": system_message,
                 },
+                *(context or []),
                 {
                     "role": "user",
                     "content": user_message,
                 },
-                *(context or []),
             ],
             **openai_settings,
         )
