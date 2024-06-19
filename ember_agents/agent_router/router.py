@@ -137,6 +137,7 @@ class Router:
         thread_id: str,
         message: str,
         activity: Callable[[str], None] | None = None,
+        context: str | None = None,
     ):
         route = decision_layer(message).name
         print(f"Route: {route}")
@@ -145,7 +146,7 @@ class Router:
             agent_team = self._create_agent_team_session(sender_did, thread_id, route)
         if activity is not None:
             agent_team.get_activity_updates(activity)
-        return await agent_team.send(message)
+        return await agent_team.send(message, context=context)
 
     def _create_agent_team_session(
         self, sender_did: str, thread_id: str, route: str | None

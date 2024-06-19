@@ -16,6 +16,7 @@ app = FastAPI()
 class Message(BaseModel):
     sender_uid: str
     message: str
+    context: str | None
 
 
 ResponseStatus = Literal["done", "processing", "error"]
@@ -53,7 +54,7 @@ def event_router(
         sender_did = body.sender_uid
         try:
             response_message = await router.send(
-                sender_did, thread_id, body.message, on_activity
+                sender_did, thread_id, body.message, on_activity, context=body.context
             )
             response = Response(status="done", message=response_message)
         except Exception as e:

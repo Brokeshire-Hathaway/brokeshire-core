@@ -104,8 +104,8 @@ class TokenQueried(BaseModel):
 
 
 #### main market route function
-async def market_route(message: str) -> str:
-    token_queried = await extract_token_from_message(message)
+async def market_route(message: str, context: str | None = None) -> str:
+    token_queried = await extract_token_from_message(message, context=context)
     try:
         info_of_token = await info_from_apis(token_queried)
     except ValueError as e:
@@ -217,7 +217,9 @@ Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fr
 
 
 #### Extracts the token name or address for user message
-async def extract_token_from_message(message: str) -> TokenQueried:
+async def extract_token_from_message(
+    message: str, context: str | None = None
+) -> TokenQueried:
     system_message = """You are a crypto token research expert responsible for returning the single word token referenced in a message in the following structured json format:
 # Examples
 ## Input
@@ -239,7 +241,11 @@ search 0x1234567890123456789012345678901234567890
 }
 ```
 """
-    user_message = f"Extract the singular crypto token or contract address the user is referencing:\n{message}"
+    user_message = f"""
+    User previous messages:
+    {context}
+
+    Extract the singular crypto token or contract address the user is referencing:\n{message}"""
     try:
         chat_completion = await client.chat.completions.create(
             messages=[

@@ -9,7 +9,7 @@ from ember_agents.bg_tasks import add_bg_task
 class AgentTeam(Protocol):
     _is_initialized: bool = False
     _on_activity: Callable[[str], None] | None = None
-    _user_message_queue: Queue[str]
+    _user_message_queue: Queue[dict[str, str]]
     # TODO: might update to be a queue in case of an API reconnection
     _agent_team_response: Future[str]
     on_complete: Callable[[str, str], None] | None = None
@@ -19,9 +19,9 @@ class AgentTeam(Protocol):
     def __init__(self, sender_did: str, thread_id: str):
         self.sender_did = sender_did
         self.thread_id = thread_id
-        self._user_message_queue: Queue[str] = Queue()
+        self._user_message_queue = Queue()
 
-    async def _run_conversation(self, message: str):
+    async def _run_conversation(self, message: str, context: str | None = None):
         ...
         # a_initiate_chat()
         # user_reply: Callable[[], Awaitable[str]]
@@ -53,7 +53,7 @@ class AgentTeam(Protocol):
 
         async def collect_from_queue():
             message = await self._user_message_queue.get()
-            messages.append(message)
+            messages.append(message["message"])
             self._user_message_queue.task_done()
 
         # Collect all existing messages
@@ -65,12 +65,12 @@ class AgentTeam(Protocol):
 
         return "\n\n".join(messages)
 
-    def _init_conversation(self, message: str):
+    def _init_conversation(self, message: str, context: str | None = None):
         # NOTE: self._run_conversation does not return until the entire team conversation is complete
 
         # TODO: Probably should first have a setup method, then execute a run method
         async def task():
-            await self._run_conversation(message)
+            await self._run_conversation(message, context=context)
             if self.on_complete is not None:
                 self.on_complete(self.sender_did, self.thread_id)
 
@@ -84,7 +84,7 @@ class AgentTeam(Protocol):
     def get_activity_updates(self, on_activity: Callable[[str], None]):
         self._on_activity = on_activity
 
-    async def send(self, message: str):
+    async def send(self, message: str, context: str | None = None):
         # send message to human proxy agent
         # await and return response
 
@@ -92,8 +92,10 @@ class AgentTeam(Protocol):
 
         if not self._is_initialized:
             # asyncio.create_task(self._init_conversation(message))
-            self._init_conversation(message)
+            self._init_conversation(message, context=context)
         else:
-            self._user_message_queue.put_nowait(message)
+            self._user_message_queue.put_nowait(
+                {"message": message, "context": context or ""}
+            )
 
         return await self._on_team_response()

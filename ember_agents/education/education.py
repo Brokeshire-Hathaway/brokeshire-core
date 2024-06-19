@@ -11,9 +11,9 @@ from ember_agents.settings import SETTINGS
 
 
 class EducationAgentTeam(AgentTeam):
-    async def _run_conversation(self, message: str):
+    async def _run_conversation(self, message: str, context: str | None = None):
         self._send_activity_update("💭...")
-        response = await education(message)
+        response = await education(message, context=context)
         self._send_team_response(response)
 
 
@@ -68,7 +68,7 @@ Help Ember AI (Ember) users with their crypto and DeFi needs, taking actions for
 - If a cancel or terminate message is found, always be grateful and ask to help for something else."""
 
 
-async def education(user_request: str) -> str:
+async def education(user_request: str, context: str | None = None) -> str:
     """Return an educational response to the user's request."""
 
     embedding_response = await client.embeddings.create(
@@ -97,6 +97,13 @@ async def education(user_request: str) -> str:
 {datetime.now(UTC)}{search_results}"""
 
     system_message = system_message_base + f"\n\n{context}"
+    user_message = f"""
+    Previous messages:
+    {context}
+
+    Message to answer:
+    {user_request}
+    """
 
     chat_completion = await client.chat.completions.create(
         messages=[
@@ -106,7 +113,7 @@ async def education(user_request: str) -> str:
             },
             {
                 "role": "user",
-                "content": user_request,
+                "content": user_message,
             },
         ],
         **openai_settings,
