@@ -14,6 +14,7 @@ from autogen import (
     config_list_from_json,
 )
 from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel, ValidationError
 
 from ember_agents.common.agents import AgentTeam
@@ -319,7 +320,9 @@ class SendTokenAgentTeam(AgentTeam):
     _transaction_request: TxRequest | None = None
     _transaction_preview: TxPreview | None = None
 
-    async def _run_conversation(self, message: str):
+    async def _run_conversation(
+        self, message: str, context: list[ChatCompletionMessageParam] | None = None
+    ):
         user_proxy = MessagingUserProxyAgent(
             "user",
             human_input_mode="ALWAYS",
