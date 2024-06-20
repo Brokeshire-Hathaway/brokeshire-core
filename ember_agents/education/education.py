@@ -87,6 +87,7 @@ async def education(
         vector=embedding_response.data[0].embedding,
         top_k=3,
         include_metadata=True,
+        namespace="ember_docs",
     )
 
     search_results = ""
@@ -122,6 +123,8 @@ async def education(
 
 
 async def upload_doc_memory():
+    index.delete(delete_all=True, namespace="ember_docs")
+
     doc_list = [
         "Community Manifesto.md",
         "FAQ.md",
@@ -129,7 +132,6 @@ async def upload_doc_memory():
         "Project Overview.md",
         "Team.md",
     ]
-
     for doc in doc_list:
         with open(f"ember_agents/ember_ai_docs/{doc}") as f:
             doc_text = f.read()
@@ -156,4 +158,4 @@ async def upload_doc_memory():
                     }
                 )
 
-            index.upsert(vectors)
+            index.upsert(vectors, "ember_docs")
