@@ -123,7 +123,10 @@ async def education(
 
 
 async def upload_doc_memory():
-    index.delete(delete_all=True, namespace="ember_docs")
+    try:
+        index.delete(delete_all=True, namespace="ember_docs")
+    except Exception as e:
+        print(f"Namespace 'ember_docs' not found to delete.\n{e}")
 
     doc_list = [
         "Community Manifesto.md",
