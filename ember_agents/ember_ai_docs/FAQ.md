@@ -15,8 +15,8 @@ Firepot Finance officially started operations in June 2022 as an experimental su
 **What is the $HOTT token?**
 It is a non-tradeable points token. 
 
-**When will $HOTT token launch?**
-We're ensuring the product is positioned well before an official token launch.
+**Will there be a token launch?**
+We're ensuring the product is well positioned before any official token launch.
 
 ## Investing
 **Should I invest in Ember?**

@@ -2,11 +2,11 @@
 filename: "Team.md"
 ---
 
-# Firepot Team
+# Ember AI Team
 
 
 ## Tom Daniel
-**Co-founder, CEO**
+**Co-founder, CTO**
 
 ### About
 _Crypto OG 2013 - mining - wallet & payments startup | cryptographic systems | AI startup & patent_
@@ -17,7 +17,7 @@ _Crypto OG 2013 - mining - wallet & payments startup | cryptographic systems | A
 
 
 ## Sebastian Varela
-**Co-founder, CTO**
+**Co-founder, CEO**
 
 ### About
 _Crypto OG 2013 - MVP in AI hardware startup under 4 weeks | Mathematics_

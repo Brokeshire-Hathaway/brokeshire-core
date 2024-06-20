@@ -2,8 +2,8 @@
 filename: "Project Overview.md"
 company name: "Ember AI"
 product name: "Ember"
-tagline: "DeFi for Degens. Crypto for Your Mom."
-slogan: "Conversational DeFi to get answers and take actions"
+tagline: "Crypto for Your Mom."
+slogan: "DeFi as easy as texting a friend."
 value proposition: "Intelligent – Seamless – Safe"
 links:
     website: https://www.emberai.xyz
@@ -34,7 +34,7 @@ Ember's AI is powered by a cutting-edge cognitive computing architecture, integr
 
 **Intelligent Answers** – AI serves you information about new token and yield opportunities, with real-time market data, Al-curated risk assessment, and public sentiment analysis
 
-**Seamless Actions** – (coming soon) Intent-driven actions across chains and DeFi primitives are simple through your favorite messaging apps
+**Seamless Actions** – Intent-driven actions across chains and DeFi primitives are simple through your favorite messaging apps
 
 **Safe Navigation** – (coming soon) Bringing the security of a (seedless) hardware wallet right to your phone.
 
@@ -48,14 +48,13 @@ Ember's AI is powered by a cutting-edge cognitive computing architecture, integr
 - 100,000 Telegram channel user reach
 - 30,000+ community
 - 20,000+ waitlist
-- Partnerships – Unigrid, dWallet, Lossless, Gotbit
 - Winner of Sei x OnePiece Labs AI competition
 
 
 # Team
 
-- Founders KYC’d – Tom Daniel (CEO) & Sebastian Varela (CTO)  
-- Crypto OGs (2013) – Dogecoin mining (2014) – Crypto-native builder since 2015
+- Founders KYC’d – Tom Daniel (CTO) & Sebastian Varela (CEO)  
+- Crypto OGs (2013) – Dogecoin mining (2014) – Crypto-native builders since 2015
 - Founder of AI hardware company. The team invented U.S. Patent No. 10,154,379 (2018)
 - We are an AI company building crypto products with our sights on the digital evolution of democracy and AGI
 
@@ -64,22 +63,17 @@ Ember's AI is powered by a cutting-edge cognitive computing architecture, integr
 **Key Words**: features, functionality, capabilities
 
 ## Released
-- ✅ Ember beta MVP on Telegram – Crypto insights and community ambassador
-- ✅ Reply to Ember's previous messages
+- ✅ Conversational cross-chain token sending and swapping
+- ✅ Transaction signing with existing wallets
 - ✅ Live market data and token search
 - ✅ Add Ember AI to your Telegram group – Notifies official Ember AI Chat
-- ✅ Advertise on Ember messages through sponsorship
-- ✅ Nicely styled formatting in Ember messages
-- ✅ Current time and day provided to Ember
 
 ## Upcoming
-1. Trading tools
-2. Opportunity sniping (Ethereum & Arbitrum)
-3. CEX listing on top exchange
-4. Phone as biometric hardware wallet w/ FIDO 2 passkeys
-5. Omnichain functionality & additional networks
-6. Ember integrated web and mobile app
-7. P2P fiat on/off ramp
+1. Ember widget for dApps
+2. Phone as biometric hardware wallet w/ FIDO 2 passkeys
+3. Additional networks
+4. Ember integrated web and mobile app
+5. P2P fiat on/off ramp
 
 # $HOTT Token
 
