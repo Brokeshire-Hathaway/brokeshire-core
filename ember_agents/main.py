@@ -78,7 +78,6 @@ def event_router(
         try:
             response_message = await router.send(
                 body.user_chat_id,
-                body.client_id,
                 body.store_transaction,
                 session_id,
                 body.message,

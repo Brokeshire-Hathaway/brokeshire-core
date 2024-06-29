@@ -20,7 +20,6 @@ from pydantic import BaseModel, ValidationError
 
 from ember_agents.common.agents import AgentTeam
 from ember_agents.common.validators import PositiveAmount
-from ember_agents.send_token.send import UniversalAddress
 from ember_agents.settings import SETTINGS
 
 client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
@@ -38,9 +37,11 @@ class SwapRequest(BaseModel):
 
     amount: PositiveAmount
     token: str
-    sender: UniversalAddress
+    user_chat_id: str
+    network: str
     to: TokenSwapTo
     type: str
+    store_transaction: Any
 
 
 class SwapInformation(BaseModel):
@@ -53,16 +54,17 @@ class SwapInformation(BaseModel):
     to_token: str
     type: str
 
-    def to_swap_request(self, address: UniversalAddress) -> SwapRequest:
+    def to_swap_request(self, user_chat_id: str, store_transaction: Any) -> SwapRequest:
         """Transforms information to request."""
 
-        address.network = self.network
         return SwapRequest(
             amount=self.amount,
             token=self.token,
-            sender=address,
+            user_chat_id=user_chat_id,
+            network=self.network,
             to=TokenSwapTo(network=self.to_network, token=self.to_token),
             type=self.type,
+            store_transaction=store_transaction,
         )
 
 
@@ -431,7 +433,6 @@ class SwapTokenAgentTeam(AgentTeam):
         on_complete: Callable[[], Any],
         store_transaction_info: Any,
         user_chat_id: str,
-        client_id: int,
     ):
         super().__init__(on_complete)
         self._transaction: SwapInformation | None = None
@@ -439,7 +440,6 @@ class SwapTokenAgentTeam(AgentTeam):
         self._transaction_preview: TxPreview | None = None
         self._store_transaction_info = store_transaction_info
         self._user_chat_id = user_chat_id
-        self._client_id = client_id
 
     async def _prepare_transaction(self) -> TxPreview | None:
         if self._transaction_request is None:
@@ -591,9 +591,7 @@ TERMINATE"""
         try:
             self._transaction = SwapInformation.model_validate_json(json_str)
             self._transaction_request = self._transaction.to_swap_request(
-                UniversalAddress(
-                    identifier=self._user_chat_id, platform=self._client_id, network=""
-                )
+                self._user_chat_id, self._store_transaction_info
             )
             return True, {
                 "content": "NEXT: transaction_coordinator",

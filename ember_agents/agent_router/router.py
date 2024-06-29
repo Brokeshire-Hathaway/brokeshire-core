@@ -1,5 +1,5 @@
-from collections.abc import Callable
 from functools import partial
+from collections.abc import Callable
 from typing import Any
 
 from openai.types.chat import ChatCompletionMessageParam
@@ -133,7 +133,6 @@ class Router:
     async def send(
         self,
         user_chat_id: str,
-        client_id: int,
         store_transaction_info: Any,
         session_id: str,
         message: str,
@@ -145,7 +144,7 @@ class Router:
         agent_team = self._get_agent_team_session(session_id)
         if route == "terminate" or agent_team is None:
             agent_team = self._create_agent_team_session(
-                session_id, route, store_transaction_info, user_chat_id, client_id
+                session_id, route, store_transaction_info, user_chat_id
             )
         if activity is not None:
             agent_team.get_activity_updates(activity)
@@ -157,7 +156,6 @@ class Router:
         route: str | None,
         store_transaction_info: Any,
         user_chat_id: str,
-        client_id: int,
     ) -> AgentTeam:
         if self._possible_routes is not None:
             route = (
@@ -167,11 +165,11 @@ class Router:
         match route:
             case "send":
                 agent_team = SendTokenAgentTeam(
-                    on_complete, store_transaction_info, user_chat_id, client_id
+                    on_complete, store_transaction_info, user_chat_id
                 )
             case "swap":
                 agent_team = SwapTokenAgentTeam(
-                    on_complete, store_transaction_info, user_chat_id, client_id
+                    on_complete, store_transaction_info, user_chat_id
                 )
             case "market":
                 agent_team = MarketAgentTeam(on_complete)

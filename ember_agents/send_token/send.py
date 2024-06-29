@@ -25,17 +25,13 @@ from ember_agents.settings import SETTINGS
 client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
 
-class UniversalAddress(BaseModel):
-    identifier: str
-    platform: int
-    network: str
-
-
 class TxRequest(BaseModel):
-    sender_address: UniversalAddress
+    user_chat_id: str
+    network: str
     recipient_address: str
     token: str
     amount: str
+    store_transaction: Any
 
 
 class TxPreview(BaseModel):
@@ -323,7 +319,6 @@ class SendTokenAgentTeam(AgentTeam):
         on_complete: Callable[[], Any],
         store_transaction_info: Any,
         user_chat_id: str,
-        client_id: int,
     ):
         super().__init__(on_complete)
         self._transaction: Transaction | None = None
@@ -331,7 +326,6 @@ class SendTokenAgentTeam(AgentTeam):
         self._transaction_preview: TxPreview | None = None
         self._store_transaction_info = store_transaction_info
         self._user_chat_id = user_chat_id
-        self._client_id = client_id
 
     async def _run_conversation(
         self, message: str, context: list[ChatCompletionMessageParam] | None = None
@@ -478,14 +472,12 @@ TERMINATE"""
         try:
             self._transaction = Transaction.model_validate_json(json_str)
             self._transaction_request = TxRequest(
-                sender_address=UniversalAddress(
-                    identifier=self._user_chat_id,
-                    platform=self._client_id,
-                    network=self._transaction.network,
-                ),
+                user_chat_id=self._user_chat_id,
+                network=self._transaction.network,
                 recipient_address=self._transaction.recipient_address,
                 amount=self._transaction.amount,
                 token=self._transaction.token,
+                store_transaction=self._store_transaction_info,
             )
             return True, {
                 "content": "NEXT: transaction_coordinator",
