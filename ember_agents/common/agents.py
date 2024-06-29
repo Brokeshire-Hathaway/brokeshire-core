@@ -1,35 +1,29 @@
 import asyncio
+from abc import ABC, abstractmethod
 from asyncio import Future, InvalidStateError, Queue
 from collections.abc import Callable
-from typing import Any, Protocol
+from typing import Any
 
 from openai.types.chat import ChatCompletionMessageParam
 
 from ember_agents.bg_tasks import add_bg_task
 
 
-class AgentTeam(Protocol):
-    _is_initialized: bool = False
-    _on_activity: Callable[[str], None] | None = None
-    _user_message_queue: Queue[dict[str, Any]]
+class AgentTeam(ABC):
     # TODO: might update to be a queue in case of an API reconnection
-    _agent_team_response: Future[str]
-    on_complete: Callable[[str, str], None] | None = None
-    sender_did: str
-    thread_id: str
 
-    def __init__(self, sender_did: str, thread_id: str):
-        self.sender_did = sender_did
-        self.thread_id = thread_id
-        self._user_message_queue = Queue()
+    def __init__(self, on_complete: Callable[[], Any]):
+        self._user_message_queue: Queue[dict[str, Any]] = Queue()
+        self._is_initialized: bool = False
+        self._on_activity: Callable[[str], None] | None = None
+        self._agent_team_response: Future[str] = Future()
+        self._on_complete = on_complete
 
+    @abstractmethod
     async def _run_conversation(
         self, message: str, context: list[ChatCompletionMessageParam] | None = None
     ):
-        ...
-        # a_initiate_chat()
-        # user_reply: Callable[[], Awaitable[str]]
-        # assistant_reply: Callable[[str], None]
+        """Executes a conversation with a user."""
 
     def _send_team_response(self, message: str):
         try:
@@ -37,9 +31,6 @@ class AgentTeam(Protocol):
         except InvalidStateError as e:
             print(e, flush=True)
             raise e
-
-    def _prepare_team_response(self):
-        self._agent_team_response: Future[str] = Future()
 
     async def _on_team_response(self) -> str:
         try:
@@ -77,8 +68,8 @@ class AgentTeam(Protocol):
         # TODO: Probably should first have a setup method, then execute a run method
         async def task():
             await self._run_conversation(message, context=context)
-            if self.on_complete is not None:
-                self.on_complete(self.sender_did, self.thread_id)
+            if self._on_complete is not None:
+                self._on_complete()
 
         add_bg_task(asyncio.create_task(task()))
         self._is_initialized = True
@@ -95,8 +86,6 @@ class AgentTeam(Protocol):
     ):
         # send message to human proxy agent
         # await and return response
-
-        self._prepare_team_response()
 
         if not self._is_initialized:
             # asyncio.create_task(self._init_conversation(message))

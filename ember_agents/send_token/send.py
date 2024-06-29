@@ -2,6 +2,7 @@ import json
 import re
 import tempfile
 from collections.abc import Awaitable, Callable
+from typing import Any
 
 import httpx
 from autogen import (
@@ -26,7 +27,7 @@ client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
 class UniversalAddress(BaseModel):
     identifier: str
-    platform: str
+    platform: int
     network: str
 
 
@@ -316,9 +317,21 @@ You are a technician responsible for executing tools and returning the results t
 
 
 class SendTokenAgentTeam(AgentTeam):
-    _transaction: Transaction | None = None
-    _transaction_request: TxRequest | None = None
-    _transaction_preview: TxPreview | None = None
+
+    def __init__(
+        self,
+        on_complete: Callable[[], Any],
+        store_transaction_info: Any,
+        user_chat_id: str,
+        client_id: int,
+    ):
+        super().__init__(on_complete)
+        self._transaction: Transaction | None = None
+        self._transaction_request: TxRequest | None = None
+        self._transaction_preview: TxPreview | None = None
+        self._store_transaction_info = store_transaction_info
+        self._user_chat_id = user_chat_id
+        self._client_id = client_id
 
     async def _run_conversation(
         self, message: str, context: list[ChatCompletionMessageParam] | None = None
@@ -438,8 +451,8 @@ TERMINATE"""
         try:
             await user_proxy.a_initiate_chat(manager, message=message)
         except Exception:
-            if self.on_complete is not None:
-                self.on_complete(self.sender_did, self.thread_id)
+            if self._on_complete is not None:
+                self._on_complete()
 
     def _validate_request(self, recipient: ConversableAgent, messages, sender, config):
         try:
@@ -466,8 +479,8 @@ TERMINATE"""
             self._transaction = Transaction.model_validate_json(json_str)
             self._transaction_request = TxRequest(
                 sender_address=UniversalAddress(
-                    identifier=self.sender_did,
-                    platform="telegram.me",
+                    identifier=self._user_chat_id,
+                    platform=self._client_id,
                     network=self._transaction.network,
                 ),
                 recipient_address=self._transaction.recipient_address,

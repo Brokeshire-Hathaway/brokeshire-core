@@ -1,6 +1,6 @@
 import asyncio
 from asyncio import Queue
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 from fastapi import FastAPI, Request
 from openai.types.chat import ChatCompletionMessageParam
@@ -20,9 +20,11 @@ class MessageContext(BaseModel):
 
 
 class Message(BaseModel):
-    sender_uid: str
+    user_chat_id: str
+    client_id: int
     message: str
     context: list[MessageContext]
+    store_transaction: Any
 
 
 def context_to_messages(
@@ -67,13 +69,18 @@ def event_router(
         response = Response(status="processing", message=activity)
         message_queue.put_nowait(response)
 
+    session_id = agent_team_session_manager.get_session_id(
+        body.user_chat_id, thread_id, body.client_id
+    )
+
     async def send_message():
         router = Router(agent_team_session_manager, routes)
-        sender_did = body.sender_uid
         try:
             response_message = await router.send(
-                sender_did,
-                thread_id,
+                body.user_chat_id,
+                body.client_id,
+                body.store_transaction,
+                session_id,
                 body.message,
                 on_activity,
                 context=context_to_messages(body.context),
@@ -95,7 +102,7 @@ def event_router(
                     response = await message_queue.get()
             except TimeoutError:
                 delete_task(task)
-                agent_team_session_manager.remove_session(body.sender_uid, thread_id)
+                agent_team_session_manager.remove_session(session_id)
                 yield ServerSentEvent(
                     {"message": "Operation aborted due to timeout"}, event="error"
                 )

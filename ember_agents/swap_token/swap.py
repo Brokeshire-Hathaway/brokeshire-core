@@ -2,6 +2,7 @@ import json
 import re
 import tempfile
 from collections.abc import Awaitable, Callable
+from typing import Any
 
 import httpx
 from autogen import (
@@ -424,13 +425,21 @@ You are a technician responsible for executing tools and returning the results t
 
 
 class SwapTokenAgentTeam(AgentTeam):
-    _transaction: SwapInformation | None = None
-    _transaction_request: SwapRequest | None = None
-    _transaction_preview: TxPreview | None = None
 
-    def __init__(self, sender_did: str, thread_id: str):
-        # TODO: Create a new protocol for the prepare_transaction and get_transaction_result functions as a separation of concerns for transactions.
-        super().__init__(sender_did, thread_id)
+    def __init__(
+        self,
+        on_complete: Callable[[], Any],
+        store_transaction_info: Any,
+        user_chat_id: str,
+        client_id: int,
+    ):
+        super().__init__(on_complete)
+        self._transaction: SwapInformation | None = None
+        self._transaction_request: SwapRequest | None = None
+        self._transaction_preview: TxPreview | None = None
+        self._store_transaction_info = store_transaction_info
+        self._user_chat_id = user_chat_id
+        self._client_id = client_id
 
     async def _prepare_transaction(self) -> TxPreview | None:
         if self._transaction_request is None:
@@ -555,8 +564,8 @@ TERMINATE"""
             await user_proxy.a_initiate_chat(manager, message=message)
         except Exception as error:
             print(error)
-            if self.on_complete is not None:
-                self.on_complete(self.sender_did, self.thread_id)
+            if self._on_complete is not None:
+                self._on_complete()
 
     def _validate_request(self, recipient: ConversableAgent, messages, sender, config):
         try:
@@ -583,7 +592,7 @@ TERMINATE"""
             self._transaction = SwapInformation.model_validate_json(json_str)
             self._transaction_request = self._transaction.to_swap_request(
                 UniversalAddress(
-                    identifier=self.sender_did, platform="telegram.me", network=""
+                    identifier=self._user_chat_id, platform=self._client_id, network=""
                 )
             )
             return True, {

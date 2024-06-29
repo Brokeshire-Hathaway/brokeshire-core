@@ -407,7 +407,7 @@ async def dexscreener(token_contract_address: str):
         price_change_24h=jsonresp.get("priceChange", {}).get("h24"),
         market_cap=jsonresp.get("fdv"),
         pool_address=jsonresp.get("pairAddress"),
-        liquidity=jsonresp.get("liquidity").get("usd"),  #
+        liquidity=jsonresp.get("liquidity").get("usd"),
     )
 
 
