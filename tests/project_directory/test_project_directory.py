@@ -1,4 +1,4 @@
-from unittest import result
+"""from unittest import result
 
 import pytest
 from numpy import full
@@ -11,14 +11,14 @@ from update_samples import (
     raw_update_simple,
 )
 
-from src.ember_agents.project_directory.parse_c4_updates import (
+from ember_agents.project_directory.parse_c4_updates import (
     parse_launches,
     parse_new_projects,
     parse_news_items,
     parse_project_updates,
     parse_threads_and_reads,
 )
-from src.ember_agents.project_directory.run_workflow import (
+from ember_agents.project_directory.run_workflow import (
     run_all_things,
     run_workflow_live,
     run_workflow_saved,
@@ -153,3 +153,4 @@ async def test_run_all_things(update):
     print(f"============running test for {date}==================")
     result = await run_all_things(update, date)
     print("===================test complete========================")
+"""

@@ -1,15 +1,11 @@
 from collections.abc import Callable
 
 from openai.types.chat import ChatCompletionMessageParam
-from semantic_router import Route
-from semantic_router.encoders import CohereEncoder
-from semantic_router.layer import RouteLayer
 
 from ember_agents.common.agents import AgentTeam
 from ember_agents.education.education import EducationAgentTeam
 from ember_agents.project_market_info.market_agent_team import MarketAgentTeam
 from ember_agents.send_token.send import SendTokenAgentTeam
-from ember_agents.settings import SETTINGS
 from ember_agents.swap_token.swap import SwapTokenAgentTeam
 
 
@@ -41,96 +37,22 @@ class AgentTeamSessionManager:
         return f"{sender_did}:{thread_id}"
 
 
-encoder = CohereEncoder(cohere_api_key=SETTINGS.cohere_api_key)
+# TODO: Track sessions using a user id and thread id.
+#       (A thread represents a private chat, public group, or chat thread)
 
-send = Route(
-    name="send",
-    utterances=[
-        "give 5 {token} to alice",
-        "send token",
-        "send {token}",
-        "send {token} to bob",
-        "transfer crypto",
-        "1.25 {token} to 0xC7F97cCC3b899fd0372134570A7c5404f6F887F8",
-        "48.06 {token} to mike",
-        "22 {token} to 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
-    ],
-)
-
-terminate = Route(
-    name="terminate",
-    utterances=["terminate", "cancel", "stop", "quit", "exit"],
-)
-
-swap = Route(
-    name="swap",
-    utterances=[
-        "swap 1 {token} from {network} to {network}",
-        "swap token",
-        "swap {token} to {token}",
-        "buy crypto",
-        "buy {token}",
-        "purchase {token}",
-        "I want to purchase crypto",
-        "convert my 5 {token}",
-        "change crypto",
-        "48.5 {token} to other chain",
-        "1.01 from {network} to {network}",
-        "change some of my tokens",
-    ],
-)
-
-market = Route(
-    name="market",
-    utterances=[
-        "info on {token}",
-        "what's the price of {token}?",
-        "current {token} price",
-        "how much is {token}?",
-        "market cap of {token}",
-        "{token} volume",
-        "doland tremp",
-        "tell me about {token}",
-        "market info",
-        "{name} {network}",
-        "project details",
-        "{token} summary",
-    ],
-)
-
-education = Route(
-    name="education",
-    utterances=[
-        "how does {protocol} work?",
-        "what is a blockchain?",
-        "explain a smart contract",
-        "tell me about yourself",
-        "good morning",
-        "what is an L2 {network}?",
-        "what is the difference between {protocol Y} and {protocol Z}?",
-        "technology comparison of {protocol A} and {protocol B}",
-        "Will the price of {token} go up?",
-        "educational content",
-        "tell me a joke",
-        "technical questions",
-        "yes",
-        "proceed",
-        "ok",
-    ],
-)
-
-routes = [send, market, education, swap, terminate]
-decision_layer = RouteLayer(encoder=encoder, routes=routes)
+# TODO: Each time an agent team ends their session with the user, they should return
+#       a summary of their conversation with the user so that it can be included in
+#       the top level conversation for context.
 
 
 class Router:
     def __init__(
         self,
         session_manager: AgentTeamSessionManager,
-        possible_routes: list[str] | None,
+        intents: list[str] | None,
     ):
         self._session_manager = session_manager
-        self._possible_routes = possible_routes
+        self._intents = intents
 
     async def send(
         self,
@@ -152,10 +74,8 @@ class Router:
     def _create_agent_team_session(
         self, sender_did: str, thread_id: str, route: str | None
     ) -> AgentTeam:
-        if self._possible_routes is not None:
-            route = (
-                route if route is not None and route in self._possible_routes else None
-            )
+        if self._intents is not None:
+            route = route if route is not None and route in self._intents else None
         match route:
             case "send":
                 agent_team = SendTokenAgentTeam(sender_did, thread_id)
@@ -172,25 +92,3 @@ class Router:
         self, sender_did: str, thread_id: str
     ) -> AgentTeam | None:
         return self._session_manager.get_session(sender_did, thread_id)
-
-
-"""
-def router(message: str) -> str:
-    \"""Route a user message to the appropriate agent team.\"""
-
-    # TODO: Track sessions using a user id and thread id.
-    #       (A thread represents a private chat, public group, or chat thread)
-
-    # TODO: Each time an agent team ends their session with the user, they should return
-    #       a summary of their conversation with the user so that it can be included in
-    #       the top level conversation for context.
-
-    route = decision_layer(message).name
-    match route:
-        case "send":
-            return "send"
-        case "market":
-            return "market"
-        case "education" | None | _:
-            return "education"
-"""

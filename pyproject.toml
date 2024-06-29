@@ -17,6 +17,7 @@ dependencies = [
     "sse-starlette>=1.8.2",
     "uvicorn[standard]>=0.27.0",
     "tiktoken>=0.6.0",                 # Although not used directly, need to lock version of tiktoken for python 3.12 support.
+    "fireworks-ai>=0.14.0",
 ]
 requires-python = ">=3.11,<3.13"
 readme = "README.md"

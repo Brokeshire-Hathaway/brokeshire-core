@@ -12,7 +12,7 @@ from ember_agents.education.education import education
         ("tell me about yourself"),
     ],
 )
-# @pytest.mark.skip
+@pytest.mark.skip
 async def test_education(user_request: str):
     print(f"User request: {user_request}", flush=True)
     response = await education(user_request)

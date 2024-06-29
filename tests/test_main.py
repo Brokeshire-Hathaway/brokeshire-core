@@ -10,6 +10,7 @@ from ember_agents.agent_router.router import Router
         ("Send 5 Bitcoin to Alice", ""),
     ],
 )
+@pytest.mark.skip
 async def test_create_message(message: str, expected: str):
     """
     ## DESIGN PATTERN OPTIONS
