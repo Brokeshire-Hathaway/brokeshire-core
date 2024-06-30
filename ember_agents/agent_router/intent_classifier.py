@@ -14,13 +14,14 @@ INTENT = Literal[
     "explanation_query",
     "advice_query",
     "market_news_query",
+    "terminate",
     "unclear",
     "out_of_scope",
 ]
 
 
 class ClassifiedIntent(BaseModel):
-    intent: INTENT
+    name: INTENT
     linear_probability: float
 
 
@@ -30,11 +31,12 @@ client = Fireworks(api_key=SETTINGS.fireworks_api_key)
 descriptions: dict[INTENT, str] = {
     "capabilities_query": "Reply to any questions about me. Help the user understand what this assistant can do, it's features and functionalies, and how to use it. Its name is Ember.",
     "crypto_price_query": "Get the price of a cryptocurrency or token",
-    "swap_crypto_action": "Convert one cryptocurrency or token to another",
-    "transfer_crypto_action": "Send cryptocurrency or tokens to someone else",
+    "swap_crypto_action": "Convert one cryptocurrency or token to another. Buy cryptocurrency, token or noun. This includes 'I want <noun>' or 'buy <noun>'. User can use any noun for this intent.",
+    "transfer_crypto_action": "Send cryptocurrency or tokens to someone else. Someone else requests a cryptocurrency or token.",
     "explanation_query": "Describe a concept or term",
-    "advice_query": "Provide guidance on a decision",
+    "advice_query": "Provide guidance on a decision or make predictions.",
     "market_news_query": "Get the latest news on the crypto market",
+    "terminate": "End the current intent conversation",
     "unclear": "User message is gibberish, ambiguous or unclear",
     "out_of_scope": "Does not fit any of the other intents",
 }
@@ -79,4 +81,4 @@ async def classify_intent(utterance: str) -> ClassifiedIntent:
     token_logprob = response.choices[0].logprobs.content[0].top_logprobs[0]
     linear_probability = exp(token_logprob.logprob)
 
-    return ClassifiedIntent(intent=intent, linear_probability=linear_probability)
+    return ClassifiedIntent(name=intent, linear_probability=linear_probability)

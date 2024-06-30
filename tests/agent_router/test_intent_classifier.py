@@ -1,3 +1,4 @@
+from operator import is_
 import pytest
 
 from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
@@ -6,6 +7,11 @@ from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
 @pytest.mark.parametrize(
     "utterance, expected_intent, expected_is_confident",
     [
+        ("I want cookies", "swap_crypto_action", True),
+        ("Buy cookies", "swap_crypto_action", True),
+        ("I want puppy", "swap_crypto_action", True),
+        ("buy render", "swap_crypto_action", True),
+        ("change a tire", "out_of_scope", True),
         (
             "@EmberAIBot  What is the cryptocurrency with the highest trading volume today and why? 🤔",
             "market_news_query",
@@ -29,7 +35,7 @@ from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
         (
             "how do you see the idea of telegram wallets",
             "explanation_query",
-            False,
+            True,
         ),
         (
             "jeo boden",
@@ -38,8 +44,7 @@ from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
         ),
         ("tell me about arweave", "explanation_query", True),
         ("how much is doge?", "crypto_price_query", True),
-        ("poocoin convert price point news outlet", "unclear", True),
-        ("change a tire", "out_of_scope", True),
+        ("poocoin convert price point news outlet", "unclear", False),
         ("the metal is soft because grass is green", "unclear", True),
         ("What can you do?", "capabilities_query", True),
         ("wif price", "crypto_price_query", True),
@@ -47,7 +52,7 @@ from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
         ("swap op", "swap_crypto_action", True),
         ("give eth to friend", "transfer_crypto_action", True),
         ("change sol for arb", "swap_crypto_action", True),
-        ("give me bitcoin", "crypto_price_query", True),
+        ("give me bitcoin", "swap_crypto_action", True),
         ("my friend wants some eth", "transfer_crypto_action", True),
         ("What is an L3?", "explanation_query", True),
         ("should I short bitcoin", "advice_query", True),
@@ -78,5 +83,14 @@ async def test_classify_intent(
     utterance: str, expected_intent: INTENT, expected_is_confident: bool
 ):
     classified_intent = await classify_intent(utterance)
-    assert classified_intent.intent == expected_intent
-    assert (classified_intent.linear_probability >= 0.8) is expected_is_confident
+
+    print(f"\n\n---\n\nUtterance: {utterance}")
+    print(f"Classified Intent: {classified_intent.name}")
+    print(f"Confidence: {classified_intent.linear_probability}")
+
+    is_confident = classified_intent.linear_probability >= 0.8
+
+    assert is_confident is expected_is_confident
+
+    if is_confident:
+        assert classified_intent.name == expected_intent

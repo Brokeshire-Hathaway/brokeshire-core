@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 from openai.types.chat import ChatCompletionMessageParam
 
+from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
 from ember_agents.common.agents import AgentTeam
 from ember_agents.education.education import EducationAgentTeam
 from ember_agents.project_market_info.market_agent_team import MarketAgentTeam
@@ -62,7 +63,8 @@ class Router:
         activity: Callable[[str], None] | None = None,
         context: list[ChatCompletionMessageParam] | None = None,
     ):
-        route = decision_layer(message).name
+        intent = await classify_intent(message)
+        route = intent.name
         print(f"Route: {route}")
         agent_team = self._get_agent_team_session(sender_did, thread_id)
         if route == "terminate" or agent_team is None:
@@ -72,18 +74,27 @@ class Router:
         return await agent_team.send(message, context=context)
 
     def _create_agent_team_session(
-        self, sender_did: str, thread_id: str, route: str | None
+        self, sender_did: str, thread_id: str, route: INTENT | None
     ) -> AgentTeam:
         if self._intents is not None:
             route = route if route is not None and route in self._intents else None
         match route:
-            case "send":
+            case "transfer_crypto_action":
                 agent_team = SendTokenAgentTeam(sender_did, thread_id)
-            case "swap":
+            case "swap_crypto_action":
                 agent_team = SwapTokenAgentTeam(sender_did, thread_id)
-            case "market":
+            case "crypto_price_query" | "market_news_query":
                 agent_team = MarketAgentTeam(sender_did, thread_id)
-            case "education" | "terminate" | None | _:
+            case (
+                "explanation_query"
+                | "capabilities_query"
+                | "advice_query"
+                | "unclear"
+                | "out_of_scope"
+                | "terminate"
+                | None
+                | _
+            ):
                 agent_team = EducationAgentTeam(sender_did, thread_id)
         self._session_manager.create_session(agent_team)
         return agent_team
