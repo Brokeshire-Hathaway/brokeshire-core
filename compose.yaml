@@ -6,7 +6,7 @@ services:
       COHERE_API_KEY: /run/secrets/cohere_api_key
       OPENAI_API_KEY: /run/secrets/openai_api_key
       PINECONE_API_KEY: /run/secrets/pinecone_api_key
-      TRANSACTION_SERVICE_URL: http://ember-engine-${ENVIRONMENT}
+      TRANSACTION_SERVICE_URL: http://transaction_executor
     networks:
       - shared_network
     secrets:
