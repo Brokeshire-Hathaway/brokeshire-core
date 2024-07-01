@@ -16,8 +16,8 @@ class AgentTeam(ABC):
         self._user_message_queue: Queue[dict[str, Any]] = Queue()
         self._is_initialized: bool = False
         self._on_activity: Callable[[str], None] | None = None
-        self._agent_team_response: Future[str] = Future()
         self._on_complete = on_complete
+        self._agent_team_response: Future[str] = Future()
         self.sign_url: str | None = None
 
     @abstractmethod
@@ -88,6 +88,7 @@ class AgentTeam(ABC):
         # send message to human proxy agent
         # await and return response
 
+        self._agent_team_response = Future()
         if not self._is_initialized:
             # asyncio.create_task(self._init_conversation(message))
             self._init_conversation(message, context=context)
