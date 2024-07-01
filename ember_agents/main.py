@@ -46,6 +46,7 @@ ResponseStatus = Literal["done", "processing", "error"]
 class Response(BaseModel):
     status: ResponseStatus
     message: str
+    sign_tx_url: str | None = None
 
 
 @app.get("/")
@@ -85,7 +86,11 @@ def event_router(
                 on_activity,
                 context=context_to_messages(body.context),
             )
-            response = Response(status="done", message=response_message)
+            response = Response(
+                status="done",
+                message=response_message["message"],
+                sign_tx_url=response_message["sign_url"],
+            )
         except Exception as e:
             response = Response(status="error", message=str(e))
         message_queue.put_nowait(response)

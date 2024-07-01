@@ -72,7 +72,10 @@ class Router:
             )
         if activity is not None:
             agent_team.get_activity_updates(activity)
-        return await agent_team.send(message, context=context)
+        return {
+            "message": await agent_team.send(message, context=context),
+            "sign_url": agent_team.sign_url,
+        }
 
     def _create_agent_team_session(
         self,

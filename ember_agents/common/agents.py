@@ -18,6 +18,7 @@ class AgentTeam(ABC):
         self._on_activity: Callable[[str], None] | None = None
         self._agent_team_response: Future[str] = Future()
         self._on_complete = on_complete
+        self.sign_url: str | None = None
 
     @abstractmethod
     async def _run_conversation(

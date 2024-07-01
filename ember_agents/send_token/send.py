@@ -396,6 +396,7 @@ Details: {error_message}
 TERMINATE""",
                 )
 
+            self.sign_url = self._transaction_preview.sign_url
             response_message = f"""Transaction {self._transaction_preview.id} is ready for you to sign! 💸
 
 💸 **Send ・** {self._transaction.amount} [{self._transaction_preview.token_symbol}]({self._transaction_preview.token_explorer_url}) ({self._transaction_preview.network_name})
