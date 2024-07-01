@@ -7,6 +7,7 @@ from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse, ServerSentEvent
 
+from ember_agents.agent_router.intent_classifier import INTENT
 from ember_agents.agent_router.router import AgentTeamSessionManager, Router
 from ember_agents.bg_tasks import add_bg_task, delete_task
 from ember_agents.education.education import upload_doc_memory
@@ -59,7 +60,7 @@ ONE_MINUTE_TIMEOUT = 60
 
 
 def event_router(
-    thread_id: str, body: Message, request: Request, routes: list[str] | None = None
+    thread_id: str, body: Message, request: Request, routes: list[INTENT] | None = None
 ):
     """Default event router for the threads API."""
 
@@ -137,5 +138,17 @@ async def create_message(thread_id: str, body: Message, request: Request):
 @app.post("/v1/threads/{thread_id}/group")
 async def create_message_group(thread_id: str, body: Message, request: Request):
     return event_router(
-        thread_id, body, request, routes=["education", "terminate", "market"]
+        thread_id,
+        body,
+        request,
+        routes=[
+            "crypto_price_query",
+            "market_news_query",
+            "explanation_query",
+            "capabilities_query",
+            "advice_query",
+            "unclear",
+            "out_of_scope",
+            "terminate",
+        ],
     )
