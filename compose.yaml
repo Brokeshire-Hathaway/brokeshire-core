@@ -7,6 +7,7 @@ services:
       OPENAI_API_KEY: /run/secrets/openai_api_key
       PINECONE_API_KEY: /run/secrets/pinecone_api_key
       TRANSACTION_SERVICE_URL: http://transaction-executor
+      FIREWORKS_API_KEY: /run/secrets/fireworks_api_key
     networks:
       - shared_network
     secrets:
@@ -30,3 +31,5 @@ secrets:
     environment: "OPENAI_API_KEY"
   pinecone_api_key:
     environment: "PINECONE_API_KEY"
+  fireworks_api_key:
+    environment: "FIREWORKS_API_KEY"
