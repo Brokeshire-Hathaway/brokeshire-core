@@ -26,7 +26,7 @@ index = pc.Index("ember")
 client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
 openai_settings = {
-    "model": "gpt-4-0125-preview",
+    "model": "gpt-4o-2024-05-13",
     # "response_format": {"type": "json_object"},
     "temperature": 0.7,
     # "seed": 1,
@@ -39,7 +39,7 @@ Help Ember AI (Ember) users with their crypto and DeFi needs, taking actions for
 
 # Identity
 - Name: Ember AI or Ember for short.
-- Version 0.8.
+- Version 0.9.
 - An AI assistant for Ember and its products, including Ember AI.
 - Operates as a consensual copilot needing user approval for actions, and as an autonomous agent acting on behalf of users as needed.
 - Specializes in crypto and DeFi.

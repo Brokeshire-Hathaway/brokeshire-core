@@ -12,7 +12,7 @@ client = AsyncOpenAI(
 )
 
 openai_settings = {
-    "model": "gpt-4-0125-preview",
+    "model": "gpt-4o-2024-05-13",
     "response_format": {"type": "json_object"},
     "temperature": 0,
     "seed": 1,

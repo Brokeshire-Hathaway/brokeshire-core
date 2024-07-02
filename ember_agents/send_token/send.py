@@ -49,7 +49,7 @@ class Transaction(BaseModel):
     token: str
 
 
-OAI_CONFIG_LIST = [{"model": "gpt-4-1106-preview", "api_key": SETTINGS.openai_api_key}]
+OAI_CONFIG_LIST = [{"model": "gpt-4o-2024-05-13", "api_key": SETTINGS.openai_api_key}]
 
 
 # Create a temporary file
@@ -254,7 +254,7 @@ Send 1 eth to 0x2D6c1025994dB45c7618571d6cB49B064DA9881B in ethereum chain
                 "content": user_message,
             },
         ],
-        model="gpt-4-1106-preview",
+        model="gpt-4o-2024-05-13",
         temperature=0,
         seed=42,
         response_format={"type": "json_object"},

@@ -81,7 +81,7 @@ class TxPreview(BaseModel):
     to_token_explorer_url: str
 
 
-OAI_CONFIG_LIST = [{"model": "gpt-4-1106-preview", "api_key": SETTINGS.openai_api_key}]
+OAI_CONFIG_LIST = [{"model": "gpt-4o-2024-05-13", "api_key": SETTINGS.openai_api_key}]
 
 # Create a temporary file
 # Write the JSON structure to a temporary file and pass it to config_list_from_json
@@ -347,7 +347,7 @@ Buy 0.456345632 usd-coin in eth sepolia using matic in mumbai
                 "content": user_message,
             },
         ],
-        model="gpt-4-1106-preview",
+        model="gpt-4o-2024-05-13",
         temperature=0,
         seed=42,
         response_format={"type": "json_object"},
