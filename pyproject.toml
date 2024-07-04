@@ -19,6 +19,9 @@ dependencies = [
     "tiktoken>=0.6.0",
     "multidict>=6.0.5",
     "fireworks-ai>=0.14.0",
+    "indexnetwork-sdk>=0.0.17",
+    "web3>=6.20.0",
+    "pycryptodome>=3.20.0",
 ]
 requires-python = ">=3.11,<3.13"
 readme = "README.md"
