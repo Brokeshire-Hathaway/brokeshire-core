@@ -24,6 +24,7 @@ class Environment(BaseSettings):
     pinecone_api_key: SensitiveField
     cohere_api_key: SensitiveField
     fireworks_api_key: SensitiveField
+    openrouter_api_key: SensitiveField
     transaction_service_url: str
 
 

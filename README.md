@@ -28,6 +28,7 @@ OPENAI_API_KEY="your_openai_api_key"
 PINECONE_API_KEY="your_pinecone_key"
 TRANSACTION_SERVICE_URL="http://localhost:3000"
 FIREWORKS_API_KEY="your_fireworks_api_key"
+OPENROUTER_API_KEY="your_openrouter_api_key"
 ```
 
 After that, start the project by running:
