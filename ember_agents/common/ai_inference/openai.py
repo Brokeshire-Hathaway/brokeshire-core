@@ -23,6 +23,9 @@ class Temperature(BaseModel):
     value: Annotated[float, Field(ge=0, le=2)]
 
 
+client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
+
+
 async def get_openai_response(
     messages: list[ChatCompletionMessageParam],
     model: Model,
@@ -38,8 +41,6 @@ async def get_openai_response(
     """
 
     temperature = Temperature(value=0.7) if temperature is None else temperature
-
-    client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
     chat_completion = await client.chat.completions.create(
         model=model,
