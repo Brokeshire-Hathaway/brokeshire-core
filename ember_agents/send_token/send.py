@@ -2,6 +2,7 @@ import json
 import re
 import tempfile
 from collections.abc import Awaitable, Callable
+from pprint import pprint
 from typing import Any
 
 import httpx
@@ -19,6 +20,7 @@ from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel, ValidationError
 
 from ember_agents.common.agents import AgentTeam
+from ember_agents.common.transaction import link_chain, link_token
 from ember_agents.common.validators import PositiveAmount
 from ember_agents.settings import SETTINGS
 
@@ -27,9 +29,9 @@ client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
 class TxRequest(BaseModel):
     user_chat_id: str
-    network: str
+    network_id: str
     recipient_address: str
-    token: str
+    token_id: str
     amount: str
     store_transaction: Any
 
@@ -449,7 +451,9 @@ TERMINATE"""
             if self._on_complete is not None:
                 self._on_complete()
 
-    def _validate_request(self, recipient: ConversableAgent, messages, sender, config):
+    async def _validate_request(
+        self, recipient: ConversableAgent, messages, sender, config
+    ):
         try:
             message = get_last_message(recipient)
             print(f"message = {message}")
@@ -472,12 +476,40 @@ TERMINATE"""
 
         try:
             self._transaction = Transaction.model_validate_json(json_str)
+
+            linked_chain_results = await link_chain(self._transaction.network)
+            chain_llm_matches = linked_chain_results["llm_matches"]
+            if chain_llm_matches is None or len(chain_llm_matches) == 0:
+                msg = f"{self._transaction.network} is not a supported chain"
+                raise ValueError(msg)
+            chain_match = chain_llm_matches[0]
+            chain_confidence_threshold = 70
+            if chain_match["confidence_percentage"] < chain_confidence_threshold:
+                msg = f"{self._transaction.network} is not a supported chain"
+                raise ValueError(msg)
+
+            linked_token_results = await link_token(
+                self._transaction.token, chain_match["entity"]["id"]
+            )
+            token_fuzzy_matches = linked_token_results["fuzzy_matches"]
+            token_llm_matches = linked_token_results["llm_matches"]
+            token_match = (
+                token_fuzzy_matches[0]
+                if token_llm_matches is None
+                else token_llm_matches[0]
+            )
+            token_confidence_threshold = 60
+            if token_match["confidence_percentage"] < token_confidence_threshold:
+                msg = f"{self._transaction.token} is not a supported token"
+                raise ValueError(msg)
+            # print("CHAIN MATCH:")
+            # pprint(chain_match)
             self._transaction_request = TxRequest(
                 user_chat_id=self._user_chat_id,
-                network=self._transaction.network,
+                network_id=chain_match["entity"]["id"],
                 recipient_address=self._transaction.recipient_address,
                 amount=self._transaction.amount,
-                token=self._transaction.token,
+                token_id=token_match["entity"]["address"],
                 store_transaction=self._store_transaction_info,
             )
             return True, {

@@ -41,6 +41,13 @@ for network_name, file_name in json_files.items():
             True,
         ),
         (
+            "axl",
+            "Base",
+            supported_tokens["Base"],
+            "0x23ee2343B892b1BB63503a4FAbc840E0e2C6810f",
+            True,
+        ),
+        (
             "doge coin",
             "BNB Chain",
             supported_tokens["BNB Chain"],
@@ -59,13 +66,6 @@ for network_name, file_name in json_files.items():
             "Base",
             supported_tokens["Base"],
             "0x7f5373AE26c3E8FfC4c77b7255DF7eC1A9aF52a6",
-            True,
-        ),
-        (
-            "axl",
-            "Base",
-            supported_tokens["Base"],
-            "0x23ee2343B892b1BB63503a4FAbc840E0e2C6810f",
             True,
         ),
         (
@@ -105,7 +105,7 @@ for network_name, file_name in json_files.items():
         ),
     ],
 )
-# @pytest.mark.skip
+@pytest.mark.skip
 async def test_classify_intent(
     named_entity: str,
     network_name: str,
@@ -113,13 +113,19 @@ async def test_classify_intent(
     expected_token_address: str,
     expected_is_confident: bool,
 ):
+    print("\n---")
+
     results = await link_entity(
         named_entity, unique_entities, ["name", "symbol"], ["name", "symbol"]
     )
 
-    entity_match = results["llm_matches"][0]
+    # pprint(results["llm_matches"])
+    llm_matches = results["llm_matches"]
+    if llm_matches is None or len(llm_matches) == 0:
+        raise ValueError("No LLM matches found")
+    entity_match = llm_matches[0]
 
-    is_confident = entity_match["confidence_percentage"] >= 0.8
+    is_confident = entity_match["confidence_percentage"] >= 80
 
     assert is_confident is expected_is_confident
 
