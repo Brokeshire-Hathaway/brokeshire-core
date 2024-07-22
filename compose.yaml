@@ -8,6 +8,7 @@ services:
       PINECONE_API_KEY: /run/secrets/pinecone_api_key
       TRANSACTION_SERVICE_URL: http://transaction-executor
       FIREWORKS_API_KEY: /run/secrets/fireworks_api_key
+      OPENROUTER_API_KEY: /run/secrets/openrouter_api_key
     networks:
       - shared_network
     secrets:
@@ -15,6 +16,7 @@ services:
       - openai_api_key
       - pinecone_api_key
       - fireworks_api_key
+      - openrouter_api_key
     logging:
       options:
         max-size: "1m"
@@ -34,3 +36,5 @@ secrets:
     environment: "PINECONE_API_KEY"
   fireworks_api_key:
     environment: "FIREWORKS_API_KEY"
+  openrouter_api_key:
+    environment: "OPENROUTER_API_KEY"
