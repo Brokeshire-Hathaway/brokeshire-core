@@ -140,7 +140,7 @@ async def llm_entity_match(
     llm_match_token_index = 8
     choice = response.choices[0] if len(response.choices) >= 1 else None
     print("CHOICE.CONTENT")
-    pprint(choice.content)
+    pprint(choice)
     if choice is None or choice.logprobs is None or choice.logprobs.content is None:
         raise ValueError(LOGPROBS_REQUIRED_ERROR)
 
