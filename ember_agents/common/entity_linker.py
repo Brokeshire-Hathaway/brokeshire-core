@@ -1,5 +1,6 @@
 import json
 from math import exp, log
+from pprint import pprint
 from typing import Any, TypedDict
 
 from openai.types.chat import ChatCompletionMessageParam
@@ -138,6 +139,8 @@ async def llm_entity_match(
 
     llm_match_token_index = 8
     choices = response.choices[0] if len(response.choices) >= 1 else None
+    print("CHOICES[0].CONTENT")
+    pprint(choices[0].content)
     if choices is None or choices.logprobs is None or choices.logprobs.content is None:
         raise ValueError(LOGPROBS_REQUIRED_ERROR)
 

@@ -603,7 +603,7 @@ TERMINATE"""
             token_llm_matches = linked_from_token_results["llm_matches"]
             token_match = (
                 token_fuzzy_matches[0]
-                if token_llm_matches is None
+                if token_llm_matches is None or len(token_llm_matches) == 0
                 else token_llm_matches[0]
             )
             token_confidence_threshold = 60
@@ -628,7 +628,7 @@ TERMINATE"""
             to_token_llm_matches = linked_to_token_results["llm_matches"]
             to_token_match = (
                 to_token_fuzzy_matches[0]
-                if to_token_llm_matches is None
+                if to_token_llm_matches is None or len(to_token_llm_matches) == 0
                 else to_token_llm_matches[0]
             )
             if to_token_match["confidence_percentage"] < token_confidence_threshold:
