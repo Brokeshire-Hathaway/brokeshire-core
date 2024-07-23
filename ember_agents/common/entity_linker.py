@@ -138,13 +138,13 @@ async def llm_entity_match(
     )
 
     llm_match_token_index = 8
-    choices = response.choices[0] if len(response.choices) >= 1 else None
-    print("CHOICES[0].CONTENT")
-    pprint(choices[0].content)
-    if choices is None or choices.logprobs is None or choices.logprobs.content is None:
+    choice = response.choices[0] if len(response.choices) >= 1 else None
+    print("CHOICE.CONTENT")
+    pprint(choice.content)
+    if choice is None or choice.logprobs is None or choice.logprobs.content is None:
         raise ValueError(LOGPROBS_REQUIRED_ERROR)
 
-    llm_match_logprob = choices.logprobs.content[llm_match_token_index]
+    llm_match_logprob = choice.logprobs.content[llm_match_token_index]
     return [
         EntityMatch(
             entity=entity_list[index],
