@@ -2,6 +2,7 @@ import json
 import re
 import tempfile
 from collections.abc import Awaitable, Callable
+from pprint import pprint
 from typing import Any
 
 import httpx
@@ -596,6 +597,8 @@ TERMINATE"""
             linked_from_token_results = await link_token(
                 self._transaction.token, chain_match["entity"]["id"]
             )
+            print("LINKED FROM TOKEN RESULTS:")
+            pprint(linked_from_token_results)
             token_fuzzy_matches = linked_from_token_results["fuzzy_matches"]
             token_llm_matches = linked_from_token_results["llm_matches"]
             token_match = (
