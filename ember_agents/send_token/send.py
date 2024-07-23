@@ -29,9 +29,9 @@ client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
 class TxRequest(BaseModel):
     user_chat_id: str
-    network_id: str
+    network_id: int
     recipient_address: str
-    token_id: str
+    token_address: str
     amount: str
     store_transaction: Any
 
@@ -509,7 +509,7 @@ TERMINATE"""
                 network_id=chain_match["entity"]["id"],
                 recipient_address=self._transaction.recipient_address,
                 amount=self._transaction.amount,
-                token_id=token_match["entity"]["address"],
+                token_address=token_match["entity"]["address"],
                 store_transaction=self._store_transaction_info,
             )
             return True, {
