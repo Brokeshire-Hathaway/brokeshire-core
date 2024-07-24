@@ -502,8 +502,7 @@ TERMINATE"""
             if token_match["confidence_percentage"] < token_confidence_threshold:
                 msg = f"{self._transaction.token} is not a supported token"
                 raise ValueError(msg)
-            # print("CHAIN MATCH:")
-            # pprint(chain_match)
+
             self._transaction_request = TxRequest(
                 user_chat_id=self._user_chat_id,
                 network_id=chain_match["entity"]["id"],

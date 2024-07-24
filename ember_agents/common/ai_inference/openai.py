@@ -1,4 +1,3 @@
-from pprint import pprint
 from typing import Annotated, Literal, TypedDict
 
 from openai import NOT_GIVEN, AsyncOpenAI, NotGiven
@@ -51,7 +50,5 @@ async def get_openai_response(
         logprobs=logprobs,
         top_logprobs=top_logprobs,
     )
-    # print("CHAT COMPLETION")
-    # pprint(chat_completion)
 
     return chat_completion

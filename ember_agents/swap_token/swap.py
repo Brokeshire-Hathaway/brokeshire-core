@@ -634,8 +634,7 @@ TERMINATE"""
             if to_token_match["confidence_percentage"] < token_confidence_threshold:
                 msg = f"{self._transaction.to_token} is not a supported token"
                 raise ValueError(msg)
-            # print("CHAIN MATCH:")
-            # pprint(chain_match)
+
             token_swap_to = TokenSwapTo(
                 network_id=to_chain_match["entity"]["id"],
                 token_address=to_token_match["entity"]["address"],

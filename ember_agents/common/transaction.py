@@ -1,9 +1,5 @@
-import json
-from pprint import pprint
-from typing import Optional
-
 import httpx
-from pydantic import BaseModel, Field, HttpUrl, ValidationError
+from pydantic import BaseModel, Field, HttpUrl
 from web3 import Web3
 
 from ember_agents.common.entity_linker import link_entity
@@ -68,7 +64,6 @@ class Token(BaseModel):
 
 async def link_chain(chain_name: str):
     supported_chains = await _get_supported_chains()
-    # pprint(supported_chains)
     return await link_entity(
         chain_name,
         [chain.model_dump() for chain in supported_chains],
@@ -79,7 +74,6 @@ async def link_chain(chain_name: str):
 
 async def link_token(token: str, chain_id: int):
     supported_tokens = await _get_supported_tokens(chain_id)
-    # pprint(supported_tokens)
 
     if Web3.is_address(token):
         fuzzy_keys = ["address"]
