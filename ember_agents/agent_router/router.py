@@ -5,7 +5,7 @@ from typing import Any
 from openai.types.chat import ChatCompletionMessageParam
 
 from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
-from ember_agents.common.agents import AgentTeam
+from ember_agents.common.agent_team import AgentTeam
 from ember_agents.education.education import EducationAgentTeam
 from ember_agents.project_market_info.market_agent_team import MarketAgentTeam
 from ember_agents.send_token.send import SendTokenAgentTeam

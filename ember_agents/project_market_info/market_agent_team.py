@@ -1,6 +1,6 @@
 from openai.types.chat import ChatCompletionMessageParam
 
-from ember_agents.common.agents import AgentTeam
+from ember_agents.common.agent_team import AgentTeam
 from ember_agents.project_market_info.info_from_apis import market_route
 
 

@@ -19,7 +19,7 @@ from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel, ValidationError
 
-from ember_agents.common.agents import AgentTeam
+from ember_agents.common.agent_team import AgentTeam
 from ember_agents.common.transaction import link_chain, link_token
 from ember_agents.common.validators import PositiveAmount
 from ember_agents.settings import SETTINGS

@@ -7,7 +7,7 @@ from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 from pinecone import Pinecone
 
-from ember_agents.common.agents import AgentTeam
+from ember_agents.common.agent_team import AgentTeam
 from ember_agents.settings import SETTINGS
 
 
