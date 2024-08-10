@@ -6,7 +6,7 @@ authors = [{ name = "Tom Daniel", email = "0xtomdaniel@gmail.com" }]
 dependencies = [
     "fastapi>=0.109.0",
     "httpx[http2]>=0.26.0",
-    "langchain>=0.1.13",
+    "langchain>=0.2.12",
     "langchain-text-splitters>=0.0.1",
     "pinecone-client>=3.2.0",
     "pyautogen>=0.2.6",
@@ -22,6 +22,10 @@ dependencies = [
     "rapidfuzz>=3.9.4",
     "openai>=1.35.13",
     "web3>=6.20.0",
+    "langgraph>=0.2.1",
+    "langchain-core>=0.2.29",
+    "defusedxml>=0.7.1",
+    "rich>=13.7.1",
 ]
 requires-python = ">=3.11,<3.13"
 readme = "README.md"
