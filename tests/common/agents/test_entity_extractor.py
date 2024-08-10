@@ -1,13 +1,20 @@
-from unicodedata import category
 import pytest
-from pprint import pprint
-from typing import Any, Literal
+from typing import Literal, TypedDict
 
 from ember_agents.common.agents.entity_extractor import (
     extract_entities,
-    ClassifiedEntity,
 )
-from ember_agents.common.ai_inference.openai import add_confidence_to_json_values
+
+
+class ExpectedNamedEntity(TypedDict):
+    value: str
+    confidence_threshold: float
+
+
+class ExpectedClassification(TypedDict):
+    named_entity: list[ExpectedNamedEntity]
+    confidence_threshold: float
+
 
 SwapEntityCategories = list[
     Literal[
@@ -33,14 +40,6 @@ SendEntityCategories = list[
 
 EntityCategories = SwapEntityCategories | SendEntityCategories
 
-
-"""
-
-"""
-
-"""
-
-"""
 
 swapEntityCategories = [
     "from_amount",
@@ -71,12 +70,21 @@ additionalContextSend = "User Intent: send_token_action"
             swapEntityCategories,
             additionalContextSwap,
             {
-                "from_amount": [{"value": "5", "confidence_threshold": 99}],
-                "from_token": [{"value": "usdc", "confidence_threshold": 99}],
-                "from_network": [],
-                "to_amount": [],
-                "to_token": [{"value": "eth", "confidence_threshold": 99}],
-                "to_network": [],
+                "from_amount": {
+                    "named_entity": [{"value": "5", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "from_token": {
+                    "named_entity": [{"value": "usdc", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "from_network": None,
+                "to_amount": None,
+                "to_token": {
+                    "named_entity": [{"value": "eth", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "to_network": None,
             },
         ),
         (
@@ -84,12 +92,18 @@ additionalContextSend = "User Intent: send_token_action"
             swapEntityCategories,
             additionalContextSwap,
             {
-                "from_amount": [],
-                "from_token": [{"value": "op", "confidence_threshold": 90}],
-                "from_network": [],
-                "to_amount": [],
-                "to_token": [{"value": "op", "confidence_threshold": 90}],
-                "to_network": [],
+                "from_amount": None,
+                "from_token": {
+                    "named_entity": [{"value": "op", "confidence_threshold": 90}],
+                    "confidence_threshold": 99,
+                },
+                "from_network": None,
+                "to_amount": None,
+                "to_token": {
+                    "named_entity": [{"value": "op", "confidence_threshold": 90}],
+                    "confidence_threshold": 99,
+                },
+                "to_network": None,
             },
         ),
         (
@@ -97,12 +111,15 @@ additionalContextSend = "User Intent: send_token_action"
             swapEntityCategories,
             additionalContextSwap,
             {
-                "from_amount": [],
-                "from_token": [],
-                "from_network": [],
-                "to_amount": [],
-                "to_token": [{"value": "puppy", "confidence_threshold": 40}],
-                "to_network": [],
+                "from_amount": None,
+                "from_token": None,
+                "from_network": None,
+                "to_amount": None,
+                "to_token": {
+                    "named_entity": [{"value": "puppy", "confidence_threshold": 40}],
+                    "confidence_threshold": 95,
+                },
+                "to_network": None,
             },
         ),
         (
@@ -110,12 +127,15 @@ additionalContextSend = "User Intent: send_token_action"
             swapEntityCategories,
             additionalContextSwap,
             {
-                "from_amount": [],
-                "from_token": [],
-                "from_network": [],
-                "to_amount": [],
-                "to_token": [{"value": "cookies", "confidence_threshold": 85}],
-                "to_network": [],
+                "from_amount": None,
+                "from_token": None,
+                "from_network": None,
+                "to_amount": None,
+                "to_token": {
+                    "named_entity": [{"value": "cookies", "confidence_threshold": 85}],
+                    "confidence_threshold": 95,
+                },
+                "to_network": None,
             },
         ),
         (
@@ -123,12 +143,15 @@ additionalContextSend = "User Intent: send_token_action"
             swapEntityCategories,
             additionalContextSwap,
             {
-                "from_amount": [],
-                "from_token": [],
-                "from_network": [],
-                "to_amount": [],
-                "to_token": [{"value": "render", "confidence_threshold": 99}],
-                "to_network": [],
+                "from_amount": None,
+                "from_token": None,
+                "from_network": None,
+                "to_amount": None,
+                "to_token": {
+                    "named_entity": [{"value": "render", "confidence_threshold": 99}],
+                    "confidence_threshold": 95,
+                },
+                "to_network": None,
             },
         ),
         (
@@ -136,12 +159,15 @@ additionalContextSend = "User Intent: send_token_action"
             swapEntityCategories,
             additionalContextSwap,
             {
-                "from_amount": [],
-                "from_token": [],
-                "from_network": [],
-                "to_amount": [],
-                "to_token": [{"value": "bitcoin", "confidence_threshold": 65}],
-                "to_network": [],
+                "from_amount": None,
+                "from_token": None,
+                "from_network": None,
+                "to_amount": None,
+                "to_token": {
+                    "named_entity": [{"value": "bitcoin", "confidence_threshold": 65}],
+                    "confidence_threshold": 99,
+                },
+                "to_network": None,
             },
         ),
         (
@@ -149,12 +175,15 @@ additionalContextSend = "User Intent: send_token_action"
             swapEntityCategories,
             additionalContextSwap,
             {
-                "from_amount": [],
-                "from_token": [{"value": "bitcoin", "confidence_threshold": 99}],
-                "from_network": [],
-                "to_amount": [],
-                "to_token": [],
-                "to_network": [],
+                "from_amount": None,
+                "from_token": {
+                    "named_entity": [{"value": "bitcoin", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "from_network": None,
+                "to_amount": None,
+                "to_token": None,
+                "to_network": None,
             },
         ),
         (
@@ -162,12 +191,15 @@ additionalContextSend = "User Intent: send_token_action"
             swapEntityCategories,
             additionalContextSwap,
             {
-                "from_amount": [],
-                "from_token": [],
-                "from_network": [],
-                "to_amount": [],
-                "to_token": [{"value": "cookies", "confidence_threshold": 90}],
-                "to_network": [],
+                "from_amount": None,
+                "from_token": None,
+                "from_network": None,
+                "to_amount": None,
+                "to_token": {
+                    "named_entity": [{"value": "cookies", "confidence_threshold": 90}],
+                    "confidence_threshold": 99,
+                },
+                "to_network": None,
             },
         ),
         (
@@ -175,10 +207,16 @@ additionalContextSend = "User Intent: send_token_action"
             sendEntityCategories,
             sendEntityCategories,
             {
-                "amount": [],
-                "token": [{"value": "eth", "confidence_threshold": 99}],
-                "network": [],
-                "recipient": [{"value": "friend", "confidence_threshold": 99}],
+                "amount": None,
+                "token": {
+                    "named_entity": [{"value": "eth", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "network": None,
+                "recipient": {
+                    "named_entity": [{"value": "friend", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
             },
         ),
         (
@@ -186,12 +224,18 @@ additionalContextSend = "User Intent: send_token_action"
             swapEntityCategories,
             additionalContextSwap,
             {
-                "from_amount": [],
-                "from_token": [{"value": "sol", "confidence_threshold": 99}],
-                "from_network": [],
-                "to_amount": [],
-                "to_token": [{"value": "arb", "confidence_threshold": 99}],
-                "to_network": [],
+                "from_amount": None,
+                "from_token": {
+                    "named_entity": [{"value": "sol", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "from_network": None,
+                "to_amount": None,
+                "to_token": {
+                    "named_entity": [{"value": "arb", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "to_network": None,
             },
         ),
         (
@@ -199,10 +243,46 @@ additionalContextSend = "User Intent: send_token_action"
             sendEntityCategories,
             sendEntityCategories,
             {
-                "amount": [],
-                "token": [{"value": "eth", "confidence_threshold": 99}],
-                "network": [],
-                "recipient": [{"value": "my friend", "confidence_threshold": 99}],
+                "amount": None,
+                "token": {
+                    "named_entity": [{"value": "eth", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "network": None,
+                "recipient": {
+                    "named_entity": [
+                        {"value": "my friend", "confidence_threshold": 99}
+                    ],
+                    "confidence_threshold": 55,
+                },
+            },
+        ),
+        (
+            "Swap WBTC from Polygon network to receive 8.21 USDT on the Arbitrum network.",
+            swapEntityCategories,
+            additionalContextSwap,
+            {
+                "from_amount": None,
+                "from_token": {
+                    "named_entity": [{"value": "WBTC", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "from_network": {
+                    "named_entity": [{"value": "Polygon", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "to_amount": {
+                    "named_entity": [{"value": "8.21", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "to_token": {
+                    "named_entity": [{"value": "USDT", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "to_network": {
+                    "named_entity": [{"value": "Arbitrum", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
             },
         ),
     ],
@@ -212,43 +292,31 @@ async def test_extract_entities(
     text: str,
     entity_categories: EntityCategories,
     additional_context: str,
-    expected_extracted_entities: dict[
-        str, list[dict[Literal["value", "confidence_threshold"], Any]]
-    ],
+    expected_extracted_entities: dict[str, ExpectedClassification],
 ):
     print(f"\n--- {text}")
 
     results = await extract_entities(text, entity_categories, additional_context)
 
-    print("EXPECTED_EXTRACTED_ENTITIES:")
-    pprint(expected_extracted_entities)
-    print("RESULTS:")
-    pprint(results)
-
     for _, classified_entity in enumerate(results["classified_entities"]):
-        category = classified_entity["category"]
-        named_entity = classified_entity["named_entity"]
+        classified_category = classified_entity["category"]
+        expected_category = expected_extracted_entities[classified_category["value"]]
+
+        assert (
+            classified_category["confidence_percentage"]
+            >= expected_category["confidence_threshold"]
+        )
+
+        classified_named_entity = classified_entity["named_entity"]
+
         found_named_entity = False
-        for _, expected_entity in enumerate(
-            expected_extracted_entities[category["value"]]
-        ):
-            if expected_entity["value"] != named_entity["value"]:
+        for _, expected_named_entity in enumerate(expected_category["named_entity"]):
+            if expected_named_entity["value"] != classified_named_entity["value"]:
                 continue
             found_named_entity = True
             assert (
-                category["confidence_percentage"]
-                >= expected_entity["confidence_threshold"]
+                classified_named_entity["confidence_percentage"]
+                >= expected_named_entity["confidence_threshold"]
             )
             break
         assert found_named_entity == True
-
-    """for entity_category, expected_entities in expected_extracted_entities.items():
-        assert len(expected_entities) == len(results[entity_category])
-
-        for i, expected_entity in enumerate(expected_entities):
-            named_entity = results[entity_category][i]["named_entity"]
-            assert named_entity["value"] == expected_entity["value"]
-            assert (
-                named_entity["confidence_percentage"]
-                >= expected_entity["confidence_threshold"]
-            )"""
