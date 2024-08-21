@@ -1,5 +1,6 @@
 import pytest
 from typing import Literal, TypedDict
+from rich import print
 
 from ember_agents.common.agents.entity_extractor import (
     extract_entities,
@@ -94,14 +95,14 @@ additionalContextSend = "User Intent: send_token_action"
             {
                 "from_amount": None,
                 "from_token": {
-                    "named_entity": [{"value": "op", "confidence_threshold": 90}],
-                    "confidence_threshold": 99,
+                    "named_entity": [{"value": "op", "confidence_threshold": 45}],
+                    "confidence_threshold": 90,
                 },
                 "from_network": None,
                 "to_amount": None,
                 "to_token": {
-                    "named_entity": [{"value": "op", "confidence_threshold": 90}],
-                    "confidence_threshold": 99,
+                    "named_entity": [{"value": "op", "confidence_threshold": 45}],
+                    "confidence_threshold": 90,
                 },
                 "to_network": None,
             },
@@ -285,6 +286,34 @@ additionalContextSend = "User Intent: send_token_action"
                 },
             },
         ),
+        (
+            "Swap 5 USDC for ETH from the Arbitrum network to the Base network",
+            swapEntityCategories,
+            additionalContextSwap,
+            {
+                "from_amount": {
+                    "named_entity": [{"value": "5", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "from_token": {
+                    "named_entity": [{"value": "USDC", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "from_network": {
+                    "named_entity": [{"value": "Arbitrum", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+                "to_amount": None,
+                "to_token": {
+                    "named_entity": [{"value": "ETH", "confidence_threshold": 99}],
+                    "confidence_threshold": 75,
+                },
+                "to_network": {
+                    "named_entity": [{"value": "Base", "confidence_threshold": 99}],
+                    "confidence_threshold": 99,
+                },
+            },
+        ),
     ],
 )
 @pytest.mark.skip
@@ -297,6 +326,7 @@ async def test_extract_entities(
     print(f"\n--- {text}")
 
     results = await extract_entities(text, entity_categories, additional_context)
+    print(results)
 
     for _, classified_entity in enumerate(results["classified_entities"]):
         classified_category = classified_entity["category"]

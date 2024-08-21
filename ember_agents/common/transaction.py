@@ -92,13 +92,21 @@ async def link_token(token: str, chain_id: int):
 
 async def _get_supported_chains():
     url = f"{SETTINGS.transaction_service_url}/chains"
-    async with httpx.AsyncClient(http2=True, timeout=2) as client:
-        response = await client.get(url)
+    try:
+        async with httpx.AsyncClient(http2=True, timeout=2) as client:
+            response = await client.get(url)
+    except Exception as e:
+        msg = f"An error occurred while requesting {url}: {e}"
+        raise Exception(msg) from e
     return [Chain(**chain) for chain in response.json()]
 
 
 async def _get_supported_tokens(chain_id: int):
     url = f"{SETTINGS.transaction_service_url}/tokens/{chain_id}"
-    async with httpx.AsyncClient(http2=True, timeout=2) as client:
-        response = await client.get(url)
+    try:
+        async with httpx.AsyncClient(http2=True, timeout=2) as client:
+            response = await client.get(url)
+    except Exception as e:
+        msg = f"An error occurred while requesting {url}: {e}"
+        raise Exception(msg) from e
     return [Token(**token) for token in response.json()]

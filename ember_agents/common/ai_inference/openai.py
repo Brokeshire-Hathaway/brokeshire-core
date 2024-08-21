@@ -132,13 +132,6 @@ def add_confidence_to_json_values(
 
         if obj_index == len(obj_str):
             if matching_logprobs:
-                """print("MATCHING_LOGPROBS")
-                pprint(
-                    [
-                        f"{lp.token}: {logprob_to_percentage(lp.logprob)}"
-                        for lp in matching_logprobs
-                    ]
-                )"""
                 first_logprob = matching_logprobs[0].logprob
             else:
                 first_logprob = 0  # Default value for empty strings or other edge cases

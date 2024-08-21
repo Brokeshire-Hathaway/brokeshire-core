@@ -3,6 +3,7 @@ from openai.types.chat import (
     ChatCompletionMessageParam,
 )
 from pydantic import BaseModel
+from rich import print
 
 from ember_agents.common.ai_inference.openai import Temperature, get_openai_response
 
@@ -31,6 +32,22 @@ def extract_xml_content(xml_string, tag_name):
 def get_instructions_prompt(
     utterance: str, intent_classification: str, provided_info: str, deficient_info: str
 ) -> str:
+    print(utterance, intent_classification, provided_info, deficient_info)
+
+    """
+    4. Identify any missing or unclear information that is necessary to fully understand and complete the user's intent. Consider details such as:
+    - Who: Relevant people or entities
+    - What: Specific items, actions, or services
+    - When: Dates, times, or durations
+    - Where: Locations or venues
+    - How: Methods, processes, or preferences
+    - Why: Reasons or motivations (if relevant)
+    """
+
+    """
+    Rewrite or rephrase the user's utterance to completely satisfy the deficient information. It should include any information necessary to make the user's intent clear and complete.
+    """
+
     return f"""You will be provided with three inputs:
 1. The user's initial intent
 2. Any information that has already been provided
@@ -58,33 +75,27 @@ ${provided_info}
 ${deficient_info}
 </deficient_info>
 
-4. Identify any missing or unclear information that is necessary to fully understand and complete the user's intent. Consider details such as:
-    - Who: Relevant people or entities
-    - What: Specific items, actions, or services
-    - When: Dates, times, or durations
-    - Where: Locations or venues
-    - How: Methods, processes, or preferences
-    - Why: Reasons or motivations (if relevant)
-
-5. Formulate clear and concise questions to gather the deficient information. Ensure that:
+4. Formulate clear and concise questions to gather the deficient information that you don't know. Ensure that:
     - Questions are directly related to the user's intent
     - Each question addresses a single piece of deficient information
+    - If you suspect you know the answer, ask the question in a way that will help you confirm your suspicions
     - Questions are phrased in a polite and user-friendly manner
+    - Deficient information mentioned in questions is always converted from snake case to title case
 
-6. Carefully reflect on the deficient information and ensure that the user has fully satisfied the requirements of the deficient information.
+5. Carefully reflect on the deficient information and ensure that the requirements of the deficient information has been satisfied. User's answers must satisfy all details of the deficient information.
 
-7. Choose the next node to call based on the following rules:
+6. Choose the next node to call based on the following rules:
     - If all deficient information has been satisfied, choose "default"
     - Otherwise, choose "ask_user"
 
-8. Provide your response based on the following rules:
+7. Provide your response based on the following rules:
     - When choosing "default", provide your response in the following format:
     <analysis>
     Briefly explain how the deficient information has been satisfied.
     </analysis>
 
     <revised_utterance>
-    Create a new utterance that satisfies both the user's intent and the deficient information. It should be as clear and concise as possible.
+    Create a new utterance from your analysis that makes the user's intent clear and complete. Add nouns from the deficient information to the utterance to avoid ambiguity.
     </revised_utterance>
 
     <next_node>
@@ -93,7 +104,7 @@ ${deficient_info}
 
     - When choosing "ask_user", provide your response in the following format:
     <analysis>
-    Briefly explain your understanding of the user's intent and how to elucidate the deficient information.
+    Reflect on deficient information to ensure that the requirements are being met. Briefly explain your understanding of the user's intent and how to elucidate the deficient information.
     </analysis>
 
     <questions>
@@ -130,6 +141,7 @@ async def get_clarifier_response(
     )
 
     questions = extract_xml_content(response.choices[0].message.content, "questions")
+    analysis = extract_xml_content(response.choices[0].message.content, "analysis")
     revised_utterance = extract_xml_content(
         response.choices[0].message.content, "revised_utterance"
     )
@@ -137,6 +149,10 @@ async def get_clarifier_response(
 
     if next_node is None:
         msg = "No next agent found in clarifier response"
+        raise ValueError(msg)
+
+    if next_node == "default" and analysis is None:
+        msg = "No analysis found in clarifier response"
         raise ValueError(msg)
 
     if next_node == "default" and revised_utterance is None:

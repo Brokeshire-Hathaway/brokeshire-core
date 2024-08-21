@@ -1,54 +1,70 @@
 import pytest
-from pprint import pprint
+from rich import print
 from typing import Any, Literal
 
 from ember_agents.convert_token.convert_token_agent_team import (
+    ConvertTokenAgentTeam,
     ConvertTokenSchema,
-    convert_token_agent_team,
 )
+
+
+"""
+        
+"""
 
 
 @pytest.mark.parametrize(
-    "user_utterance, user_responses",
+    "user_messages",
     [
-        (
-            "swap 5 usdc for eth",
-            ["from arbitrum to base"],
-        ),
-        (
+        ["change sol for arb", "20 sol to 11 arb", "from solana to arbitrum", "11 arb"],
+        ["Buy cookie", "with usdt", "from linea to blast", "recieve 55"],
+        [
             "swap wbtc",
-            ["to usdt token", "polygon to arbitrum", "8.21 usdt"],
-        ),
-        (
-            "Buy render",
-            ["100 usdc", "from ethereum to optimism"],
-        ),
-        (
-            "Buy cookie",
-            ["with usdt", "linea to blast", "recieve 55"],
-        ),
-        (
-            "change sol for arb",
-            ["20 sol to 11 arb", "from solana to arbitrum", "11 arb"],
-        ),
+            "to usdt token",
+            "polygon to arbitrum",
+            "8.21 usdt",
+            "yes, from wbtc",
+        ],
+        ["Buy render", "100 usdc", "from ethereum to optimism"],
+        ["swap 5 usdc for eth", "from arbitrum to base", "yes ETH"],
     ],
 )
-@pytest.mark.skip
-async def test_convert_token_agent_team(user_utterance: str, user_responses: list[str]):
-    print(f"\n--- {user_utterance}")
+# @pytest.mark.skip
+async def test_convert_token_agent_team(user_messages: list[str]):
+    print(f"\n--- {user_messages[0]}")
 
-    next_user_response_index = 0
+    next_user_message_index = 0
 
-    async def get_user_response():
-        nonlocal next_user_response_index
-        next_user_response = user_responses[next_user_response_index]
-        next_user_response_index += 1
-        return next_user_response
+    def get_user_message():
+        nonlocal next_user_message_index
+        next_user_message = user_messages[next_user_message_index]
+        next_user_message_index += 1
+        return next_user_message
 
-    response = await convert_token_agent_team(user_utterance, get_user_response)
+    is_complete = False
 
-    print("RESPONSE:")
-    pprint(response)
+    def on_complete():
+        print("COMPLETE")
+        nonlocal is_complete
+        is_complete = True
+
+    store_transaction_info = {
+        "authorization_header": "",
+        "endpoint": "/public/telegram/transaction",
+        "method": "POST",
+    }
+    convert_token_agent_team = ConvertTokenAgentTeam(
+        on_complete=on_complete,
+        store_transaction_info=store_transaction_info,
+        user_chat_id="1129320042",
+    )
+
+    while not is_complete:
+        user_message = get_user_message()
+        response = await convert_token_agent_team.send(user_message)
+
+        print("RESPONSE: ")
+        print(response)
 
 
 @pytest.mark.skip

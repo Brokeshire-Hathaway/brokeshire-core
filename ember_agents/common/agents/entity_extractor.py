@@ -31,6 +31,11 @@ class ExtractedEntities(TypedDict):
 SYSTEM_PROMPT = """You are a Named-entity recognition (NER) processor. Your task is to identify entities from a given utterance and classify them according to the provided JSON schema."""
 
 
+"""
+
+"""
+
+
 def get_instructions_prompt(
     utterance: str, categories: Sequence[str], additional_context: str | None
 ):
@@ -44,7 +49,10 @@ def get_instructions_prompt(
                         "category": {"type": "string"},
                         "named_entity": {"type": "string"},
                     },
-                    "required": ["category", "named_entity"],
+                    "required": [
+                        "category",
+                        "named_entity",
+                    ],
                 },
             },
         },
@@ -74,12 +82,15 @@ Here is the JSON schema to use for your output:
 <instructions>
 1. Carefully read through the utterance and identify any words or phrases that represent entities associated with the categories. Pay attention to context and potential variations in how entities might be expressed.
 
-2. For any word or phrase that is not clearly an identified entity, show low confidence.
+2. For any word or phrase that is not clearly an identified entity, show less confidence.
 
 3. For each identified entity:
-    a. Determine the appropriate category from categories.
-    b. If the category classification is not clear, show low confidence.
-    c. Extract the exact text of the entity from the utterance.
+    a. Determine any potential match from categories in no particular order
+    b. Extract the exact text of the entity from the utterance
+    c. When presented with a phrase, identify and focus only on the first element.
+        - Ignore any subsequent elements in your named entity response unless they are necessary to fully identify the entity.
+        - When dealing with number + unit expressions, treat the number as the focus, even if it doesn't make semantic sense on its own.
+    d. If the category classification is not clear, show less confidence
 
 4. Construct a JSON object that follows the structure of the provided schema, populating it with all of the entities you've extracted. Ensure that your output is valid JSON and matches the schema structure exactly.
 </instructions>
@@ -87,6 +98,7 @@ Here is the JSON schema to use for your output:
 Now, analyze the utterance and provide your output as instructed."""
 
 
+# If there is no match, do not include the entity in the output.
 async def extract_entities(
     text: str, categories: Sequence[str], additional_context: str
 ) -> ExtractedEntities:

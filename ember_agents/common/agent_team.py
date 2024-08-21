@@ -2,11 +2,16 @@ import asyncio
 from abc import ABC, abstractmethod
 from asyncio import Future, InvalidStateError, Queue
 from collections.abc import Callable
-from typing import Any
+from typing import Any, TypedDict
 
 from openai.types.chat import ChatCompletionMessageParam
 
 from ember_agents.bg_tasks import add_bg_task
+
+
+class SendResponse(TypedDict):
+    message: str
+    sign_url: str | None
 
 
 class AgentTeam(ABC):
@@ -17,8 +22,7 @@ class AgentTeam(ABC):
         self._is_initialized: bool = False
         self._on_activity: Callable[[str], None] | None = None
         self._on_complete = on_complete
-        self._agent_team_response: Future[str] = Future()
-        self.sign_url: str | None = None
+        self._agent_team_response: Future[SendResponse] = Future()
 
     @abstractmethod
     async def _run_conversation(
@@ -26,14 +30,16 @@ class AgentTeam(ABC):
     ):
         """Executes a conversation with a user."""
 
-    def _send_team_response(self, message: str):
+    def _send_team_response(self, message: str, sign_url: str | None = None):
         try:
-            self._agent_team_response.set_result(message)
+            self._agent_team_response.set_result(
+                {"message": message, "sign_url": sign_url}
+            )
         except InvalidStateError as e:
             print(e, flush=True)
             raise e
 
-    async def _on_team_response(self) -> str:
+    async def _on_team_response(self) -> SendResponse:
         try:
             await self._agent_team_response
         except Exception as e:
@@ -84,7 +90,7 @@ class AgentTeam(ABC):
 
     async def send(
         self, message: str, context: list[ChatCompletionMessageParam] | None = None
-    ):
+    ) -> SendResponse:
         # send message to human proxy agent
         # await and return response
 
