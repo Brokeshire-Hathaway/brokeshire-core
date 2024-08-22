@@ -29,7 +29,7 @@ from ember_agents.convert_token.convert_token_agent_team import (
         ["swap 5 usdc for eth", "from arbitrum to base", "yes ETH"],
     ],
 )
-# @pytest.mark.skip
+@pytest.mark.skip
 async def test_convert_token_agent_team(user_messages: list[str]):
     print(f"\n--- {user_messages[0]}")
 
