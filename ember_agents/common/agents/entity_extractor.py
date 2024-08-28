@@ -1,38 +1,100 @@
 import json
-from typing import Sequence, TypedDict, TypeVar
+from collections.abc import Sequence
+from typing import Generic, Literal, TypedDict, TypeVar, get_args
 
 from openai.types.chat import (
     ChatCompletionMessageParam,
 )
+from pydantic import BaseModel
+from rich import print
 
 from ember_agents.common.ai_inference.openai import (
     Temperature,
-    add_confidence_to_json_values,
+    extract_xml_content,
+    get_chat_completion_message,
     get_openai_response,
 )
 
 T = TypeVar("T", bound=str)
 
+C = TypeVar("C", bound=str)
 
-class ValueWithConfidence(TypedDict):
-    value: str
-    confidence_percentage: float
+
+ConfidenceLevel = Literal["high", "normal", "low"]
+
+
+"""class ClassifiedEntity(BaseModel):
+    named_entity: str
+    confidence: confidence_level
+
+
+class ExtractedEntities(BaseModel, Generic[T]):
+    classified_entities: dict[T, list[ClassifiedEntity]]"""
+
+
+class ExtractedEntity(BaseModel):
+    category: str
+    named_entity: str
+    confidence_level: ConfidenceLevel
+
+
+class ExtractedEntities(BaseModel):
+    extracted_entities: list[ExtractedEntity]
 
 
 class ClassifiedEntity(TypedDict):
-    named_entity: ValueWithConfidence
-    category: ValueWithConfidence
+    named_entity: str
+    confidence_level: ConfidenceLevel
 
 
-class ExtractedEntities(TypedDict):
-    classified_entities: list[ClassifiedEntity]
+ClassifiedEntities = dict[str, ClassifiedEntity]
 
 
-SYSTEM_PROMPT = """You are a Named-entity recognition (NER) processor. Your task is to identify entities from a given utterance and classify them according to the provided JSON schema."""
+Reasoning = str
+
+
+def flatten_classified_entities(
+    data: ExtractedEntities,
+) -> ClassifiedEntities:
+    return {
+        classified_entity.category: {
+            "named_entity": classified_entity.named_entity,
+            "confidence_level": classified_entity.confidence_level,
+        }
+        for classified_entity in data.extracted_entities
+    }
+
+
+SYSTEM_PROMPT = """You are an Named-entity recognition (NER) processor tasked with identifying and classifying entities in a given utterance according to the provided JSON schema."""
 
 
 """
-
+{
+    "properties": {
+        "extracted_entities": {
+            "type": "object",
+            "properties": {
+                category: {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "named_entity": {"type": "string"},
+                            "confidence_level": {
+                                "type": "string",
+                                "enum": list(get_args(confidence_level)),
+                            },
+                        },
+                        "required": ["named_entity", "confidence_level"],
+                    },
+                }
+                for category in categories
+            },
+            "required": categories,
+        },
+    },
+    "required": ["extracted_entities"],
+}
 """
 
 
@@ -41,67 +103,93 @@ def get_instructions_prompt(
 ):
     schema = {
         "properties": {
-            "classified_entities": {
+            "extracted_entities": {
                 "type": "array",
                 "items": {
                     "type": "object",
                     "properties": {
                         "category": {"type": "string"},
                         "named_entity": {"type": "string"},
+                        "confidence_level": {
+                            "type": "string",
+                            "enum": list(get_args(ConfidenceLevel)),
+                        },
                     },
                     "required": [
                         "category",
                         "named_entity",
+                        "confidence_level",
                     ],
                 },
             },
         },
-        "required": ["classified_entities"],
+        "required": ["extracted_entities"],
     }
 
-    return f"""Here is the utterance to analyze:
+    # TODO: Make entity descriptions dynamic
+
+    return f"""Follow these instructions carefully to complete the task:
+
+1. Here is the utterance you need to analyze:
 <utterance>
 {utterance}
 </utterance>
 
-Here is some additional context that may help you identify and classify potential entities in the utterance:
+2. Here is some additional context that should help you identify and classify entities in the utterance:
 <additional_context>
 {additional_context}
 </additional_context>
 
-Here are the categories to use for classification:
+3. Use the following categories for classification:
 <categories>
 {json.dumps(categories, indent=2)}
 </categories>
 
-Here is the JSON schema to use for your output:
+4. Your output should follow this JSON schema:
 <json_schema>
 {json.dumps(schema, indent=2)}
 </json_schema>
 
-<instructions>
-1. Carefully read through the utterance and identify any words or phrases that represent entities associated with the categories. Pay attention to context and potential variations in how entities might be expressed.
+5. Follow these steps to identify and classify entities:
+   a. Assume that the utterance is related to any additional context provided and understand how they are related.
+   b. Carefully read through the utterance and identify any words or phrases that represent entities associated with the provided categories. Pay attention to context and potential variations in how entities might be expressed.
+   c. For each identified entity:
+      - When presented with a phrase, identify and focus only on the single key element. Ignore any surrounding elements in the named entity unless they are absolutely necessary to fully identify the entity.
+         * The entity name should exclude any nouns that are also found in the matching category
+      - Extract the exact text of the entity from the utterance
+      - Identify which categories that the entity could belong to (in no particular order)
+         * Make reasonable assumptions even when confidence is low
+      - For entities that might belong to multiple categories, you must choose only one.
+         * Assume that one of the categories is the correct one.
+         * Assess which category is the most likely one and why.
+         * Give low confidence if the category choice is unclear or ambiguous
+      - For number + unit expressions, treat the number as the focus, even if it doesn't make semantic sense on its own.
 
-2. For any word or phrase that is not clearly an identified entity, show less confidence.
+6. Before providing your final output, use a <scratchpad> to think through your entity identification and classification process.
+   - Consider any ambiguities or challenges and how you're addressing them.
+   - Justify any assumptions made.
+      * Ensure that low confidence is given to any assumptions made
+   - Carefully consider the confidence of your identified entities and category classifications.
+      * Give low confidence to any uncertainty uncovered in your analysis.
 
-3. For each identified entity:
-    a. Determine any potential match from categories in no particular order
-    b. Extract the exact text of the entity from the utterance
-    c. When presented with a phrase, identify and focus only on the first element.
-        - Ignore any subsequent elements in your named entity response unless they are necessary to fully identify the entity.
-        - When dealing with number + unit expressions, treat the number as the focus, even if it doesn't make semantic sense on its own.
-    d. If the category classification is not clear, show less confidence
+7. Construct a JSON object that follows the provided schema, populating it with all of the entities you've extracted. Ensure that your output is valid JSON and matches the schema structure exactly.
 
-4. Construct a JSON object that follows the structure of the provided schema, populating it with all of the entities you've extracted. Ensure that your output is valid JSON and matches the schema structure exactly.
-</instructions>
+8. Provide your final analysis and output in the following format:
+   <scratchpad>
+   [Your thought process here]
+   </scratchpad>
 
-Now, analyze the utterance and provide your output as instructed."""
+   <output>
+   [Your JSON output here]
+   </output>
+
+Remember to adhere strictly to the provided JSON schema and ensure your output is valid JSON. Do not include any explanations or additional text outside of the specified tags."""
 
 
 # If there is no match, do not include the entity in the output.
 async def extract_entities(
     text: str, categories: Sequence[str], additional_context: str
-) -> ExtractedEntities:
+) -> tuple[ExtractedEntities, Reasoning]:
     instructions_prompt = get_instructions_prompt(text, categories, additional_context)
     messages: list[ChatCompletionMessageParam] = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -109,19 +197,20 @@ async def extract_entities(
     ]
     response = await get_openai_response(
         messages,
-        "gpt-4o-2024-05-13",
+        "gpt-4o-2024-08-06",
         Temperature(value=0),
-        response_format={"type": "json_object"},
         seed=42,
-        logprobs=True,
     )
 
-    logprobs = response.choices[0].logprobs
+    message_content = get_chat_completion_message(response)
 
-    if logprobs is None or logprobs.content is None:
-        msg = "No logprobs found in response"
+    scratchpad_content = extract_xml_content(message_content, "scratchpad")
+
+    output_json = extract_xml_content(message_content, "output")
+    if output_json is None:
+        msg = "No JSON content found in expected XML output"
         raise ValueError(msg)
 
-    json_with_confidence = add_confidence_to_json_values(logprobs.content)
+    extracted_entities = ExtractedEntities.model_validate_json(output_json)
 
-    return json_with_confidence
+    return extracted_entities, "" if scratchpad_content is None else scratchpad_content

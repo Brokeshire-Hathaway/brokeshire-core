@@ -1,11 +1,14 @@
-from defusedxml import ElementTree
 from openai.types.chat import (
     ChatCompletionMessageParam,
 )
 from pydantic import BaseModel
 from rich import print
 
-from ember_agents.common.ai_inference.openai import Temperature, get_openai_response
+from ember_agents.common.ai_inference.openai import (
+    Temperature,
+    extract_xml_content,
+    get_openai_response,
+)
 
 
 class ClarifierResponse(BaseModel):
@@ -14,26 +17,12 @@ class ClarifierResponse(BaseModel):
     revised_utterance: str | None
 
 
-SYSTEM_PROMPT = """You are an AI assistant tasked with clarifying information needed to complete users intents. Your goal is to analyze the user's intent, identify any problems with the information, and formulate appropriate questions to gather or correct that information."""
-
-
-def extract_xml_content(xml_string, tag_name):
-    # Wrap the input in a root element
-    wrapped_xml = f"<root>{xml_string}</root>"
-    root = ElementTree.fromstring(wrapped_xml)
-    element = root.find(f".//{tag_name}")
-    return (
-        element.text.strip()
-        if element is not None and element.text is not None
-        else None
-    )
+SYSTEM_PROMPT = """You are an AI assistant tasked with refining a user's intent and gathering necessary information. Your goal is to analyze the provided inputs, identify missing information, and formulate appropriate questions or a revised utterance based on the completeness of the information."""
 
 
 def get_instructions_prompt(
     utterance: str, intent_classification: str, provided_info: str, deficient_info: str
 ) -> str:
-    print(utterance, intent_classification, provided_info, deficient_info)
-
     """
     4. Identify any missing or unclear information that is necessary to fully understand and complete the user's intent. Consider details such as:
     - Who: Relevant people or entities
@@ -46,77 +35,91 @@ def get_instructions_prompt(
 
     """
     Rewrite or rephrase the user's utterance to completely satisfy the deficient information. It should include any information necessary to make the user's intent clear and complete.
+
+
+    - Your understanding of the user's intent using the provided information and the information that has been gathered or clarified.
+      - An explanation of what information is still needed that is not already provided.
+      - Any assumptions made based on the context and user's intent.
     """
 
-    return f"""You will be provided with three inputs:
-1. The user's initial intent
-2. Any information that has already been provided
-3. Any information that still needs to be clarified
+    return f"""Follow these instructions carefully:
 
-Here's what you need to do:
-<instructions>
-1. Analyze the user's intent:
+1. Review the following inputs:
+
 <user_intent>
-    <utterance>
-    ${utterance}
-    </utterance>
-    <classification>
-    ${intent_classification}
-    </classification>
+<utterance>
+{utterance}
+</utterance>
+<classification>
+{intent_classification}
+</classification>
 </user_intent>
 
-2. Review the information already provided:
-<provided_info>
-${provided_info}
-</provided_info>
+<sufficient_info>
+{provided_info}
+</sufficient_info>
 
-3. Review the information that still needs to be clarified:
 <deficient_info>
-${deficient_info}
+{deficient_info}
 </deficient_info>
 
-4. Formulate clear and concise questions to gather the deficient information that you don't know. Ensure that:
-    - Questions are directly related to the user's intent
-    - Each question addresses a single piece of deficient information
-    - If you suspect you know the answer, ask the question in a way that will help you confirm your suspicions
-    - Questions are phrased in a polite and user-friendly manner
-    - Deficient information mentioned in questions is always converted from snake case to title case
+2. Analyze the user's intent and the sufficient information:
+   a. Understand the user's initial request and its classification.
+   b. Identify what information has already been provided.
+   c. Carefully review the original utterance to identify any information that may already satisfy deficient fields.
+   d. Determine what information is still missing or needs clarification.
+   e. Make reasonable assumptions based on the context and user's intent, to be confirmed later if necessary.
 
-5. Carefully reflect on the deficient information and ensure that the requirements of the deficient information has been satisfied. User's answers must satisfy all details of the deficient information.
+3. Process the deficient information:
+   a. Identify all required fields from the deficient_info that are still needed.
+   b. Note any specific rules or constraints (e.g., mutually exclusive fields).
+   c. Create a mental map of what information is still needed.
 
-6. Choose the next node to call based on the following rules:
-    - If all deficient information has been satisfied, choose "default"
-    - Otherwise, choose "ask_user"
+4. Formulate your response:
+   a. Prepare a brief review of your analysis.
+   b. If all required information has been provided:
+      - Create a revised utterance that clearly and completely expresses the user's intent.
+         * Include all information required to satisfy the user's intent from the sufficient_info, the deficient_info, and any other information that the user may have provided or clarified.
+         * Ensure all names from the required information are preserved. Always use the original entity names unless otherwise revised by the user.
+         * Do not modify the entity names from the required information for any reason, including pluralization (e.g., do not change 'zombie' to 'zombies')
+      - Set the next_node to "default".
+   c. If information is still missing:
+      - Formulate clear, concise questions to confirm assumptions and gather only the truly missing information. Ensure each question:
+        * Addresses a single piece of deficient information.
+        * Is directly related to the user's intent and required fields.
+        * Is phrased politely and in a user-friendly manner.
+        * Converts fields from snake case to title case if mentioning them in questions.
+        * Explains any constraints or rules if applicable.
+        * Avoids asking for information already provided in the original utterance or by the user.
+        * Presents assumptions for confirmation when appropriate.
+      - Set the next_node to "ask_user".
 
-7. Provide your response based on the following rules:
-    - When choosing "default", provide your response in the following format:
-    <analysis>
-    Briefly explain how the deficient information has been satisfied.
-    </analysis>
+5. Provide your response in the following format:
 
-    <revised_utterance>
-    Create a new utterance from your analysis that makes the user's intent clear and complete. Add nouns from the deficient information to the utterance to avoid ambiguity.
-    </revised_utterance>
+<analysis>
+[Your analysis here]
+</analysis>
 
-    <next_node>
-    default
-    </next_node>
+[If all information is provided, include:]
+<revised_utterance>
+[Your revised utterance here]
+</revised_utterance>
 
-    - When choosing "ask_user", provide your response in the following format:
-    <analysis>
-    Reflect on deficient information to ensure that the requirements are being met. Briefly explain your understanding of the user's intent and how to elucidate the deficient information.
-    </analysis>
+[If information is missing, include:]
+<questions>
+[Your numbered list of questions here]
+</questions>
 
-    <questions>
-    List your questions, one per line, numbered.
-    </questions>
+<next_node>
+[Either "default" or "ask_user"]
+</next_node>
 
-    <next_node>
-    ask_user
-    </next_node>
-</instructions>
+6. Before finalizing your response, validate that:
+   - All required fields identified from the deficient information are addressed.
+   - Your response adheres to any specific rules or constraints mentioned in the deficient information.
+   - If constructing a revised utterance, it includes all necessary information in a natural, conversational format.
 
-Remember to tailor your questions to the specific context of the user's intent and the information already provided. Your goal is to gather all necessary information efficiently and politely."""
+Remember, your goal is to efficiently and politely gather all necessary information or provide a clear, complete revised utterance based on the user's intent and the information available."""
 
 
 async def get_clarifier_response(
@@ -126,6 +129,11 @@ async def get_clarifier_response(
     deficient_info: str,
     message_history: list[ChatCompletionMessageParam],
 ) -> ClarifierResponse:
+    print("get_clarifier_response")
+    print(utterance)
+    print(intent_classification)
+    print(provided_info)
+    print(deficient_info)
     instructions_prompt = get_instructions_prompt(
         utterance, intent_classification, provided_info, deficient_info
     )
@@ -137,11 +145,12 @@ async def get_clarifier_response(
     response = await get_openai_response(
         messages,
         "gpt-4o-2024-05-13",
-        Temperature(value=0.5),
+        Temperature(value=0),
     )
 
     questions = extract_xml_content(response.choices[0].message.content, "questions")
     analysis = extract_xml_content(response.choices[0].message.content, "analysis")
+    print(f"analysis: {analysis}")
     revised_utterance = extract_xml_content(
         response.choices[0].message.content, "revised_utterance"
     )

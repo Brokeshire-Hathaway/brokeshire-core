@@ -1,35 +1,47 @@
-from typing import Any, Generic, Type, TypeVar, Union, get_args, get_origin
+from typing import (
+    ClassVar,
+    Generic,
+    TypeVar,
+)
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 from rich import print
 
 from ember_agents.common.agents.entity_extractor import (
+    ConfidenceLevel,
     ExtractedEntities,
-    ValueWithConfidence,
+    flatten_classified_entities,
 )
 
 T = TypeVar("T")
 
 
-class InferredValue(BaseModel, Generic[T]):
-    value: T
-    confidence_percentage: float = Field(
+"""class ValueWithConfidence(TypedDict):
+    value: str
+    confidence_percentage: float"""
+
+
+class InferredEntity(BaseModel, Generic[T]):
+    named_entity: T
+    confidence_level: ConfidenceLevel = Field(
         ...,
-        ge=0,
-        le=100,
-        description="Confidence level of the inference, between 0 and 100 percent",
+        description="Confidence level of the inference: low, normal, or high",
     )
-    confidence_threshold: float = Field(
-        default=80, ge=0, le=100, description="Minimum acceptable confidence level"
+    confidence_threshold: ConfidenceLevel = Field(
+        default="normal", description="Minimum acceptable confidence level"
     )
 
-    @field_validator("confidence_percentage")
+    CONFIDENCE_ORDER: ClassVar[list[str]] = ["low", "normal", "high"]
+
+    @field_validator("confidence_level")
     @classmethod
-    def validate_confidence(cls, v: float, info: ValidationInfo) -> float:
-        threshold = info.data.get("confidence_threshold", 80)
-        if v < threshold:
-            print(f"Confidence {v} is below the threshold of {threshold}")
-            msg = "Unsure if this is the correct value"
+    def validate_confidence(
+        cls, v: ConfidenceLevel, info: ValidationInfo
+    ) -> ConfidenceLevel:
+        threshold = info.data.get("confidence_threshold", "normal")
+        if cls.CONFIDENCE_ORDER.index(v) < cls.CONFIDENCE_ORDER.index(threshold):
+            print(f"Confidence '{v}' is below the threshold of '{threshold}'")
+            msg = f"Confidence is {v}. Unsure if {cls.named_entity} is the correct named entity."
             raise ValueError(msg)
         return v
 
@@ -37,27 +49,12 @@ class InferredValue(BaseModel, Generic[T]):
 S = TypeVar("S", bound=BaseModel)
 
 
-def flatten_classified_entities(
-    data: ExtractedEntities,
-) -> dict[str, ValueWithConfidence]:
-    return {
-        classified_entity["category"]["value"]: {
-            "value": classified_entity["named_entity"]["value"],
-            "confidence_percentage": min(
-                classified_entity["category"]["confidence_percentage"],
-                classified_entity["named_entity"]["confidence_percentage"],
-            ),
-        }
-        for classified_entity in data["classified_entities"]
-    }
-
-
 def convert_to_schema(
     schema_class: type[S], data: ExtractedEntities, *, validate: bool = True
 ) -> S:
-    print(data)
+    print(f"data: {data}")
     data_model = flatten_classified_entities(data)
-    print(data_model)
+    print(f"data_model: {data_model}")
     """if validate:
         model = schema_class.model_validate(data_model)
         print(model)

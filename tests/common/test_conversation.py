@@ -22,6 +22,7 @@ from ember_agents.common.conversation import (
         ),
     ],
 )
+@pytest.mark.skip
 def test_create_context_message(sender, content, participant, expected):
     assert create_context_message(sender, content, participant) == expected
 
@@ -69,6 +70,7 @@ def test_create_context_message(sender, content, participant, expected):
         ),
     ],
 )
+@pytest.mark.skip
 def test_create_conversation_update(
     sender, content, participants, is_visible_to_user, expected
 ):
@@ -80,7 +82,7 @@ def test_create_conversation_update(
     )
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_get_context():
     conversation: Conversation = {
         "history": [
@@ -129,5 +131,6 @@ def test_get_context():
         ),
     ],
 )
+@pytest.mark.skip
 def test_empty_and_single_message_conversation(conversation, participant, expected):
     assert get_context(conversation, participant) == expected

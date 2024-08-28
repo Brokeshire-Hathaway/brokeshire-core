@@ -21,7 +21,7 @@ from ember_agents.common.agents.entity_extractor import (
     extract_entities,
 )
 from ember_agents.common.agents.schema_validator import (
-    InferredValue,
+    InferredEntity,
     convert_to_schema,
     flatten_classified_entities,
 )
@@ -31,8 +31,8 @@ from ember_agents.settings import SETTINGS
 
 
 class ConvertTokenAmount(BaseModel):
-    from_amount: InferredValue[float] | None = None
-    to_amount: InferredValue[float] | None = None
+    from_amount: InferredEntity[float] | None = None
+    to_amount: InferredEntity[float] | None = None
 
     @model_validator(mode="after")
     def check_amounts(self):
@@ -46,10 +46,10 @@ class ConvertTokenAmount(BaseModel):
 
 class ConvertTokenSchema(BaseModel):
     amount: ConvertTokenAmount
-    from_token: InferredValue[str]
-    from_network: InferredValue[str]
-    to_token: InferredValue[str]
-    to_network: InferredValue[str]
+    from_token: InferredEntity[str]
+    from_network: InferredEntity[str]
+    to_token: InferredEntity[str]
+    to_network: InferredEntity[str]
 
     @classmethod
     def model_validate(cls, obj: Any, *, strict: bool = False) -> "ConvertTokenSchema":
@@ -217,9 +217,10 @@ class ConvertTokenAgentTeam(AgentTeam):
             else f"Original: {state.user_utterance}\nClarified: {state.revised_utterance}"
         )
         intent_classification = f"Intent Classification: {state.intent_classification}"
-        extracted_entities = await extract_entities(
+        [extracted_entities, reasoning] = await extract_entities(
             utterance, CONVERT_TOKEN_ENTITIES, intent_classification
         )
+        print(reasoning)
         return {
             "extracted_entities": extracted_entities,
         }
@@ -263,18 +264,20 @@ class ConvertTokenAgentTeam(AgentTeam):
 
     async def _get_linked_entities(self, schema: ConvertTokenSchema):
         async def link_from():
-            from_network_entity = schema.from_network.value
+            from_network_entity = schema.from_network.named_entity
             linked_from_chain_id = await self._get_linked_chain_id(from_network_entity)
             linked_from_token_address = await self._get_linked_token_address(
-                schema.from_token.value, linked_from_chain_id, from_network_entity
+                schema.from_token.named_entity,
+                linked_from_chain_id,
+                from_network_entity,
             )
             return linked_from_chain_id, linked_from_token_address
 
         async def link_to():
-            to_network_entity = schema.to_network.value
+            to_network_entity = schema.to_network.named_entity
             linked_to_chain_id = await self._get_linked_chain_id(to_network_entity)
             linked_to_token_address = await self._get_linked_token_address(
-                schema.to_token.value, linked_to_chain_id, to_network_entity
+                schema.to_token.named_entity, linked_to_chain_id, to_network_entity
             )
             return linked_to_chain_id, linked_to_token_address
 
@@ -298,7 +301,6 @@ class ConvertTokenAgentTeam(AgentTeam):
                 msg = "Extracted entities are empty or not present."
                 raise ValueError(msg)
             schema = convert_to_schema(ConvertTokenSchema, state.extracted_entities)
-            print(schema)
             (
                 linked_from_chain_id,
                 linked_from_token_address,
@@ -310,10 +312,10 @@ class ConvertTokenAgentTeam(AgentTeam):
                 token_address=linked_to_token_address,
             )
             amount = (
-                ("buy", schema.amount.to_amount.value)
+                ("buy", schema.amount.to_amount.named_entity)
                 if schema.amount.to_amount is not None
                 else (
-                    ("swap", schema.amount.from_amount.value)
+                    ("swap", schema.amount.from_amount.named_entity)
                     if schema.amount.from_amount is not None
                     else None
                 )
@@ -332,8 +334,11 @@ class ConvertTokenAgentTeam(AgentTeam):
             )
             return {"transaction_request": transaction_request}
         except ValidationError as e:
+            message = e.json(
+                indent=2, include_url=False, include_context=True, include_input=False
+            )
             return {
-                "messages": [{"role": "user", "content": str(e)}],
+                "messages": [{"role": "user", "content": message}],
                 "next_node": "clarifier",
             }
 

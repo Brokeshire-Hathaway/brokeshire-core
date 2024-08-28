@@ -16,8 +16,9 @@ from ember_agents.convert_token.convert_token_agent_team import (
 @pytest.mark.parametrize(
     "user_messages",
     [
+        ["Buy cookie", "with usdt", "from linea to blast", "recieve 55", "yes"],
+        ["swap 5 usdc for eth", "from arbitrum to base", "yes ETH"],
         ["change sol for arb", "20 sol to 11 arb", "from solana to arbitrum", "11 arb"],
-        ["Buy cookie", "with usdt", "from linea to blast", "recieve 55"],
         [
             "swap wbtc",
             "to usdt token",
@@ -26,10 +27,9 @@ from ember_agents.convert_token.convert_token_agent_team import (
             "yes, from wbtc",
         ],
         ["Buy render", "100 usdc", "from ethereum to optimism"],
-        ["swap 5 usdc for eth", "from arbitrum to base", "yes ETH"],
     ],
 )
-@pytest.mark.skip
+# @pytest.mark.skip
 async def test_convert_token_agent_team(user_messages: list[str]):
     print(f"\n--- {user_messages[0]}")
 
@@ -70,9 +70,11 @@ async def test_convert_token_agent_team(user_messages: list[str]):
 @pytest.mark.skip
 async def test_convert_token_schema_validation():
     entities = {
-        "from_token": {"value": "usdc", "confidence_percentage": 99.0},
-        "from_network": {"value": "arbitrum", "confidence_percentage": 99.0},
-        "to_network": {"value": "base", "confidence_percentage": 99.0},
+        "from_amount": {"value": "5", "confidence_level": "high"},
+        "from_token": {"value": "usdc", "confidence_level": "high"},
+        "from_network": {"value": "arbitrum", "confidence_level": "high"},
+        "to_token": {"value": "eth", "confidence_level": "high"},
+        "to_network": {"value": "base", "confidence_level": "high"},
     }
     schema = ConvertTokenSchema.model_validate(entities)
     print(f"schema: {schema}")

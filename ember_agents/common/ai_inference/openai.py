@@ -1,8 +1,8 @@
 import json
 from math import exp
-from pprint import pprint
 from typing import Annotated, Any, Literal, TypedDict
 
+from defusedxml import ElementTree
 from openai import NOT_GIVEN, AsyncOpenAI, NotGiven
 from openai.types.chat import (
     ChatCompletion,
@@ -23,7 +23,7 @@ class Message(TypedDict):
     content: str
 
 
-Model = Literal["gpt-4o-2024-05-13", "gpt-4o-mini-2024-07-18"]
+Model = Literal["gpt-4o-2024-05-13", "gpt-4o-2024-08-06", "gpt-4o-mini-2024-07-18"]
 
 
 class Temperature(BaseModel):
@@ -102,6 +102,79 @@ def get_chat_completion_message(completion: ChatCompletion) -> str:
     raise NoContentError(msg)
 
 
+def get_chat_completion_logprobs(
+    completion: ChatCompletion,
+) -> list[ChatCompletionTokenLogprob]:
+    if not completion.choices:
+        msg = "The ChatCompletion object contains no choices."
+        raise NoChoicesError(msg)
+
+    logprobs = completion.choices[0].logprobs
+
+    if logprobs is None or logprobs.content is None:
+        msg = "No logprobs found in response"
+        raise ValueError(msg)
+
+    return logprobs.content
+
+
+def extract_xml_content(xml_string: str, tag_name: str) -> str | None:
+    # Wrap the input in a root element
+    wrapped_xml = f"<root>{xml_string}</root>"
+    root = ElementTree.fromstring(wrapped_xml)
+    element = root.find(f".//{tag_name}")
+    return (
+        element.text.strip()
+        if element is not None and element.text is not None
+        else None
+    )
+
+
+def find_json_logprobs(
+    json_content: str, tokens: list[ChatCompletionTokenLogprob]
+) -> list[ChatCompletionTokenLogprob]:
+    """
+    Find the matching logprobs for the JSON content in the token list.
+
+    Args:
+    json_content (str): The JSON content to find.
+    tokens (List[ChatCompletionTokenLogprob]): Full list of token logprob objects.
+
+    Returns:
+    List[ChatCompletionTokenLogprob]: The list of logprob objects that match the JSON content.
+
+    Raises:
+    ValueError: If the JSON content cannot be found in the tokens.
+    """
+    # Normalize the input JSON content
+    json_content_normalized = json.dumps(json.loads(json_content), sort_keys=True)
+
+    accumulated_content = ''
+    matching_logprobs = []
+
+    for token in tokens:
+        accumulated_content += token.token
+        matching_logprobs.append(token)
+
+        # Try to parse and normalize the accumulated content
+        try:
+            accumulated_normalized = json.dumps(
+                json.loads(accumulated_content), sort_keys=True
+            )
+            if accumulated_normalized == json_content_normalized:
+                return matching_logprobs
+        except json.JSONDecodeError:
+            # If it's not valid JSON yet, continue accumulating
+            pass
+
+        # If accumulated content is too long, trim the oldest token and continue
+        while len(accumulated_content) > len(json_content):
+            accumulated_content = accumulated_content[len(matching_logprobs[0].token) :]
+            matching_logprobs.pop(0)
+
+    raise ValueError("JSON content not found in tokens")
+
+
 def add_confidence_to_json_values(
     logprobs: list[ChatCompletionTokenLogprob],
 ) -> dict[str, Any]:
@@ -133,6 +206,7 @@ def add_confidence_to_json_values(
         if obj_index == len(obj_str):
             if matching_logprobs:
                 first_logprob = matching_logprobs[0].logprob
+                print(f"*** top_logprobs: {matching_logprobs[0].top_logprobs}")
             else:
                 first_logprob = 0  # Default value for empty strings or other edge cases
             return first_logprob, current_index

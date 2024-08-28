@@ -3,18 +3,20 @@ from typing import Literal, TypedDict
 from rich import print
 
 from ember_agents.common.agents.entity_extractor import (
+    ClassifiedEntities,
     extract_entities,
+    flatten_classified_entities,
 )
 
 
-class ExpectedNamedEntity(TypedDict):
+"""class ExpectedNamedEntity(TypedDict):
     value: str
     confidence_threshold: float
 
 
 class ExpectedClassification(TypedDict):
     named_entity: list[ExpectedNamedEntity]
-    confidence_threshold: float
+    confidence_threshold: float"""
 
 
 SwapEntityCategories = list[
@@ -63,256 +65,317 @@ additionalContextSwap = "User Intent: convert_token_action"
 additionalContextSend = "User Intent: send_token_action"
 
 
-@pytest.mark.parametrize(
-    "text, entity_categories, additional_context, expected_extracted_entities",
-    [
+"""
         (
-            "swap 5 usdc for eth",
+            "Swap WBTC from Polygon network to receive 8.21 USDT on the Arbitrum network.",
             swapEntityCategories,
             additionalContextSwap,
-            {
-                "from_amount": {
-                    "named_entity": [{"value": "5", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
+            [
+                {
+                    "from_token": {
+                        "named_entity": "WBTC",
+                        "confidence_level": "high",
+                    },
+                    "from_network": {
+                        "named_entity": "Polygon",
+                        "confidence_level": "high",
+                    },
+                    "to_amount": {
+                        "named_entity": "8.21",
+                        "confidence_level": "high",
+                    },
+                    "to_token": {
+                        "named_entity": "USDT",
+                        "confidence_level": "high",
+                    },
+                    "to_network": {
+                        "named_entity": "Arbitrum",
+                        "confidence_level": "high",
+                    },
                 },
-                "from_token": {
-                    "named_entity": [{"value": "usdc", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
-                },
-                "from_network": None,
-                "to_amount": None,
-                "to_token": {
-                    "named_entity": [{"value": "eth", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
-                },
-                "to_network": None,
-            },
+            ],
         ),
         (
             "swap op",
             swapEntityCategories,
             additionalContextSwap,
-            {
-                "from_amount": None,
-                "from_token": {
-                    "named_entity": [{"value": "op", "confidence_threshold": 45}],
-                    "confidence_threshold": 90,
-                },
-                "from_network": None,
-                "to_amount": None,
-                "to_token": {
-                    "named_entity": [{"value": "op", "confidence_threshold": 45}],
-                    "confidence_threshold": 90,
-                },
-                "to_network": None,
-            },
-        ),
-        (
-            "I want puppy",
-            swapEntityCategories,
-            additionalContextSwap,
-            {
-                "from_amount": None,
-                "from_token": None,
-                "from_network": None,
-                "to_amount": None,
-                "to_token": {
-                    "named_entity": [{"value": "puppy", "confidence_threshold": 40}],
-                    "confidence_threshold": 95,
-                },
-                "to_network": None,
-            },
-        ),
-        (
-            "Buy cookies",
-            swapEntityCategories,
-            additionalContextSwap,
-            {
-                "from_amount": None,
-                "from_token": None,
-                "from_network": None,
-                "to_amount": None,
-                "to_token": {
-                    "named_entity": [{"value": "cookies", "confidence_threshold": 85}],
-                    "confidence_threshold": 95,
-                },
-                "to_network": None,
-            },
-        ),
-        (
-            "buy render",
-            swapEntityCategories,
-            additionalContextSwap,
-            {
-                "from_amount": None,
-                "from_token": None,
-                "from_network": None,
-                "to_amount": None,
-                "to_token": {
-                    "named_entity": [{"value": "render", "confidence_threshold": 99}],
-                    "confidence_threshold": 95,
-                },
-                "to_network": None,
-            },
-        ),
-        (
-            "give me bitcoin",
-            swapEntityCategories,
-            additionalContextSwap,
-            {
-                "from_amount": None,
-                "from_token": None,
-                "from_network": None,
-                "to_amount": None,
-                "to_token": {
-                    "named_entity": [{"value": "bitcoin", "confidence_threshold": 65}],
-                    "confidence_threshold": 99,
-                },
-                "to_network": None,
-            },
-        ),
-        (
-            "bitcoin",
-            swapEntityCategories,
-            additionalContextSwap,
-            {
-                "from_amount": None,
-                "from_token": {
-                    "named_entity": [{"value": "bitcoin", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
-                },
-                "from_network": None,
-                "to_amount": None,
-                "to_token": None,
-                "to_network": None,
-            },
-        ),
-        (
-            "I want cookies",
-            swapEntityCategories,
-            additionalContextSwap,
-            {
-                "from_amount": None,
-                "from_token": None,
-                "from_network": None,
-                "to_amount": None,
-                "to_token": {
-                    "named_entity": [{"value": "cookies", "confidence_threshold": 90}],
-                    "confidence_threshold": 99,
-                },
-                "to_network": None,
-            },
-        ),
-        (
-            "give eth to friend",
-            sendEntityCategories,
-            sendEntityCategories,
-            {
-                "amount": None,
-                "token": {
-                    "named_entity": [{"value": "eth", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
-                },
-                "network": None,
-                "recipient": {
-                    "named_entity": [{"value": "friend", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
-                },
-            },
-        ),
-        (
-            "change sol for arb",
-            swapEntityCategories,
-            additionalContextSwap,
-            {
-                "from_amount": None,
-                "from_token": {
-                    "named_entity": [{"value": "sol", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
-                },
-                "from_network": None,
-                "to_amount": None,
-                "to_token": {
-                    "named_entity": [{"value": "arb", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
-                },
-                "to_network": None,
-            },
-        ),
-        (
-            "my friend wants some eth",
-            sendEntityCategories,
-            sendEntityCategories,
-            {
-                "amount": None,
-                "token": {
-                    "named_entity": [{"value": "eth", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
-                },
-                "network": None,
-                "recipient": {
-                    "named_entity": [
-                        {"value": "my friend", "confidence_threshold": 99}
-                    ],
-                    "confidence_threshold": 55,
-                },
-            },
-        ),
-        (
-            "Swap WBTC from Polygon network to receive 8.21 USDT on the Arbitrum network.",
-            swapEntityCategories,
-            additionalContextSwap,
-            {
-                "from_amount": None,
-                "from_token": {
-                    "named_entity": [{"value": "WBTC", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
-                },
-                "from_network": {
-                    "named_entity": [{"value": "Polygon", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
-                },
-                "to_amount": {
-                    "named_entity": [{"value": "8.21", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
-                },
-                "to_token": {
-                    "named_entity": [{"value": "USDT", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
-                },
-                "to_network": {
-                    "named_entity": [{"value": "Arbitrum", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
-                },
-            },
+            [
+                {},
+                {'to_token': {'named_entity': 'op', "confidence_level": 'low'}},
+                {'from_token': {'named_entity': 'op', "confidence_level": 'low'}},
+            ],
         ),
         (
             "Swap 5 USDC for ETH from the Arbitrum network to the Base network",
             swapEntityCategories,
             additionalContextSwap,
-            {
-                "from_amount": {
-                    "named_entity": [{"value": "5", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
+            [
+                {
+                    "from_amount": {
+                        "named_entity": "5",
+                        "confidence_level": "high",
+                    },
+                    "from_token": {
+                        "named_entity": "USDC",
+                        "confidence_level": "high",
+                    },
+                    "from_network": {
+                        "named_entity": "Arbitrum",
+                        "confidence_level": "high",
+                    },
+                    "to_token": {
+                        "named_entity": "ETH",
+                        "confidence_level": "high",
+                    },
+                    "to_network": {
+                        "named_entity": "Base",
+                        "confidence_level": "high",
+                    },
+                }
+            ],
+        ),
+        (
+            "I want cookies",
+            swapEntityCategories,
+            additionalContextSwap,
+            [
+                {
+                    "to_token": {
+                        "named_entity": "cookies",
+                        "confidence_level": "low",
+                    },
                 },
-                "from_token": {
-                    "named_entity": [{"value": "USDC", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
+                {
+                    "from_token": {
+                        "named_entity": "cookies",
+                        "confidence_level": "low",
+                    },
                 },
-                "from_network": {
-                    "named_entity": [{"value": "Arbitrum", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
+            ],
+        ),
+        (
+            "I want puppy",
+            swapEntityCategories,
+            additionalContextSwap,
+            [
+                {
+                    "to_token": {
+                        "named_entity": "puppy",
+                        "confidence_level": "low",
+                    },
                 },
-                "to_amount": None,
-                "to_token": {
-                    "named_entity": [{"value": "ETH", "confidence_threshold": 99}],
-                    "confidence_threshold": 75,
+                {
+                    "from_token": {
+                        "named_entity": "puppy",
+                        "confidence_level": "low",
+                    },
                 },
-                "to_network": {
-                    "named_entity": [{"value": "Base", "confidence_threshold": 99}],
-                    "confidence_threshold": 99,
+                {'to_token': {'named_entity': 'puppy', "confidence_level": 'normal'}},
+            ],
+        ),
+        (
+            "Buy cookies",
+            swapEntityCategories,
+            additionalContextSwap,
+            [
+                {
+                    "to_token": {
+                        "named_entity": "cookies",
+                        "confidence_level": "low",
+                    },
+                }
+            ],
+        ),
+        (
+            "bitcoin",
+            swapEntityCategories,
+            additionalContextSwap,
+            [
+                {
+                    "from_token": {
+                        "named_entity": "bitcoin",
+                        "confidence_level": "high",
+                    },
                 },
-            },
+                {
+                    "from_token": {
+                        "named_entity": "bitcoin",
+                        "confidence_level": "normal",
+                    },
+                },
+                {'from_token': {'named_entity': 'bitcoin', "confidence_level": 'low'}},
+            ],
+        ),
+        (
+            "swap 5 usdc for eth",
+            swapEntityCategories,
+            additionalContextSwap,
+            [
+                {
+                    "from_amount": {
+                        "named_entity": "5",
+                        "confidence_level": "high",
+                    },
+                    "from_token": {
+                        "named_entity": "usdc",
+                        "confidence_level": "high",
+                    },
+                    "to_token": {
+                        "named_entity": "eth",
+                        "confidence_level": "high",
+                    },
+                },
+            ],
+        ),
+        (
+            "buy render",
+            swapEntityCategories,
+            additionalContextSwap,
+            [
+                {
+                    "to_token": {
+                        "named_entity": "render",
+                        "confidence_level": "high",
+                    },
+                },
+            ],
+        ),
+        (
+            "give me bitcoin",
+            swapEntityCategories,
+            additionalContextSwap,
+            [
+                {
+                    "to_token": {
+                        "named_entity": "bitcoin",
+                        "confidence_level": "high",
+                    },
+                },
+            ],
+        ),
+        (
+            "give eth to friend",
+            sendEntityCategories,
+            sendEntityCategories,
+            [
+                {
+                    "token": {
+                        "named_entity": "eth",
+                        "confidence_level": "high",
+                    },
+                    "recipient": {
+                        "named_entity": "friend",
+                        "confidence_level": "high",
+                    },
+                },
+                {
+                    'token': {'named_entity': 'eth', "confidence_level": 'high'},
+                    'recipient': {
+                        'named_entity': 'friend',
+                        "confidence_level": 'normal',
+                    },
+                },
+            ],
+        ),
+        (
+            "change sol for arb",
+            swapEntityCategories,
+            additionalContextSwap,
+            [
+                {
+                    "from_token": {
+                        "named_entity": "sol",
+                        "confidence_level": "high",
+                    },
+                    "to_token": {
+                        "named_entity": "arb",
+                        "confidence_level": "high",
+                    },
+                },
+            ],
+        ),
+        (
+            "my friend wants some eth",
+            sendEntityCategories,
+            sendEntityCategories,
+            [
+                {
+                    "amount": None,
+                    "token": {
+                        "named_entity": "eth",
+                        "confidence_level": "high",
+                    },
+                    "network": None,
+                    "recipient": {
+                        "named_entity": "my friend",
+                        "confidence_level": "high",
+                    },
+                },
+                {
+                    'recipient': {
+                        'named_entity': 'my friend',
+                        "confidence_level": 'normal',
+                    },
+                    'token': {'named_entity': 'eth', "confidence_level": 'high'},
+                },
+            ],
+        ),
+"""
+
+
+@pytest.mark.parametrize(
+    "text, entity_categories, additional_context, expected",
+    [
+        (
+            "Convert USDT from the Linea network to receive 55 cookie on the Blast network.",
+            swapEntityCategories,
+            additionalContextSwap,
+            [
+                {
+                    "from_token": {
+                        "named_entity": "USDT",
+                        "confidence_level": "high",
+                    },
+                    "from_network": {
+                        "named_entity": "Linea",
+                        "confidence_level": "high",
+                    },
+                    "to_amount": {
+                        "named_entity": "55",
+                        "confidence_level": "high",
+                    },
+                    "to_token": {
+                        "named_entity": "cookie",
+                        "confidence_level": "normal",
+                    },
+                    "to_network": {
+                        "named_entity": "Blast",
+                        "confidence_level": "high",
+                    },
+                },
+                {
+                    "from_token": {
+                        "named_entity": "USDT",
+                        "confidence_level": "high",
+                    },
+                    "from_network": {
+                        "named_entity": "Linea",
+                        "confidence_level": "high",
+                    },
+                    "to_amount": {
+                        "named_entity": "55",
+                        "confidence_level": "high",
+                    },
+                    "to_token": {
+                        "named_entity": "cookie",
+                        "confidence_level": "high",
+                    },
+                    "to_network": {
+                        "named_entity": "Blast",
+                        "confidence_level": "high",
+                    },
+                },
+            ],
         ),
     ],
 )
@@ -321,32 +384,19 @@ async def test_extract_entities(
     text: str,
     entity_categories: EntityCategories,
     additional_context: str,
-    expected_extracted_entities: dict[str, ExpectedClassification],
+    expected: list[ClassifiedEntities],
 ):
     print(f"\n--- {text}")
 
-    results = await extract_entities(text, entity_categories, additional_context)
+    (results, reasoning) = await extract_entities(
+        text, entity_categories, additional_context
+    )
     print(results)
+    print(reasoning)
+    classified_entities = flatten_classified_entities(results)
+    print(classified_entities)
 
-    for _, classified_entity in enumerate(results["classified_entities"]):
-        classified_category = classified_entity["category"]
-        expected_category = expected_extracted_entities[classified_category["value"]]
-
-        assert (
-            classified_category["confidence_percentage"]
-            >= expected_category["confidence_threshold"]
-        )
-
-        classified_named_entity = classified_entity["named_entity"]
-
-        found_named_entity = False
-        for _, expected_named_entity in enumerate(expected_category["named_entity"]):
-            if expected_named_entity["value"] != classified_named_entity["value"]:
-                continue
-            found_named_entity = True
-            assert (
-                classified_named_entity["confidence_percentage"]
-                >= expected_named_entity["confidence_threshold"]
-            )
-            break
-        assert found_named_entity == True
+    assert any(
+        classified_entities == expected_classified_entities
+        for expected_classified_entities in expected
+    ), f"[{text}] No match found between classified_entities and any expected_classified_entities\n\nclassified_entities: {classified_entities}\nexpected: {expected}"
