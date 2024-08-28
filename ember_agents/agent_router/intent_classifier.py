@@ -9,7 +9,7 @@ from ember_agents.settings import SETTINGS
 INTENT = Literal[
     "capabilities_query",
     "crypto_price_query",
-    "swap_crypto_action",
+    "convert_crypto_action",
     "transfer_crypto_action",
     "explanation_query",
     "advice_query",
@@ -31,7 +31,7 @@ client = Fireworks(api_key=SETTINGS.fireworks_api_key)
 descriptions: dict[INTENT, str] = {
     "capabilities_query": "Reply to any questions about me. Help the user understand what this assistant can do, it's features and functionalies, and how to use it. Its name is Ember.",
     "crypto_price_query": "Get the price of a cryptocurrency or token",
-    "swap_crypto_action": "Convert one cryptocurrency or token to another. Buy cryptocurrency, token or noun. This includes 'I want <noun>' or 'buy <noun>'. User can use any noun for this intent.",
+    "convert_crypto_action": "Convert one cryptocurrency or token to another. Buy cryptocurrency, token or noun. This includes 'I want <noun>' or 'buy <noun>'. User can use any noun for this intent.",
     "transfer_crypto_action": "Send cryptocurrency or tokens to someone else. Someone else requests a cryptocurrency or token.",
     "explanation_query": "Describe a concept or term",
     "advice_query": "Provide guidance on a decision or make predictions.",

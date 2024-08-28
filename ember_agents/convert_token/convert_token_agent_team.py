@@ -161,6 +161,8 @@ class ConvertTokenAgentTeam(AgentTeam):
         self._send_activity_update("Understanding your convert request...")
 
         async def stream_updates(graph_input: dict[str, Any] | Any):
+            self._send_activity_update("Thinking...")
+
             async for values in self._app.astream(
                 graph_input, self._config, stream_mode="values"
             ):
