@@ -4,7 +4,7 @@ from typing import (
     TypeVar,
 )
 
-from pydantic import BaseModel, Field, ValidationInfo, field_validator
+from pydantic import BaseModel, Field, ValidationError, ValidationInfo, field_validator
 from rich import print
 
 from ember_agents.common.agents.entity_extractor import (
@@ -41,7 +41,9 @@ class InferredEntity(BaseModel, Generic[T]):
         threshold = info.data.get("confidence_threshold", "normal")
         if cls.CONFIDENCE_ORDER.index(v) < cls.CONFIDENCE_ORDER.index(threshold):
             print(f"Confidence '{v}' is below the threshold of '{threshold}'")
-            msg = f"Confidence is {v}. Unsure if {cls.named_entity} is the correct named entity."
+            print(cls)
+            print(info)
+            msg = f"Confidence is {v}. Unsure if '{info.data["named_entity"]}' is the correct named entity."
             raise ValueError(msg)
         return v
 

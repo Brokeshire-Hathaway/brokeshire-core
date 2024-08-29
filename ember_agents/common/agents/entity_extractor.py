@@ -164,13 +164,15 @@ def get_instructions_prompt(
          * Assess which category is the most likely one and why.
          * Give low confidence if the category choice is unclear or ambiguous
       - For number + unit expressions, treat the number as the focus, even if it doesn't make semantic sense on its own.
+   d. For any category that you didn't initially identify any entities in, double check the utterance to ensure you have not missed any.
+      - A single entity may belong to multiple categories.
 
 6. Before providing your final output, use a <scratchpad> to think through your entity identification and classification process.
    - Consider any ambiguities or challenges and how you're addressing them.
    - Justify any assumptions made.
-      * Ensure that low confidence is given to any assumptions made
+      * Ensure that low confidence is given to any highly speculative assumptions made
    - Carefully consider the confidence of your identified entities and category classifications.
-      * Give low confidence to any uncertainty uncovered in your analysis.
+      * Give low confidence to high uncertainty uncovered in your analysis.
 
 7. Construct a JSON object that follows the provided schema, populating it with all of the entities you've extracted. Ensure that your output is valid JSON and matches the schema structure exactly.
 

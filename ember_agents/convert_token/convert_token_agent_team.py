@@ -161,8 +161,6 @@ class ConvertTokenAgentTeam(AgentTeam):
         self._send_activity_update("Understanding your convert request...")
 
         async def stream_updates(graph_input: dict[str, Any] | Any):
-            self._send_activity_update("Thinking...")
-
             async for values in self._app.astream(
                 graph_input, self._config, stream_mode="values"
             ):
@@ -199,6 +197,7 @@ class ConvertTokenAgentTeam(AgentTeam):
                 # Manually print the user state update because it won't be printed by the stream
                 print({node_name: state_values})
 
+                self._send_activity_update("Just a moment...")
                 response = await stream_updates(None)
 
                 snapshot = self._app.get_state(self._config)
@@ -239,7 +238,7 @@ class ConvertTokenAgentTeam(AgentTeam):
         chain_match = chain_llm_matches[0]
         chain_confidence_threshold = 70
         if chain_match["confidence_percentage"] < chain_confidence_threshold:
-            msg = f"You entered '{chain_name}', but did you mean '{chain_match['entity']['name']}'?"
+            msg = f"You entered '{chain_name}' network, but it's not supported. Did you mean '{chain_match['entity']['name']}'?"
             raise ValueError(msg)
         return chain_match["entity"]["id"]
 
@@ -260,7 +259,7 @@ class ConvertTokenAgentTeam(AgentTeam):
         )
         token_confidence_threshold = 60
         if token_match["confidence_percentage"] < token_confidence_threshold:
-            msg = f"You entered '{token}', but did you mean '{token_match['entity']['name']}'?"
+            msg = f"You entered '{token}' token, but it's not supported. Did you mean '{token_match['entity']['name']}'?"
             raise ValueError(msg)
         return token_match["entity"]["address"]
 
@@ -287,8 +286,7 @@ class ConvertTokenAgentTeam(AgentTeam):
 
         errors = [r for r in results if isinstance(r, BaseException)]
         if errors:
-            msg = f"Errors occurred: {errors}"
-            raise Exception(msg)
+            raise ValueError(str(errors))
 
         valid_results = [r for r in results if not isinstance(r, BaseException)]
         if len(valid_results) != 2:
@@ -343,6 +341,14 @@ class ConvertTokenAgentTeam(AgentTeam):
                 "messages": [{"role": "user", "content": message}],
                 "next_node": "clarifier",
             }
+        except ValueError as e:
+            return {
+                "messages": [{"role": "user", "content": str(e)}],
+                "next_node": "clarifier",
+            }
+        except Exception as e:
+            print(f"ERROR: {e}")
+            raise e
 
     async def _clarifier_action(self, state: AgentState):
         last_message = state.messages[-1].get("content", None)
