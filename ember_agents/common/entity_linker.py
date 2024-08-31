@@ -25,7 +25,7 @@ def log_weighted_average(values):
     if not values:
         return 0
     weights = [exp(log(x)) if x > 0 else 0 for x in values]
-    weighted_sum = sum(w * v for w, v in zip(weights, values))
+    weighted_sum = sum(w * v for w, v in zip(weights, values, strict=False))
     sum_of_weights = sum(weights)
     return weighted_sum / sum_of_weights if sum_of_weights > 0 else 0
 

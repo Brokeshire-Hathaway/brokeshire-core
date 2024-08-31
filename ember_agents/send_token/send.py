@@ -2,7 +2,6 @@ import json
 import re
 import tempfile
 from collections.abc import Awaitable, Callable
-from pprint import pprint
 from typing import Any
 
 import httpx

@@ -1,6 +1,3 @@
-from openai.types.chat import (
-    ChatCompletionMessageParam,
-)
 from pydantic import BaseModel
 from rich import print
 

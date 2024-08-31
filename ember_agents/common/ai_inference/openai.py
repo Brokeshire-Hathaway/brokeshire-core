@@ -149,7 +149,7 @@ def find_json_logprobs(
     # Normalize the input JSON content
     json_content_normalized = json.dumps(json.loads(json_content), sort_keys=True)
 
-    accumulated_content = ''
+    accumulated_content = ""
     matching_logprobs = []
 
     for token in tokens:
@@ -172,7 +172,8 @@ def find_json_logprobs(
             accumulated_content = accumulated_content[len(matching_logprobs[0].token) :]
             matching_logprobs.pop(0)
 
-    raise ValueError("JSON content not found in tokens")
+    msg = "JSON content not found in tokens"
+    raise ValueError(msg)
 
 
 def add_confidence_to_json_values(

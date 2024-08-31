@@ -1,12 +1,8 @@
 import json
 from collections.abc import Sequence
-from typing import Generic, Literal, TypedDict, TypeVar, get_args
+from typing import Literal, TypedDict, TypeVar, get_args
 
-from openai.types.chat import (
-    ChatCompletionMessageParam,
-)
 from pydantic import BaseModel
-from rich import print
 
 from ember_agents.common.ai_inference.openai import (
     Temperature,

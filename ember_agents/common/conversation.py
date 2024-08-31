@@ -1,6 +1,4 @@
-from typing import Dict, Generic, List, Literal, TypedDict, TypeVar, Union
-
-from rich import print
+from typing import Generic, Literal, TypedDict, TypeVar
 
 P = TypeVar("P", bound=str)
 UserAndOthers = Literal["user"] | P

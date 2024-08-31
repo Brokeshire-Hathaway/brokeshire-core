@@ -11,7 +11,7 @@ from langgraph.graph import END, StateGraph
 from openai.types.chat import (
     ChatCompletionMessageParam,
 )
-from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
+from pydantic import BaseModel, ValidationError, model_validator
 from rich import print
 
 from ember_agents.common.agent_team import AgentTeam
@@ -330,8 +330,9 @@ class ConvertTokenAgentTeam(AgentTeam):
             raise ValueError(str(errors))
 
         valid_results = [r for r in results if not isinstance(r, BaseException)]
-        if len(valid_results) != 2:
-            msg = f"Expected 2 valid results, but got {len(valid_results)}"
+        expected_results = 2
+        if len(valid_results) != expected_results:
+            msg = f"Expected {expected_results} valid results, but got {len(valid_results)}"
             raise ValueError(msg)
 
         return valid_results[0] + valid_results[1]
