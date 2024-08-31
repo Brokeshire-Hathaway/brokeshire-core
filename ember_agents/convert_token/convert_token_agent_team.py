@@ -2,7 +2,7 @@ import asyncio
 import json
 import operator
 from collections.abc import Callable
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 import httpx
 from langchain_core.runnables.config import RunnableConfig
@@ -11,7 +11,7 @@ from langgraph.graph import END, StateGraph
 from openai.types.chat import (
     ChatCompletionMessageParam,
 )
-from pydantic import BaseModel, ValidationError, field_validator, model_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from rich import print
 
 from ember_agents.common.agent_team import AgentTeam
@@ -24,6 +24,11 @@ from ember_agents.common.agents.schema_validator import (
     InferredEntity,
     convert_to_schema,
     flatten_classified_entities,
+)
+from ember_agents.common.conversation import (
+    Conversation,
+    conversation_reducer,
+    get_context,
 )
 from ember_agents.common.transaction import link_chain, link_token
 from ember_agents.common.validators import PositiveAmount
@@ -110,8 +115,11 @@ class TxPreview(BaseModel):
     to_token_explorer_url: str
 
 
+Participant = Literal["entity_extractor", "schema_validator", "clarifier", "transactor"]
+
+
 class AgentState(BaseModel):
-    messages: Annotated[list[ChatCompletionMessageParam], operator.add]
+    conversation: Annotated[Conversation[Participant], conversation_reducer]
     user_utterance: Annotated[str, operator.setitem]
     intent_classification: Annotated[str, operator.setitem]
     next_node: Annotated[str | None, operator.setitem] = None
@@ -164,21 +172,38 @@ class ConvertTokenAgentTeam(AgentTeam):
             async for values in self._app.astream(
                 graph_input, self._config, stream_mode="values"
             ):
-                messages = values.get("messages")
+                messages = values.get("conversation", {}).get("history")
                 if messages is None or len(messages) == 0:
                     continue
 
                 print(messages[-1])
 
                 if values.get("next_node") == "ask_user":
-                    return values["messages"][-1]["content"]
+                    return values["conversation"]["history"][-1]["content"]
 
         try:
             intent_classification = "convert_token_action"
             graph_input = {
+                "conversation": {
+                    "history": [
+                        {
+                            "sender_name": "user",
+                            "content": message,
+                            "is_visible_to_user": True,
+                        }
+                    ],
+                    "participants": [
+                        "user",
+                        "entity_extractor",
+                        "schema_validator",
+                        "clarifier",
+                        "transactor",
+                    ],
+                },
                 "user_utterance": message,
                 "intent_classification": intent_classification,
             }
+
             response = await stream_updates(graph_input)
 
             is_pending_interrupt = True
@@ -186,9 +211,20 @@ class ConvertTokenAgentTeam(AgentTeam):
                 user_message_future = asyncio.create_task(self._get_human_messages())
                 if isinstance(response, str):
                     self._send_team_response(response)
+
                 user_message = await user_message_future
                 node_name = "ask_user"
-                state_values = {"messages": [{"role": "user", "content": user_message}]}
+                state_values = {
+                    "conversation": {
+                        "history": [
+                            {
+                                "sender_name": "user",
+                                "content": user_message,
+                                "is_visible_to_user": True,
+                            }
+                        ]
+                    }
+                }
                 self._app.update_state(
                     self._config,
                     state_values,
@@ -205,7 +241,8 @@ class ConvertTokenAgentTeam(AgentTeam):
                 if sign_url is not None:
                     is_pending_interrupt = False
                     self._send_team_response(
-                        snapshot.values["messages"][-1]["content"], sign_url
+                        snapshot.values["conversation"]["history"][-1]["content"],
+                        sign_url,
                     )
 
         except Exception as error:
@@ -218,10 +255,14 @@ class ConvertTokenAgentTeam(AgentTeam):
             else f"Original: {state.user_utterance}\nClarified: {state.revised_utterance}"
         )
         intent_classification = f"Intent Classification: {state.intent_classification}"
+        entity_extractor_context = get_context(state.conversation, "entity_extractor")
         [extracted_entities, reasoning] = await extract_entities(
-            utterance, CONVERT_TOKEN_ENTITIES, intent_classification
+            utterance,
+            CONVERT_TOKEN_ENTITIES,
+            intent_classification,
+            entity_extractor_context,
         )
-        print(reasoning)
+
         return {
             "extracted_entities": extracted_entities,
         }
@@ -338,12 +379,28 @@ class ConvertTokenAgentTeam(AgentTeam):
                 indent=2, include_url=False, include_context=True, include_input=False
             )
             return {
-                "messages": [{"role": "user", "content": message}],
+                "conversation": {
+                    "history": [
+                        {
+                            "sender_name": "schema_validator",
+                            "content": message,
+                            "is_visible_to_user": False,
+                        }
+                    ]
+                },
                 "next_node": "clarifier",
             }
         except ValueError as e:
             return {
-                "messages": [{"role": "user", "content": str(e)}],
+                "conversation": {
+                    "history": [
+                        {
+                            "sender_name": "schema_validator",
+                            "content": str(e),
+                            "is_visible_to_user": False,
+                        }
+                    ]
+                },
                 "next_node": "clarifier",
             }
         except Exception as e:
@@ -351,7 +408,8 @@ class ConvertTokenAgentTeam(AgentTeam):
             raise e
 
     async def _clarifier_action(self, state: AgentState):
-        last_message = state.messages[-1].get("content", None)
+        clarifier_context = get_context(state.conversation, "clarifier")
+        last_message = clarifier_context[-1].get("content", None)
         if not isinstance(last_message, str):
             msg = "Message content is empty or not present."
             raise ValueError(msg)
@@ -365,34 +423,39 @@ class ConvertTokenAgentTeam(AgentTeam):
             state.intent_classification,
             provided_info,
             last_message,
-            state.messages,
+            clarifier_context,
         )
         assistant_message = (
             clarifier_response.revised_utterance
             if clarifier_response.questions is None
             else clarifier_response.questions
         )
+
         return {
-            "messages": [{"role": "assistant", "content": assistant_message}],
+            "conversation": {
+                "history": [
+                    {
+                        "sender_name": "clarifier",
+                        "content": assistant_message,
+                        "is_visible_to_user": clarifier_response.next_node
+                        == "ask_user",
+                    }
+                ]
+            },
             "next_node": clarifier_response.next_node,
             "revised_utterance": clarifier_response.revised_utterance,
         }
 
     async def _prepare_transaction_preview(self, request: ConvertRequest):
-        print("PREPARE TRANSACTION PREVIEW")
-        print(request)
-        print(request.model_dump())
         url = f"{SETTINGS.transaction_service_url}/swap/preview"
         async with httpx.AsyncClient(http2=True, timeout=65) as client:
             response = await client.post(url, json=request.model_dump())
 
         response_json = response.json()
         if not response_json["success"]:
-            print(response_json)
             raise Exception(response_json["message"])
 
         try:
-            print(response_json)
             return TxPreview.model_validate(response_json)
         except ValidationError as err:
             msg = "Failed processing response, try again."
@@ -405,7 +468,6 @@ class ConvertTokenAgentTeam(AgentTeam):
             if state.transaction_request is None:
                 msg = "Transaction request not found"
                 raise ValueError(msg)
-            print(state.transaction_request)
             transaction_preview = await self._prepare_transaction_preview(
                 state.transaction_request
             )
@@ -428,7 +490,15 @@ Details: {error_message}"""
 🔏 **[Sign here]({transaction_preview.sign_url})** to complete your transaction."""
 
         return {
-            "messages": [{"role": "assistant", "content": response_message}],
+            "conversation": {
+                "history": [
+                    {
+                        "sender_name": "transactor",
+                        "content": response_message,
+                        "is_visible_to_user": True,
+                    }
+                ]
+            },
             "next_node": "default",
             "sign_url": transaction_preview.sign_url,
         }

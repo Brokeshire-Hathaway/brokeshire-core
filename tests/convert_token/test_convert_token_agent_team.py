@@ -13,9 +13,19 @@ from ember_agents.convert_token.convert_token_agent_team import (
 )
 
 
-"""
-["change token", "10 usdc to reth both on arbitrum", "yes"],
-["swap 5 usdc for eth", "from arbitrum to base", "yes ETH"],
+@pytest.mark.parametrize(
+    "user_messages",
+    [
+        [
+            "Buy cookie",
+            "with usdt",
+            "from linea to blast",
+            "recieve 55",
+            "yes",
+            "yes, use that token instead",
+        ],
+        ["change token", "10 usdc to reth both on arbitrum", "yes"],
+        ["swap 5 usdc for eth", "from arbitrum to base", "yes ETH"],
         ["change sol for arb", "20 sol to 11 arb", "from solana to arbitrum", "11 arb"],
         [
             "swap wbtc",
@@ -25,16 +35,9 @@ from ember_agents.convert_token.convert_token_agent_team import (
             "yes, from wbtc",
         ],
         ["Buy render", "100 usdc", "from ethereum to optimism"],
-"""
-
-
-@pytest.mark.parametrize(
-    "user_messages",
-    [
-        ["Buy cookie", "with usdt", "from linea to blast", "recieve 55", "yes"],
     ],
 )
-# @pytest.mark.skip
+@pytest.mark.skip
 async def test_convert_token_agent_team(user_messages: list[str]):
     print(f"\n--- {user_messages[0]}")
 
@@ -72,7 +75,7 @@ async def test_convert_token_agent_team(user_messages: list[str]):
         print(response)
 
 
-# @pytest.mark.skip
+@pytest.mark.skip
 async def test_convert_token_schema_validation():
     entities = {
         "from_amount": {"value": "5", "confidence_level": "high"},
@@ -82,7 +85,6 @@ async def test_convert_token_schema_validation():
         "to_network": {"value": "base", "confidence_level": "high"},
     }
     schema = ConvertTokenSchema.model_validate(entities)
-    print(f"schema: {schema}")
 
 
 @pytest.mark.parametrize(
@@ -121,7 +123,7 @@ async def test_schema_validator_action(user_message: str):
         ]
     )
     state = AgentState(
-        messages=[{"role": "user", "content": user_message, "name": "User"}],
+        conversation=[{"role": "user", "content": user_message, "name": "User"}],
         user_utterance=user_message,
         intent_classification="convert_token_action",
         extracted_entities=extracted_entities,

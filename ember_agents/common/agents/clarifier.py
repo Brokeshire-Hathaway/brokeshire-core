@@ -9,6 +9,7 @@ from ember_agents.common.ai_inference.openai import (
     extract_xml_content,
     get_openai_response,
 )
+from ember_agents.common.conversation import ContextMessage
 
 
 class ClarifierResponse(BaseModel):
@@ -118,6 +119,8 @@ def get_instructions_prompt(
    - All required fields identified from the deficient information are addressed.
    - Your response adheres to any specific rules or constraints mentioned in the deficient information.
    - If constructing a revised utterance, it includes all necessary information in a natural, conversational format.
+   - Your response adheres to the format specified in the instructions.
+      * Ensure that the <analysis>, <revised_utterance>, <questions>, and <next_node> tags are present, correctly formatted, and not empty.
 
 Remember, your goal is to efficiently and politely gather all necessary information or provide a clear, complete revised utterance based on the user's intent and the information available."""
 
@@ -127,17 +130,12 @@ async def get_clarifier_response(
     intent_classification: str,
     provided_info: str,
     deficient_info: str,
-    message_history: list[ChatCompletionMessageParam],
+    message_history: list[ContextMessage],
 ) -> ClarifierResponse:
-    print("get_clarifier_response")
-    print(utterance)
-    print(intent_classification)
-    print(provided_info)
-    print(deficient_info)
     instructions_prompt = get_instructions_prompt(
         utterance, intent_classification, provided_info, deficient_info
     )
-    messages: list[ChatCompletionMessageParam] = [
+    messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": instructions_prompt},
         *message_history,
@@ -146,6 +144,7 @@ async def get_clarifier_response(
         messages,
         "gpt-4o-2024-05-13",
         Temperature(value=0),
+        seed=42,
     )
 
     questions = extract_xml_content(response.choices[0].message.content, "questions")

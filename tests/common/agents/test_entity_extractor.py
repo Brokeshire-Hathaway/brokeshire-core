@@ -7,6 +7,7 @@ from ember_agents.common.agents.entity_extractor import (
     extract_entities,
     flatten_classified_entities,
 )
+from ember_agents.common.conversation import ContextMessage
 
 
 """class ExpectedNamedEntity(TypedDict):
@@ -65,7 +66,60 @@ additionalContextSwap = "User Intent: convert_token_action"
 additionalContextSend = "User Intent: send_token_action"
 
 
-"""
+@pytest.mark.parametrize(
+    "text, entity_categories, additional_context, expected",
+    [
+        (
+            "Convert USDT from the Linea network to receive 55 cookie on the Blast network.",
+            swapEntityCategories,
+            additionalContextSwap,
+            [
+                {
+                    "from_token": {
+                        "named_entity": "USDT",
+                        "confidence_level": "high",
+                    },
+                    "from_network": {
+                        "named_entity": "Linea",
+                        "confidence_level": "high",
+                    },
+                    "to_amount": {
+                        "named_entity": "55",
+                        "confidence_level": "high",
+                    },
+                    "to_token": {
+                        "named_entity": "cookie",
+                        "confidence_level": "normal",
+                    },
+                    "to_network": {
+                        "named_entity": "Blast",
+                        "confidence_level": "high",
+                    },
+                },
+                {
+                    "from_token": {
+                        "named_entity": "USDT",
+                        "confidence_level": "high",
+                    },
+                    "from_network": {
+                        "named_entity": "Linea",
+                        "confidence_level": "high",
+                    },
+                    "to_amount": {
+                        "named_entity": "55",
+                        "confidence_level": "high",
+                    },
+                    "to_token": {
+                        "named_entity": "cookie",
+                        "confidence_level": "high",
+                    },
+                    "to_network": {
+                        "named_entity": "Blast",
+                        "confidence_level": "high",
+                    },
+                },
+            ],
+        ),
         (
             "Swap WBTC from Polygon network to receive 8.21 USDT on the Arbitrum network.",
             swapEntityCategories,
@@ -320,63 +374,6 @@ additionalContextSend = "User Intent: send_token_action"
                 },
             ],
         ),
-"""
-
-
-@pytest.mark.parametrize(
-    "text, entity_categories, additional_context, expected",
-    [
-        (
-            "Convert USDT from the Linea network to receive 55 cookie on the Blast network.",
-            swapEntityCategories,
-            additionalContextSwap,
-            [
-                {
-                    "from_token": {
-                        "named_entity": "USDT",
-                        "confidence_level": "high",
-                    },
-                    "from_network": {
-                        "named_entity": "Linea",
-                        "confidence_level": "high",
-                    },
-                    "to_amount": {
-                        "named_entity": "55",
-                        "confidence_level": "high",
-                    },
-                    "to_token": {
-                        "named_entity": "cookie",
-                        "confidence_level": "normal",
-                    },
-                    "to_network": {
-                        "named_entity": "Blast",
-                        "confidence_level": "high",
-                    },
-                },
-                {
-                    "from_token": {
-                        "named_entity": "USDT",
-                        "confidence_level": "high",
-                    },
-                    "from_network": {
-                        "named_entity": "Linea",
-                        "confidence_level": "high",
-                    },
-                    "to_amount": {
-                        "named_entity": "55",
-                        "confidence_level": "high",
-                    },
-                    "to_token": {
-                        "named_entity": "cookie",
-                        "confidence_level": "high",
-                    },
-                    "to_network": {
-                        "named_entity": "Blast",
-                        "confidence_level": "high",
-                    },
-                },
-            ],
-        ),
     ],
 )
 @pytest.mark.skip
@@ -388,13 +385,17 @@ async def test_extract_entities(
 ):
     print(f"\n--- {text}")
 
+    message_history: list[ContextMessage] = [
+        {
+            "role": "user",
+            "content": f"<sender_name>user</sender_name>\n<message>{text}</message>",
+        }
+    ]
     (results, reasoning) = await extract_entities(
-        text, entity_categories, additional_context
+        text, entity_categories, additional_context, message_history
     )
-    print(results)
-    print(reasoning)
+
     classified_entities = flatten_classified_entities(results)
-    print(classified_entities)
 
     assert any(
         classified_entities == expected_classified_entities

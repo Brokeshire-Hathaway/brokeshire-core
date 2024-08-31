@@ -14,6 +14,7 @@ from ember_agents.common.ai_inference.openai import (
     get_chat_completion_message,
     get_openai_response,
 )
+from ember_agents.common.conversation import ContextMessage
 
 T = TypeVar("T", bound=str)
 
@@ -190,12 +191,16 @@ Remember to adhere strictly to the provided JSON schema and ensure your output i
 
 # If there is no match, do not include the entity in the output.
 async def extract_entities(
-    text: str, categories: Sequence[str], additional_context: str
+    text: str,
+    categories: Sequence[str],
+    additional_context: str,
+    message_history: list[ContextMessage],
 ) -> tuple[ExtractedEntities, Reasoning]:
     instructions_prompt = get_instructions_prompt(text, categories, additional_context)
-    messages: list[ChatCompletionMessageParam] = [
+    messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": instructions_prompt},
+        *message_history,
     ]
     response = await get_openai_response(
         messages,

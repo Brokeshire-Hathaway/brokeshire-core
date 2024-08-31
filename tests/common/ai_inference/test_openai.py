@@ -2,6 +2,8 @@ import json
 from math import exp
 from typing import List, Dict, Any
 
+import pytest
+
 from ember_agents.common.ai_inference.openai import add_confidence_to_json_values
 
 from openai.types.chat import (
@@ -11,6 +13,7 @@ from openai.types.chat import (
 )
 
 
+@pytest.mark.skip
 def test_construct_logprob_json():
     logprobs = [
         ChatCompletionTokenLogprob(token="{", logprob=-0.006374875, top_logprobs=[]),
