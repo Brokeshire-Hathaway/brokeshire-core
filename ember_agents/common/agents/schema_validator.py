@@ -4,7 +4,7 @@ from typing import (
     TypeVar,
 )
 
-from pydantic import BaseModel, Field, ValidationError, ValidationInfo, field_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 from rich import print
 
 from ember_agents.common.agents.entity_extractor import (
@@ -22,6 +22,15 @@ T = TypeVar("T")
 
 
 class InferredEntity(BaseModel, Generic[T]):
+    """
+    Represents an inferred entity with a confidence level.
+
+    Attributes:
+        named_entity (T): The inferred entity.
+        confidence_level (ConfidenceLevel): The confidence level of the inference.
+        confidence_threshold (ConfidenceLevel): The minimum acceptable confidence level.
+    """
+
     named_entity: T
     confidence_level: ConfidenceLevel = Field(
         ...,
@@ -31,7 +40,7 @@ class InferredEntity(BaseModel, Generic[T]):
         default="normal", description="Minimum acceptable confidence level"
     )
 
-    CONFIDENCE_ORDER: ClassVar[list[str]] = ["low", "normal", "high"]
+    CONFIDENCE_ORDER: ClassVar[list[ConfidenceLevel]] = ["low", "normal", "high"]
 
     @field_validator("confidence_level")
     @classmethod
@@ -43,7 +52,8 @@ class InferredEntity(BaseModel, Generic[T]):
             print(f"Confidence '{v}' is below the threshold of '{threshold}'")
             print(cls)
             print(info)
-            msg = f"Confidence is {v}. Unsure if '{info.data["named_entity"]}' is the correct named entity."
+            named_entity = info.data["named_entity"]
+            msg = f"Confidence is {v}. Unsure if '{named_entity}' is the correct named entity."
             raise ValueError(msg)
         return v
 
@@ -54,16 +64,16 @@ S = TypeVar("S", bound=BaseModel)
 def convert_to_schema(
     schema_class: type[S], data: ExtractedEntities, *, validate: bool = True
 ) -> S:
-    print(f"data: {data}")
+    """
+    Convert extracted entities to a schema-validated model.
+
+    Args:
+        schema_class (type[S]): The schema class to validate against.
+        data (ExtractedEntities): The extracted entities data.
+        validate (bool, optional): Whether to validate the data. Defaults to True.
+
+    Returns:
+        S: An instance of the schema class with validated data.
+    """
     data_model = flatten_classified_entities(data)
-    print(f"data_model: {data_model}")
-    """if validate:
-        model = schema_class.model_validate(data_model)
-        print(model)
-        return model
-    else:
-        model = schema_class.model_construct(None, **data_model)
-        print(model)
-        return model"""
-    model = schema_class.model_validate(data_model)
-    return model
+    return schema_class.model_validate(data_model)
