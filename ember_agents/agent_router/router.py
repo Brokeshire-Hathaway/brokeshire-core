@@ -48,7 +48,7 @@ class Router:
     def __init__(
         self,
         session_manager: AgentTeamSessionManager,
-        intents: list[str] | None,
+        intents: list[INTENT] | None,
     ):
         self._session_manager = session_manager
         self._intents = intents

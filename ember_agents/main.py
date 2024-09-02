@@ -5,6 +5,7 @@ from typing import Any, Literal, cast
 from fastapi import FastAPI, Request
 from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel
+from rich import print
 from sse_starlette.sse import EventSourceResponse, ServerSentEvent
 
 from ember_agents.agent_router.intent_classifier import INTENT
@@ -74,6 +75,14 @@ def event_router(
     session_id = agent_team_session_manager.get_session_id(
         body.user_chat_id, thread_id, body.client_id
     )
+    print(f"Session ID: {session_id}")
+    print(f"thread_id: {thread_id}")
+    print(f"body.user_chat_id: {body.user_chat_id}")
+    print(f"body.client_id: {body.client_id}")
+    print(f"body.message: {body.message}")
+    print(f"body.context: {body.context}")
+    print(f"body.store_transaction: {body.store_transaction}")
+    print(f"request: {request}")
 
     async def send_message():
         router = Router(agent_team_session_manager, routes)
