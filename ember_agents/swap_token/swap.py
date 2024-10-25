@@ -428,6 +428,7 @@ class SwapTokenAgentTeam(AgentTeam):
         self._transaction_preview: TxPreview | None = None
         self._store_transaction_info = store_transaction_info
         self._user_chat_id = user_chat_id
+        self.sign_url = None
 
     async def _prepare_transaction(self) -> TxPreview | None:
         if self._transaction_request is None:

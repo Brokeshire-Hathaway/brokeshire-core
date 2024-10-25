@@ -17,7 +17,7 @@ class EntityMatch(TypedDict):
 
 class LinkedEntityResults(TypedDict):
     named_entity: str
-    fuzzy_matches: list[EntityMatch]
+    fuzzy_matches: list[EntityMatch] | None
     llm_matches: list[EntityMatch] | None
 
 
@@ -156,22 +156,26 @@ async def llm_entity_match(
 async def link_entity(
     named_entity: str,
     unique_entities: list[dict],
-    fuzzy_keys: list[str],
+    fuzzy_keys: list[str] | None = None,
     llm_keys: list[str] | None = None,
 ) -> LinkedEntityResults:
     """
     Link a named entity to a unique entity from a list of unique entities
     """
 
-    fuzzy_matches = fuzzy_entity_match(named_entity, unique_entities, fuzzy_keys)
-    fuzzy_entity_matches = [le["entity"] for le in fuzzy_matches]
-
+    fuzzy_matches = (
+        None
+        if fuzzy_keys is None
+        else fuzzy_entity_match(named_entity, unique_entities, fuzzy_keys)
+    )
+    llm_entity_list = (
+        [le["entity"] for le in fuzzy_matches] if fuzzy_matches else unique_entities
+    )
     llm_matches = (
         None
         if llm_keys is None
-        else await llm_entity_match(named_entity, fuzzy_entity_matches, llm_keys)
+        else await llm_entity_match(named_entity, llm_entity_list, llm_keys)
     )
-
     return LinkedEntityResults(
         named_entity=named_entity, fuzzy_matches=fuzzy_matches, llm_matches=llm_matches
     )

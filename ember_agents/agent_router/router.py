@@ -7,6 +7,7 @@ from openai.types.chat import ChatCompletionMessageParam
 from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
 from ember_agents.common.agent_team import AgentTeam
 from ember_agents.convert_token.convert_token_agent_team import ConvertTokenAgentTeam
+from ember_agents.earn.earn_agent_team import EarnAgentTeam
 from ember_agents.education.education import EducationAgentTeam
 from ember_agents.project_market_info.market_agent_team import MarketAgentTeam
 from ember_agents.send_token.send import SendTokenAgentTeam
@@ -91,6 +92,10 @@ class Router:
                 )
             case "convert_crypto_action":
                 agent_team = ConvertTokenAgentTeam(
+                    on_complete, store_transaction_info, user_chat_id
+                )
+            case "earn_crypto_action":
+                agent_team = EarnAgentTeam(
                     on_complete, store_transaction_info, user_chat_id
                 )
             case "crypto_price_query" | "market_news_query":
