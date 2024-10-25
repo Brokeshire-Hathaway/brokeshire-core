@@ -108,3 +108,7 @@ unfixable = ["F401"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
+
+[build-system]
+requires = ["pdm-pep517==2.15.4"]
+build-backend = "pdm.pep517.api"
