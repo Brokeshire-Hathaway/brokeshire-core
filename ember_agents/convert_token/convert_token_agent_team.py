@@ -120,7 +120,7 @@ Participant = Literal["entity_extractor", "schema_validator", "clarifier", "tran
 
 
 class AgentState(BaseModel):
-    conversation: Conversation[Participant]
+    conversation: Annotated[Conversation[Participant], conversation_reducer]
     user_utterance: str
     intent_classification: str
     next_node: str | None = None
