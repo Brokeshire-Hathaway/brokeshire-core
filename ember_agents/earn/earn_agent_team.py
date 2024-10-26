@@ -121,14 +121,14 @@ Participant = Literal["entity_extractor", "schema_validator", "clarifier", "tran
 
 
 class AgentState(BaseModel):
-    conversation: Annotated[Conversation[Participant], conversation_reducer]
-    user_utterance: Annotated[str, operator.setitem]
-    intent_classification: Annotated[str, operator.setitem]
-    next_node: Annotated[str | None, operator.setitem] = None
-    revised_utterance: Annotated[str | None, operator.setitem] = None
-    extracted_entities: Annotated[ExtractedEntities | None, operator.setitem] = None
-    transaction_request: Annotated[EarnRequest | None, operator.setitem] = None
-    sign_url: Annotated[str | None, operator.setitem] = None
+    conversation: Conversation[Participant]
+    user_utterance: str
+    intent_classification: str
+    next_node: str | None = None
+    revised_utterance: str | None = None
+    extracted_entities: ExtractedEntities | None = None
+    transaction_request: EarnRequest | None = None
+    sign_url: str | None = None
 
     model_config = {
         "arbitrary_types_allowed": True,
