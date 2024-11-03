@@ -258,7 +258,7 @@ class EarnAgentTeam(AgentTeam):
             if state.revised_utterance is None
             else f"Original: {state.user_utterance}\nClarified: {state.revised_utterance}"
         )
-        additional_context = f"- Typically any chain mentioned can be assumed to be the from_chain unless specified otherwise\n\nIntent Classification: {state.intent_classification}"
+        additional_context = f"- Typically any chain mentioned can be assumed to be the from_chain unless specified otherwise\n\n- The token that is being used to earn is always the deposit_token\n\nIntent Classification: {state.intent_classification}"
         entity_extractor_context = get_context(state.conversation, "entity_extractor")
         [extracted_entities, reasoning] = await extract_entities(
             utterance,
@@ -551,6 +551,7 @@ class EarnAgentTeam(AgentTeam):
         }
 
     async def _prepare_transaction_preview(self, request: EarnRequest):
+        # NOTE: ERC-7683 Intent standard might be returned here in the future
         url = f"{SETTINGS.transaction_service_url}/earn/deposit/preview"
         async with httpx.AsyncClient(http2=True, timeout=65) as client:
             response = await client.post(url, json=request.model_dump())

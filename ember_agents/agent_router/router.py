@@ -2,6 +2,7 @@ from collections.abc import Callable
 from functools import partial
 from typing import Any
 
+import rich
 from openai.types.chat import ChatCompletionMessageParam
 
 from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
@@ -23,6 +24,7 @@ class AgentTeamSessionManager:
         self._sessions[session_id] = agent_team
 
     def get_session(self, session_id: str):
+        rich.print(f"Sessions: {self._sessions}")
         agent_team = self._sessions.get(session_id)
         return agent_team
 
@@ -67,6 +69,7 @@ class Router:
         route = intent.name
         print(f"Route: {route}")
         agent_team = self._get_agent_team_session(session_id)
+        rich.print(f"Agent team: {agent_team}")
         if route == "terminate" or agent_team is None:
             agent_team = self._create_agent_team_session(
                 session_id, route, store_transaction_info, user_chat_id
