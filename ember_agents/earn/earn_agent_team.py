@@ -1,8 +1,7 @@
 import asyncio
 import json
-import operator
 from collections.abc import Callable
-from typing import Annotated, Any, Literal, Optional
+from typing import Annotated, Any, Literal
 
 import httpx
 import rich
@@ -12,8 +11,7 @@ from langgraph.graph import END, StateGraph
 from openai.types.chat import (
     ChatCompletionMessageParam,
 )
-from pydantic import BaseModel, Field, ValidationError, model_validator, validator
-from rich import print
+from pydantic import BaseModel, ValidationError
 
 from ember_agents.common.agent_team import AgentTeam
 from ember_agents.common.agents.clarifier import get_clarifier_response
@@ -177,11 +175,14 @@ class EarnAgentTeam(AgentTeam):
                 if messages is None or len(messages) == 0:
                     continue
 
-                print(messages[-1])
-
-                next_node = values.get("next_node")
-                if next_node == "ask_user" or next_node is END:
-                    return values["conversation"]["history"][-1]["content"]
+                rich.print(
+                    f"""
+╭─┚ {messages[-1].get("sender_name")} ┖──
+╧╾ Message ╼═
+{messages[-1].get("content")}
+╤╾
+╰───"""
+                )
 
         try:
             intent_classification = "earn_token_action"
@@ -208,20 +209,19 @@ class EarnAgentTeam(AgentTeam):
 
             is_pending_interrupt = True
             while is_pending_interrupt:
-                response = await stream_updates(graph_input)
+                await stream_updates(graph_input)
 
                 snapshot = self._app.get_state(self._config)
                 sign_url = snapshot.values.get("sign_url")
+                response = snapshot.values["conversation"]["history"][-1]["content"]
 
                 if sign_url is not None:
                     is_pending_interrupt = False
-                    self._send_team_response(
-                        snapshot.values["conversation"]["history"][-1]["content"],
-                        sign_url,
-                    )
+                    self._send_team_response(response, sign_url)
                     continue
 
                 user_message_future = asyncio.create_task(self._get_human_messages())
+
                 if isinstance(response, str):
                     self._send_team_response(response)
 
@@ -244,8 +244,6 @@ class EarnAgentTeam(AgentTeam):
                     as_node=node_name,
                 )
                 graph_input = None
-                # Manually print the user state update because it won't be printed by the stream
-                rich.print({node_name: state_values})
 
         except Exception as error:
             self._send_team_response(str(error))
