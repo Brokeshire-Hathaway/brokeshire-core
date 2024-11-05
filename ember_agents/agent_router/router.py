@@ -19,23 +19,27 @@ class AgentTeamSessionManager:
         self._sessions: dict[str, AgentTeam] = {}
 
     def create_session(self, session_id: str, agent_team: AgentTeam):
+        rich.print(f"Creating session: {session_id}")
         if session_id in self._sessions:
+            rich.print(f"Session already exists: {session_id}")
             self.remove_session(session_id)
         self._sessions[session_id] = agent_team
 
     def get_session(self, session_id: str):
-        rich.print(f"Sessions: {self._sessions}")
+        rich.print(f"Getting session: {session_id}")
         agent_team = self._sessions.get(session_id)
         return agent_team
 
     def remove_session(self, session_id: str):
+        rich.print(f"Removing session: {session_id}")
         if session_id in self._sessions:
             del self._sessions[session_id]
             return
 
-        print(f"Session ID ({session_id}) does not exist")
+        rich.print(f"Session ID ({session_id}) does not exist")
 
     def get_session_id(self, sender_did: str, thread_id: str, client_id: int) -> str:
+        rich.print(f"Getting session ID: {sender_did}:{thread_id}:{client_id}")
         return f"{sender_did}:{thread_id}:{client_id}"
 
 
@@ -67,9 +71,9 @@ class Router:
     ):
         intent = await classify_intent(message)
         route = intent.name
-        print(f"Route: {route}")
+        rich.print(f"Intent Name: {route}")
         agent_team = self._get_agent_team_session(session_id)
-        rich.print(f"Agent team: {agent_team}")
+        rich.print(f"Agent Team: {agent_team}")
         if route == "terminate" or agent_team is None:
             agent_team = self._create_agent_team_session(
                 session_id, route, store_transaction_info, user_chat_id
