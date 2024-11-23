@@ -37,5 +37,7 @@ jobs:
           DOCKER_HOST: ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}
           FIREWORKS_API_KEY: ${{ secrets.FIREWORKS_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+          USE_COINGECKO_PRO_API: ${{ vars.USE_COINGECKO_PRO_API }}
         run: |
           docker compose -f compose.yaml -p ember-core-$ENVIRONMENT up -d --build

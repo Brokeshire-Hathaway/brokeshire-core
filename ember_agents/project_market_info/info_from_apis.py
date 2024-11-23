@@ -1,6 +1,5 @@
 import json
-from time import sleep
-from typing import Literal
+from typing import Any, Callable, Iterable, Literal, TypeVar
 
 import httpx
 from openai import AsyncOpenAI
@@ -21,23 +20,6 @@ openai_settings = {
 }
 
 
-class ResponseFormat(BaseModel):
-    # coingecko
-    ember_response: str
-    name: str
-    description: str | None
-    symbol: str
-    website: str | None
-    twitter_handle: str | None
-    network: str | None
-    price: str
-    price_change_24h: str
-    market_cap: str
-    liquidity: str | None
-    # dex screener
-    token_contract_address: str | None
-
-
 class ProjectInfo(BaseModel):
     # coingecko
     name: str
@@ -54,38 +36,6 @@ class ProjectInfo(BaseModel):
     token_contract_address: str | None
     pool_address: str | None = None
     # goplus
-
-
-class CoinGecko(BaseModel):
-    token_contract_address: str | None
-    name: str
-    description: str
-    symbol: str
-    homepage: str
-    twitter_screen_name: str
-    asset_platform_id: str
-    ath: float | None
-    price: float | None
-    price_change_24h: float | None
-    market_cap: float | None
-
-    class Config:
-        extra = "allow"
-
-
-class DexScreener(BaseModel):
-    token_contract_address: str
-    name: str
-    description: str
-    symbol: str
-    network: str  # network
-    price: str
-    price_change_24h: str
-    market_cap: str
-    liquidity: str
-
-    class Config:
-        extra = "allow"
 
 
 class EmberOnProject(BaseModel):
@@ -110,7 +60,7 @@ async def market_route(
 ) -> str:
     token_queried = await extract_token_from_message(message, context=context)
     try:
-        info_of_token = await info_from_apis(token_queried)
+        info_of_token = await information_from_token_apis(token_queried)
     except ValueError as e:
         return str(e)
 
@@ -271,129 +221,115 @@ search 0x1234567890123456789012345678901234567890
 
 
 #### main info function
-async def info_from_apis(token_queried: TokenQueried):
+async def information_from_token_apis(token_queried: TokenQueried) -> ProjectInfo:
     if token_queried.token_address not in (None, ""):
-        project_details = await dexscreener(token_queried.token_address)
+        project_details = await query_token_in_gecko_terminal(
+            token_queried.token_address
+        )
         return project_details
 
     if token_queried.token_name_or_symbol in (None, ""):
         msg = "Token name could not be parsed out."
-        raise ValueError()
+        raise ValueError(msg)
 
-    coingeckoid = await getidfromcoingecko(token_queried.token_name_or_symbol)
-    if coingeckoid is None:
+    coingecko_id = await get_coingecko_id(token_queried.token_name_or_symbol)
+    if coingecko_id is None:
+        return await query_token_in_gecko_terminal(
+            token_queried.token_name_or_symbol, is_contract_address=False
+        )
+    return await search_coingecko_with_id(coingecko_id)
+
+
+async def query_token_in_gecko_terminal(
+    addressOrSymbol: str, is_contract_address: bool = True
+) -> ProjectInfo:
+    """Queries a token by contract address."""
+
+    search_parameters = {"query": addressOrSymbol, "page": 1}
+    response = (
+        await query_coingecko("/onchain/search/pools", search_parameters)
+        if SETTINGS.use_coingecko_pro_api
+        else await query_gecko_terminal("/search/pools", search_parameters)
+    )
+    token_info = get_largest_by_volume(
+        response.json(),
+        lambda x: x.get("data", []),
+        lambda y: y.get("attributes", {}).get("volume_usd", {})["h24"],
+    )
+    if token_info is None and is_contract_address:
+        return await query_dexscreener(addressOrSymbol)
+    if token_info is None:
         msg = "Token not found, please use Contract Address"
         raise ValueError(msg)
-    return await search_coingecko_with_id(coingeckoid)
 
-
-#### orchestrate cg and lc
-async def search_coingecko_with_id(search: str) -> ProjectInfo:
-    cg_response = await coingecko(search)
+    token_attributes = token_info.get("attributes", {})
+    token_name = token_attributes.get("name", "")
+    token_id_split = token_info["id"].split("_")
+    token_network = token_id_split[0] if len(token_id_split) >= 1 else "UNKNOWN"
     return ProjectInfo(
-        token_contract_address=cg_response.token_contract_address,
-        name=cg_response.name,
-        description=cg_response.description,
-        symbol=cg_response.symbol,
-        ath=cg_response.ath,
-        website=cg_response.homepage,
-        twitter_handle=cg_response.twitter_screen_name,
-        network=cg_response.asset_platform_id,
-        price=cg_response.price,
-        price_change_24h=cg_response.price_change_24h,
-        market_cap=cg_response.market_cap,
+        name=token_name,
+        symbol=token_name,
+        token_contract_address=token_info.get("address", ""),
+        price_change_24h=token_attributes.get("price_change_percentage", None),
+        website=None,
+        twitter_handle=None,
+        description=None,
+        price=token_attributes.get("base_token_price_usd", None),
+        market_cap=token_attributes.get("market_cap_usd", None),
+        network=token_network,
+        ath=None,
     )
 
 
-#### coingecko search for id
-async def getidfromcoingecko(searchterm: str):
-    url = f"https://api.coingecko.com/api/v3/search?query={searchterm}"
+async def query_coingecko(route: str, parameters: dict[str, Any] | None = None) -> Any:
+    """It queries coingecko API in a given route depending on the API key provided."""
+
+    api_prefix = "pro-api" if SETTINGS.use_coingecko_pro_api else "api"
+    header_name = (
+        "x-cg-demo-api-key" if SETTINGS.use_coingecko_pro_api else "x_cg_pro_api_key"
+    )
+    url = f"https://{api_prefix}.coingecko.com/api/v3{route}"
     async with httpx.AsyncClient(http2=True) as client:
-        response = await client.get(url)
-
+        response = await client.get(
+            url, params=parameters, headers={header_name: SETTINGS.coingecko_api_key}
+        )
     if not response.is_success:
-        msg = "Failed finding ID of token"
+        msg = "Failed querying coingecko"
         raise ValueError(msg)
-
-    json_response = response.json()
-    if len(json_response["coins"]) == 0:
-        return None
-    return json_response["coins"][0]["id"]
+    return response.json()
 
 
-#### coingecko info from id
-async def coingecko(token_id: str):
-    sleep(0.1)
-    url = f"https://api.coingecko.com/api/v3/coins/{token_id}?symbols=false&market_data=true&community_data=false&developer_data=false&sparkline=false"
+async def query_gecko_terminal(
+    route: str, parameters: dict[str, Any] | None = None
+) -> Any:
+    """It queries gecko terminal for dex information."""
+
+    url = f"https://api.geckoterminal.com/api/v2{route}"
     async with httpx.AsyncClient(http2=True) as client:
-        response = await client.get(url)
-
+        response = await client.get(url, params=parameters)
     if not response.is_success:
-        msg = "Failed finding information of coin"
+        msg = "Failed querying gecko terminal"
         raise ValueError(msg)
-
-    json_response = response.json()
-    try:
-        token_contract_address = json_response.get("contract_address", None)
-        name = json_response["name"]
-        description = json_response["description"]["en"]
-        symbol = json_response["symbol"]
-        homepage = json_response["links"]["homepage"][0]
-        twitter_screen_name = json_response["links"]["twitter_screen_name"]
-        price = json_response["market_data"]["current_price"].get("usd", None)
-        ath = json_response["market_data"]["ath"].get("usd", None)
-        price_change_24h = json_response["market_data"]["price_change_percentage_24h"]
-        market_cap = json_response["market_data"]["market_cap"].get("usd", None)
-        asset_platform_id = (
-            "_Native to its own blockchain._"
-            if json_response["asset_platform_id"] is None
-            else json_response["asset_platform_id"]
-        )
-        coingecko = CoinGecko(
-            token_contract_address=token_contract_address,
-            name=name,
-            description=description,
-            symbol=symbol,
-            homepage=homepage,
-            twitter_screen_name=twitter_screen_name,
-            asset_platform_id=asset_platform_id,
-            ath=ath,
-            price=price,
-            price_change_24h=price_change_24h,
-            market_cap=market_cap,
-        )
-    except Exception as e:
-        print(f"Error: {e}", flush=True)
-        raise e
-
-    return coingecko
+    return response.json()
 
 
-#### map lunarcursh sentiment to literal
-POSITIVE_SENTIMENT = 88
-NEUTRAL_SENTIMENT = 50
-
-
-def map_sentiment_to_literal(sentiment_score: int) -> Sentiment:
-    if sentiment_score > POSITIVE_SENTIMENT:
-        return "positive"
-    if sentiment_score > NEUTRAL_SENTIMENT:
-        return "neutral"
-    if sentiment_score > 0:
-        return "negative"
-    return "unknown"
-
-
-#### get dexscreener info of token contract
-async def dexscreener(token_contract_address: str):
+async def query_dexscreener(token_contract_address: str):
     # catch if its a contract address
-    url = f"https://api.dexscreener.com/latest/dex/search/?q={token_contract_address}"
     async with httpx.AsyncClient(http2=True) as client:
-        response = await client.get(url)
-    jsonresp = get_largest_by_volume_24h(response.json())
+        response = await client.get(
+            "https://api.dexscreener.com/latest/dex/search",
+            params={"q": token_contract_address},
+        )
+
+    jsonresp = get_largest_by_volume(
+        response.json(),
+        lambda x: x.get("pairs", []),
+        lambda y: y.get("volume", {})["h24"],
+    )
     if jsonresp is None:
         msg = "Could not find token address info"
         raise ValueError(msg)
+
     return ProjectInfo(
         token_contract_address=token_contract_address,
         name=jsonresp.get("baseToken", {}).get("name"),
@@ -411,38 +347,82 @@ async def dexscreener(token_contract_address: str):
     )
 
 
-#### get largest pool with passed contract by volume
-def get_largest_by_volume_24h(data):
-    """
-    This function takes a dictionary representing the received object and returns the entry with the largest 24-hour volume.
+T = TypeVar("T")
+K = TypeVar("K")
 
-    Args:
-      data: A dictionary representing the received object.
 
-    Returns:
-      The entry from the data with the largest 24-hour volume, or None if the object doesn't have a "pairs" key or any entry within "pairs" lacks a "volume" key with "h24" key.
-    """
-    # Check if the data has a "pairs" key
-    if "pairs" not in data:
-        print("No pairs found")
+def get_largest_by_volume(
+    data: T,
+    getIterator: Callable[[T], Iterable[K] | None],
+    getVolume: Callable[[K], int | float],
+) -> K | None:
+    """Get the largest entry for an iterator on an object."""
+
+    # Get iterator on object
+    iterator = getIterator(data)
+    if iterator is None:
         return None
 
-    # Initialize variables
-    largest_entry = None
-    largest_volume = None
-    #    baseToken = None
-    #    quoteToken = None
+    largest_entry: K | None = None
+    largest_volume: int | float | None = None
 
-    # Iterate through each entry in "pairs"
-    for entry in data["pairs"]:
-
-        # Check if the current entry has a "volume" key and "h24" key within it
-        if "volume" in entry and "h24" in entry["volume"]:
-            #  Get the current entry's 24-hour volume
-            volume = entry["volume"]["h24"]
-            # Check if it's the largest encountered so far
-            if largest_volume is None or volume > largest_volume:
-                largest_volume = volume
-                largest_entry = entry
+    # Find biggest volume in iterator
+    for entry in iterator:
+        volume = getVolume(entry)
+        if largest_volume is None:
+            largest_entry, largest_volume = entry, volume
+            continue
+        if volume > largest_volume:
+            largest_entry, largest_volume = entry, volume
 
     return largest_entry
+
+
+#### coingecko search for id
+async def get_coingecko_id(search: str) -> str | None:
+    coingecko_coins = await query_coingecko("/api/v3/search", {"query": search})
+    if len(coingecko_coins["coins"]) == 0:
+        return None
+    return coingecko_coins["coins"][0]["id"]
+
+
+#### orchestrate cg and lc
+async def search_coingecko_with_id(coingecko_id: str) -> ProjectInfo:
+    json_response = await query_coingecko(
+        f"/coins/{coingecko_id}",
+        {
+            "symbols": "false",
+            "market_data": "true",
+            "community_data": "false",
+            "developer_data": "false",
+            "sparkline": "false",
+        },
+    )
+    token_contract_address = json_response.get("contract_address", None)
+    name = json_response["name"]
+    description = json_response["description"]["en"]
+    symbol = json_response["symbol"]
+    homepage = json_response["links"]["homepage"][0]
+    twitter_screen_name = json_response["links"]["twitter_screen_name"]
+    price = json_response["market_data"]["current_price"].get("usd", None)
+    ath = json_response["market_data"]["ath"].get("usd", None)
+    price_change_24h = json_response["market_data"]["price_change_percentage_24h"]
+    market_cap = json_response["market_data"]["market_cap"].get("usd", None)
+    asset_platform_id = (
+        "_Native to its own blockchain._"
+        if json_response["asset_platform_id"] is None
+        else json_response["asset_platform_id"]
+    )
+    return ProjectInfo(
+        token_contract_address=token_contract_address,
+        name=name,
+        description=description,
+        symbol=symbol,
+        network=asset_platform_id,
+        ath=ath,
+        price=price,
+        price_change_24h=price_change_24h,
+        market_cap=market_cap,
+        website=homepage,
+        twitter_handle=twitter_screen_name,
+    )
