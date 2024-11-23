@@ -6,7 +6,7 @@ import pytest
 from ember_agents.project_market_info.info_from_apis import (
     search_coingecko_with_id,
     extract_token_from_message,
-    info_from_apis,
+    information_from_token_apis,
     market_route,
 )
 
@@ -42,7 +42,7 @@ async def test_extract_token_from_message(message):
 )
 @pytest.mark.skip
 async def test_info_from_apis(name):
-    response = await info_from_apis(name)
+    response = await information_from_token_apis(name)
 
     #    assert project_details.name == "Uniswap"  # This will pass
     #    assert (

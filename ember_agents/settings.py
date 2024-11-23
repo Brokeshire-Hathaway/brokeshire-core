@@ -26,6 +26,8 @@ class Environment(BaseSettings):
     fireworks_api_key: SensitiveField
     openrouter_api_key: SensitiveField
     transaction_service_url: str
+    coingecko_api_key: SensitiveField
+    use_coingecko_pro_api: bool
 
 
 SETTINGS = Environment()  # type: ignore
