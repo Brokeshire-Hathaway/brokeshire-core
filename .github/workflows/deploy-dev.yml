@@ -48,5 +48,6 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
           USE_COINGECKO_PRO_API: ${{ vars.USE_COINGECKO_PRO_API }}
+          DISABLE_TRANSACTION_SIGNING_URL: ${{ vars.DISABLE_TRANSACTION_SIGNING_URL }}
         run: |
           docker compose -f compose.yaml -p ember-core-$ENVIRONMENT up -d --build

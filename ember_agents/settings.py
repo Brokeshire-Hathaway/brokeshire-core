@@ -28,6 +28,7 @@ class Environment(BaseSettings):
     transaction_service_url: str
     coingecko_api_key: SensitiveField
     use_coingecko_pro_api: bool = False
+    disable_transaction_signing_url: bool = False
 
 
 SETTINGS = Environment()  # type: ignore

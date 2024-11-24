@@ -11,6 +11,7 @@ services:
       OPENROUTER_API_KEY: /run/secrets/openrouter_api_key
       COINGECKO_API_KEY: /run/secrets/coingecko_api_key
       USE_COINGECKO_PRO_API: ${USE_COINGECKO_PRO_API}
+      DISABLE_TRANSACTION_SIGNING_URL: ${DISABLE_TRANSACTION_SIGNING_URL}
     networks:
       - shared_network
     secrets:
