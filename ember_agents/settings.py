@@ -27,7 +27,7 @@ class Environment(BaseSettings):
     openrouter_api_key: SensitiveField
     transaction_service_url: str
     coingecko_api_key: SensitiveField
-    use_coingecko_pro_api: bool
+    use_coingecko_pro_api: bool = False
 
 
 SETTINGS = Environment()  # type: ignore
