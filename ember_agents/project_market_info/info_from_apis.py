@@ -1,5 +1,6 @@
 import json
-from typing import Any, Callable, Iterable, Literal, TypeVar
+from collections.abc import Callable, Iterable
+from typing import Any, Literal, TypeVar
 
 import httpx
 from openai import AsyncOpenAI
@@ -241,11 +242,11 @@ async def information_from_token_apis(token_queried: TokenQueried) -> ProjectInf
 
 
 async def query_token_in_gecko_terminal(
-    addressOrSymbol: str, is_contract_address: bool = True
+    address_or_symbol: str, *, is_contract_address: bool = True
 ) -> ProjectInfo:
     """Queries a token by contract address."""
 
-    search_parameters = {"query": addressOrSymbol, "page": 1}
+    search_parameters = {"query": address_or_symbol, "page": 1}
     response = (
         await query_coingecko("/onchain/search/pools", search_parameters)
         if SETTINGS.use_coingecko_pro_api
@@ -257,7 +258,7 @@ async def query_token_in_gecko_terminal(
         lambda y: y.get("attributes", {}).get("volume_usd", {})["h24"],
     )
     if token_info is None and is_contract_address:
-        return await query_dexscreener(addressOrSymbol)
+        return await query_dexscreener(address_or_symbol)
     if token_info is None:
         msg = "Token not found, please use Contract Address"
         raise ValueError(msg)
