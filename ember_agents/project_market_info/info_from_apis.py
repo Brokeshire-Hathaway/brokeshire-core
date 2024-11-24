@@ -353,13 +353,13 @@ K = TypeVar("K")
 
 def get_largest_by_volume(
     data: T,
-    getIterator: Callable[[T], Iterable[K] | None],
-    getVolume: Callable[[K], int | float],
+    get_iterator: Callable[[T], Iterable[K] | None],
+    get_volume: Callable[[K], int | float],
 ) -> K | None:
     """Get the largest entry for an iterator on an object."""
 
     # Get iterator on object
-    iterator = getIterator(data)
+    iterator = get_iterator(data)
     if iterator is None:
         return None
 
@@ -368,7 +368,7 @@ def get_largest_by_volume(
 
     # Find biggest volume in iterator
     for entry in iterator:
-        volume = getVolume(entry)
+        volume = get_volume(entry)
         if largest_volume is None:
             largest_entry, largest_volume = entry, volume
             continue
