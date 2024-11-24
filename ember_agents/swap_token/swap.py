@@ -20,6 +20,7 @@ from pydantic import BaseModel, ValidationError
 
 from ember_agents.common.agent_team import AgentTeam
 from ember_agents.common.transaction import link_chain, link_token
+from ember_agents.common.utils import format_transaction_url
 from ember_agents.common.validators import PositiveAmount
 from ember_agents.settings import SETTINGS
 
@@ -509,7 +510,7 @@ TERMINATE""",
 ↩️ **Convert From ・** {self._transaction_preview.token_amount} [{self._transaction_preview.token_symbol}]({self._transaction_preview.token_explorer_url}) ({self._transaction_preview.network_name})
 ↪️ **To ・** {self._transaction_preview.to_token_amount} [{self._transaction_preview.to_token_symbol}]({self._transaction_preview.to_token_explorer_url}) ({self._transaction_preview.to_network_name})
 
-🔏 **[Sign here]({self._transaction_preview.sign_url})** to complete your transaction.
+🔏 {format_transaction_url(self._transaction_preview.sign_url)} to complete your transaction.
 TERMINATE"""
 
             return True, {
