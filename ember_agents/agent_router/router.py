@@ -56,9 +56,11 @@ class Router:
         self,
         session_manager: AgentTeamSessionManager,
         intents: list[INTENT] | None,
+        requested_intent: INTENT | None,
     ):
         self._session_manager = session_manager
         self._intents = intents
+        self._requested_intent = requested_intent
 
     async def send(
         self,
@@ -70,6 +72,10 @@ class Router:
         context: list[ChatCompletionMessageParam] | None = None,
     ):
         intent = await classify_intent(message)
+        if self._requested_intent is not None and intent != self._requested_intent:
+            msg = f"Requested intent {self._requested_intent} mismatches with matched intent {intent}"
+            raise ValueError(msg)
+
         route = intent.name
         rich.print(f"Intent Name: {route}")
         agent_team = self._get_agent_team_session(session_id)
