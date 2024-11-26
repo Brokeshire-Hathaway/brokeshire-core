@@ -72,11 +72,11 @@ class Router:
         context: list[ChatCompletionMessageParam] | None = None,
     ):
         intent = await classify_intent(message)
-        if self._requested_intent is not None and intent != self._requested_intent:
+        route = intent.name
+        if self._requested_intent is not None and route != self._requested_intent:
             msg = f"Requested intent {self._requested_intent} mismatches with matched intent {intent}"
             raise ValueError(msg)
 
-        route = intent.name
         rich.print(f"Intent Name: {route}")
         agent_team = self._get_agent_team_session(session_id)
         rich.print(f"Agent Team: {agent_team}")
