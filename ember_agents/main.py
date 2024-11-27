@@ -27,7 +27,7 @@ class Message(BaseModel):
     message: str
     context: list[MessageContext]
     store_transaction: Any
-    requested_route: INTENT | None = None
+    requested_routes: list[INTENT] | None = None
 
 
 def context_to_messages(
@@ -86,7 +86,7 @@ def event_router(
     print(f"request: {request}")
 
     async def send_message():
-        router = Router(agent_team_session_manager, routes, body.requested_route)
+        router = Router(agent_team_session_manager, routes, body.requested_routes)
         try:
             response_message = await router.send(
                 body.user_chat_id,

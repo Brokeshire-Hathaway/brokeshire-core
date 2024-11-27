@@ -56,11 +56,11 @@ class Router:
         self,
         session_manager: AgentTeamSessionManager,
         intents: list[INTENT] | None,
-        requested_intent: INTENT | None,
+        requested_intents: list[INTENT] | None,
     ):
         self._session_manager = session_manager
         self._intents = intents
-        self._requested_intent = requested_intent
+        self._requested_intents = requested_intents
 
     async def send(
         self,
@@ -73,8 +73,8 @@ class Router:
     ):
         intent = await classify_intent(message)
         route = intent.name
-        if self._requested_intent is not None and route != self._requested_intent:
-            msg = f"Requested intent {self._requested_intent} mismatches with matched intent {intent}"
+        if self._requested_intents is not None and route not in self._requested_intents:
+            msg = f"Requested intents {",".join(self._requested_intents)} mismatches with matched intent {route}"
             raise ValueError(msg)
 
         rich.print(f"Intent Name: {route}")
