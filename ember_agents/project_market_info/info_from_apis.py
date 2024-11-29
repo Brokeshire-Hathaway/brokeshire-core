@@ -278,11 +278,12 @@ async def query_token_in_gecko_terminal(
     return ProjectInfo(
         name=token_name,
         symbol=token_name,
-        token_contract_address=token_info.get("address", ""),
+        token_contract_address=token_attributes.get("address", ""),
         price_change_24h=apply_float(
             token_attributes.get("price_change_percentage", {}).get("h24", None)
         ),
         website=None,
+        liquidity=token_attributes.get("reserve_in_usd", None),
         twitter_handle=None,
         description=None,
         price=apply_float(token_attributes.get("base_token_price_usd", None)),
