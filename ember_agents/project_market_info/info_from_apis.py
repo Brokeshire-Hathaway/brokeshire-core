@@ -381,7 +381,12 @@ def get_largest_by_volume(
 
 #### coingecko search for id
 async def get_coingecko_id(search: str) -> str | None:
-    coingecko_coins = await query_coingecko("/api/v3/search", {"query": search})
+    try:
+        coingecko_coins = await query_coingecko("/search", {"query": search})
+    except Exception as error:
+        print("Error querying coingecko ID", error)
+        return None
+
     if len(coingecko_coins["coins"]) == 0:
         return None
     return coingecko_coins["coins"][0]["id"]
