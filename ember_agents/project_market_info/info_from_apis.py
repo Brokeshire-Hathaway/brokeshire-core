@@ -271,7 +271,12 @@ async def query_token_in_gecko_terminal(
         raise ValueError(msg)
 
     token_attributes = token_info.get("attributes", {})
-    token_name = token_attributes.get("name", "")
+    token_name_split = token_attributes.get("name", "").split("/")
+    token_name = (
+        token_name_split[0]
+        if len(token_name_split) >= 1
+        else token_attributes.get("name", "")
+    )
     token_id_split = token_info["id"].split("_")
     token_network = token_id_split[0] if len(token_id_split) >= 1 else "UNKNOWN"
     base_token_split = (
