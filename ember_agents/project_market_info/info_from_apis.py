@@ -274,16 +274,19 @@ async def query_token_in_gecko_terminal(
     token_name = token_attributes.get("name", "")
     token_id_split = token_info["id"].split("_")
     token_network = token_id_split[0] if len(token_id_split) >= 1 else "UNKNOWN"
+    apply_float = lambda x: float(x) if x is not None else None
     return ProjectInfo(
         name=token_name,
         symbol=token_name,
         token_contract_address=token_info.get("address", ""),
-        price_change_24h=float(token_attributes.get("price_change_percentage", None)),
+        price_change_24h=apply_float(
+            token_attributes.get("price_change_percentage", {}).get("h24", None)
+        ),
         website=None,
         twitter_handle=None,
         description=None,
-        price=float(token_attributes.get("base_token_price_usd", None)),
-        market_cap=float(token_attributes.get("market_cap_usd", None)),
+        price=apply_float(token_attributes.get("base_token_price_usd", None)),
+        market_cap=apply_float(token_attributes.get("market_cap_usd", None)),
         network=token_network,
         ath=None,
     )
