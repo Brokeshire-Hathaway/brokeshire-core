@@ -235,6 +235,7 @@ async def information_from_token_apis(token_queried: TokenQueried) -> ProjectInf
 
     coingecko_id = await get_coingecko_id(token_queried.token_name_or_symbol)
     if coingecko_id is None:
+        print("Coingecko failed, searching for gecko terminal...")
         return await query_token_in_gecko_terminal(
             token_queried.token_name_or_symbol, is_contract_address=False
         )
