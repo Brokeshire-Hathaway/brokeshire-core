@@ -283,6 +283,8 @@ async def query_token_in_gecko_terminal(
     )
     base_token_address = base_token_split[1] if len(base_token_split) >= 2 else None
     apply_float = lambda x: float(x) if x is not None else None
+    market_cap = apply_float(token_attributes.get("market_cap_usd", None))
+    fdv_usd = apply_float(token_attributes.get("fdv_usd", None))
     return ProjectInfo(
         name=token_name,
         symbol=token_name,
@@ -296,7 +298,7 @@ async def query_token_in_gecko_terminal(
         twitter_handle=None,
         description=None,
         price=apply_float(token_attributes.get("base_token_price_usd", None)),
-        market_cap=apply_float(token_attributes.get("market_cap_usd", None)),
+        market_cap=fdv_usd if market_cap is None else market_cap,
         network=token_network,
         ath=None,
     )
