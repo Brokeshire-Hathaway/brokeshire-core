@@ -258,9 +258,8 @@ async def query_token_in_gecko_terminal(
         print(f"Gecko terminal failed trying dexscreener ({error})")
         return await query_dexscreener(address_or_symbol)
 
-    print(response)
     token_info = get_largest_by_volume(
-        response.json(),
+        response,
         lambda x: x.get("data", []),
         lambda y: y.get("attributes", {}).get("volume_usd", {})["h24"],
     )
