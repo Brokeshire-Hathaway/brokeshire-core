@@ -248,17 +248,24 @@ async def query_token_in_gecko_terminal(
     """Queries a token by contract address."""
 
     search_parameters = {"query": address_or_symbol, "page": 1}
-    response = (
-        await query_coingecko("/onchain/search/pools", search_parameters)
-        if SETTINGS.use_coingecko_pro_api
-        else await query_gecko_terminal("/search/pools", search_parameters)
-    )
+    try:
+        response = (
+            await query_coingecko("/onchain/search/pools", search_parameters)
+            if SETTINGS.use_coingecko_pro_api
+            else await query_gecko_terminal("/search/pools", search_parameters)
+        )
+    except Exception as error:
+        print(f"Gecko terminal failed trying dexscreener ({error})")
+        return await query_dexscreener(address_or_symbol)
+
+    print(response)
     token_info = get_largest_by_volume(
         response.json(),
         lambda x: x.get("data", []),
         lambda y: y.get("attributes", {}).get("volume_usd", {})["h24"],
     )
     if token_info is None and is_contract_address:
+        print("Gecko terminal failed trying dexscreener")
         return await query_dexscreener(address_or_symbol)
     if token_info is None:
         msg = "Token not found, please use Contract Address"
