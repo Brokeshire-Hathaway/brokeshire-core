@@ -20,6 +20,7 @@ services:
       - pinecone_api_key
       - fireworks_api_key
       - openrouter_api_key
+      - coingecko_api_key
     logging:
       options:
         max-size: "1m"
