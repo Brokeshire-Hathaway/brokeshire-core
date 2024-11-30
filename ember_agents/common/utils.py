@@ -23,5 +23,5 @@ def format_transaction_url(transaction_url: str) -> str:
     """Formats the transaction url for signing."""
 
     if SETTINGS.disable_transaction_signing_url:
-        return "tap-to-edit-text.com"
-    return f"**[Sign here]({transaction_url})**"
+        return "tap-to-edit-text.com... Oops, work in progress ;)"
+    return f"**[Sign here]({transaction_url})** to complete your transaction."

@@ -404,7 +404,7 @@ TERMINATE""",
 💸 **Send ・** {self._transaction.amount} [{self._transaction_preview.token_symbol}]({self._transaction_preview.token_explorer_url}) ({self._transaction_preview.network_name})
 🧑 **To Recipient ・** {self._transaction.recipient_address}
 
-🔏 {format_transaction_url(self._transaction_preview.sign_url)} to complete your transaction.
+🔏 {format_transaction_url(self._transaction_preview.sign_url)}
 TERMINATE"""
 
             return True, {

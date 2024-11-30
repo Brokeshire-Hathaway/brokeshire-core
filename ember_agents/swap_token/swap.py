@@ -510,7 +510,7 @@ TERMINATE""",
 ↩️ **Convert From ・** {self._transaction_preview.token_amount} [{self._transaction_preview.token_symbol}]({self._transaction_preview.token_explorer_url}) ({self._transaction_preview.network_name})
 ↪️ **To ・** {self._transaction_preview.to_token_amount} [{self._transaction_preview.to_token_symbol}]({self._transaction_preview.to_token_explorer_url}) ({self._transaction_preview.to_network_name})
 
-🔏 {format_transaction_url(self._transaction_preview.sign_url)} to complete your transaction.
+🔏 {format_transaction_url(self._transaction_preview.sign_url)}
 TERMINATE"""
 
             return True, {

@@ -32,6 +32,7 @@ from ember_agents.common.conversation import (
     get_context,
 )
 from ember_agents.common.transaction import link_chain, link_token
+from ember_agents.common.utils import format_transaction_url
 from ember_agents.common.validators import PositiveAmount
 from ember_agents.settings import SETTINGS
 
@@ -496,7 +497,7 @@ Details: {error_message}"""
 ↩️ **Convert From ・** {transaction_preview.token_amount} [{transaction_preview.token_symbol}]({transaction_preview.token_explorer_url}) ({transaction_preview.network_name})
 ↪️ **To ・** {transaction_preview.to_token_amount} [{transaction_preview.to_token_symbol}]({transaction_preview.to_token_explorer_url}) ({transaction_preview.to_network_name})
 
-🔏 **[Sign here]({transaction_preview.sign_url})** to complete your transaction."""
+🔏 **{format_transaction_url(transaction_preview.sign_url)}"""
 
         return {
             "conversation": {
