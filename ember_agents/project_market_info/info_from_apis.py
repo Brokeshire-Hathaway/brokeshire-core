@@ -294,8 +294,11 @@ async def query_token_in_dexscreener(tokenAddressOrSymbol: str):
         raise ValueError(msg)
 
     apply_callback = lambda x, c: c(x) if x is not None else None
-    find_social = lambda x, t: next((x for x in x if x.get("type", "") == t), None)
-    base_token = token_information.get("base_token", {})
+    find_social = lambda x, t: next(
+        (x["url"] for x in x if x.get("type", "") == t and len(x.get("url", "")) >= 1),
+        None,
+    )
+    base_token = token_information.get("baseToken", {})
     token_additional_info = token_information.get("info", {})
     return ProjectInfo(
         token_contract_address=base_token.get("address"),
