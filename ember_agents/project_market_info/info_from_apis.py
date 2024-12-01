@@ -224,9 +224,7 @@ search 0x1234567890123456789012345678901234567890
 #### main info function
 async def information_from_token_apis(token_queried: TokenQueried) -> ProjectInfo:
     if token_queried.token_address not in (None, ""):
-        project_details = await query_token_in_gecko_terminal(
-            token_queried.token_address
-        )
+        project_details = await query_token_in_dexscreener(token_queried.token_address)
         return project_details
 
     if token_queried.token_name_or_symbol in (None, ""):
@@ -236,77 +234,8 @@ async def information_from_token_apis(token_queried: TokenQueried) -> ProjectInf
     coingecko_id = await get_coingecko_id(token_queried.token_name_or_symbol)
     if coingecko_id is None:
         print("Coingecko failed, searching for gecko terminal...")
-        return await query_token_in_gecko_terminal(
-            token_queried.token_name_or_symbol, is_contract_address=False
-        )
+        return await query_token_in_dexscreener(token_queried.token_name_or_symbol)
     return await search_coingecko_with_id(coingecko_id)
-
-
-async def query_token_in_gecko_terminal(
-    address_or_symbol: str, *, is_contract_address: bool = True
-) -> ProjectInfo:
-    """Queries a token by contract address."""
-
-    search_parameters = {"query": address_or_symbol, "page": 1}
-    try:
-        response = (
-            await query_coingecko("/onchain/search/pools", search_parameters)
-            if SETTINGS.use_coingecko_pro_api
-            else await query_gecko_terminal("/search/pools", search_parameters)
-        )
-    except Exception as error:
-        print(f"Gecko terminal failed trying dexscreener ({error})")
-        return await query_dexscreener(address_or_symbol)
-
-    token_info = get_largest_by_volume(
-        response,
-        lambda x: x.get("data", []),
-        lambda y: y.get("attributes", {}).get("volume_usd", {})["h24"],
-    )
-    if token_info is None and is_contract_address:
-        print("Gecko terminal failed trying dexscreener")
-        return await query_dexscreener(address_or_symbol)
-    if token_info is None:
-        msg = "Token not found, please use Contract Address"
-        raise ValueError(msg)
-
-    token_attributes = token_info.get("attributes", {})
-    token_name_split = token_attributes.get("name", "").split("/")
-    token_name = (
-        token_name_split[0]
-        if len(token_name_split) >= 1
-        else token_attributes.get("name", "")
-    )
-    token_id_split = token_info["id"].split("_")
-    token_network = token_id_split[0] if len(token_id_split) >= 1 else "UNKNOWN"
-    base_token_split = (
-        token_info.get("relationships", {})
-        .get("base_token", {})
-        .get("data", {})
-        .get("id", "")
-        .split("_")
-    )
-    base_token_address = base_token_split[1] if len(base_token_split) >= 2 else None
-    apply_float = lambda x: float(x) if x is not None else None
-    market_cap = apply_float(token_attributes.get("market_cap_usd", None))
-    fdv_usd = apply_float(token_attributes.get("fdv_usd", None))
-    return ProjectInfo(
-        name=token_name,
-        symbol=token_name,
-        token_contract_address=base_token_address,
-        price_change_24h=apply_float(
-            token_attributes.get("price_change_percentage", {}).get("h24", None)
-        ),
-        website=None,
-        liquidity=token_attributes.get("reserve_in_usd", None),
-        pool_address=token_attributes.get("address", None),
-        twitter_handle=None,
-        description=None,
-        price=apply_float(token_attributes.get("base_token_price_usd", None)),
-        market_cap=fdv_usd if market_cap is None else market_cap,
-        network=token_network,
-        ath=None,
-    )
 
 
 async def query_coingecko(route: str, parameters: dict[str, Any] | None = None) -> Any:
@@ -341,12 +270,12 @@ async def query_gecko_terminal(
     return response.json()
 
 
-async def query_dexscreener(token_contract_address: str):
+async def query_token_in_dexscreener(tokenAddressOrSymbol: str):
     # catch if its a contract address
     async with httpx.AsyncClient(http2=True) as client:
         response = await client.get(
             "https://api.dexscreener.com/latest/dex/search",
-            params={"q": token_contract_address},
+            params={"q": tokenAddressOrSymbol},
         )
 
     jsonresp = get_largest_by_volume(
@@ -359,7 +288,7 @@ async def query_dexscreener(token_contract_address: str):
         raise ValueError(msg)
 
     return ProjectInfo(
-        token_contract_address=token_contract_address,
+        token_contract_address=tokenAddressOrSymbol,
         name=jsonresp.get("baseToken", {}).get("name"),
         description=None,
         website=None,
