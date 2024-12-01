@@ -86,7 +86,7 @@ async def market_route(
     )
     pool_address = (
         f"📈 [Dexscreener]({info_of_token.dex_screener_url})"
-        if info_of_token.dex_screener_url is None
+        if info_of_token.dex_screener_url is not None
         else info_of_token.pool_address
     )
     if embers_description is None:
