@@ -102,6 +102,7 @@ class ConvertRequest(BaseModel):
     to: TokenConvertTo
     type: str
     store_transaction: Any
+    user_address: str | None
 
 
 class TxPreview(BaseModel):
@@ -158,11 +159,13 @@ class ConvertTokenAgentTeam(AgentTeam):
         on_complete: Callable[[], Any],
         store_transaction_info: Any,
         user_chat_id: str,
+        user_address: str | None,
     ):
         super().__init__(on_complete)
         self._init_graph()
         self._store_transaction_info = store_transaction_info
         self._user_chat_id = user_chat_id
+        self._user_address = user_address
 
     async def _run_conversation(
         self, message: str, context: list[ChatCompletionMessageParam] | None = None
@@ -382,6 +385,7 @@ class ConvertTokenAgentTeam(AgentTeam):
                 to=token_convert_to,
                 type=amount[0],
                 store_transaction=self._store_transaction_info,
+                user_address=self._user_address,
             )
             return {"transaction_request": transaction_request}
         except ValidationError as e:

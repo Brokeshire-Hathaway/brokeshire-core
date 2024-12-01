@@ -70,6 +70,7 @@ class Router:
         message: str,
         activity: Callable[[str], None] | None = None,
         context: list[ChatCompletionMessageParam] | None = None,
+        user_address: str | None = None,
     ):
         intent = await classify_intent(message)
         route = intent.name
@@ -82,7 +83,7 @@ class Router:
         rich.print(f"Agent Team: {agent_team}")
         if route == "terminate" or agent_team is None:
             agent_team = self._create_agent_team_session(
-                session_id, route, store_transaction_info, user_chat_id
+                session_id, route, store_transaction_info, user_chat_id, user_address
             )
         if activity is not None:
             agent_team.get_activity_updates(activity)
@@ -94,6 +95,7 @@ class Router:
         route: INTENT | None,
         store_transaction_info: Any,
         user_chat_id: str,
+        user_address: str | None,
     ) -> AgentTeam:
         if self._intents is not None:
             route = route if route is not None and route in self._intents else None
@@ -101,11 +103,11 @@ class Router:
         match route:
             case "transfer_crypto_action":
                 agent_team = SendTokenAgentTeam(
-                    on_complete, store_transaction_info, user_chat_id
+                    on_complete, store_transaction_info, user_chat_id, user_address
                 )
             case "convert_crypto_action":
                 agent_team = ConvertTokenAgentTeam(
-                    on_complete, store_transaction_info, user_chat_id
+                    on_complete, store_transaction_info, user_chat_id, user_address
                 )
             case "earn_crypto_action":
                 agent_team = EarnAgentTeam(

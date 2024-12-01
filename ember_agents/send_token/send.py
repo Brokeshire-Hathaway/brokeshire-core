@@ -29,6 +29,7 @@ client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
 class TxRequest(BaseModel):
     user_chat_id: str
+    user_address: str | None
     network_id: int
     recipient_address: str
     token_address: str
@@ -321,6 +322,7 @@ class SendTokenAgentTeam(AgentTeam):
         on_complete: Callable[[], Any],
         store_transaction_info: Any,
         user_chat_id: str,
+        user_address: str | None,
     ):
         super().__init__(on_complete)
         self._transaction: Transaction | None = None
@@ -328,6 +330,7 @@ class SendTokenAgentTeam(AgentTeam):
         self._transaction_preview: TxPreview | None = None
         self._store_transaction_info = store_transaction_info
         self._user_chat_id = user_chat_id
+        self._user_address = user_address
 
     async def _run_conversation(
         self, message: str, context: list[ChatCompletionMessageParam] | None = None
@@ -510,6 +513,7 @@ TERMINATE"""
                 amount=self._transaction.amount,
                 token_address=token_match["entity"]["address"],
                 store_transaction=self._store_transaction_info,
+                user_address=self._user_address,
             )
             return True, {
                 "content": "NEXT: transaction_coordinator",

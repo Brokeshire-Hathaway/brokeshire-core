@@ -28,6 +28,7 @@ class Message(BaseModel):
     context: list[MessageContext]
     store_transaction: Any
     requested_routes: list[INTENT] | None = None
+    user_address: str | None = None
 
 
 def context_to_messages(
@@ -95,6 +96,7 @@ def event_router(
                 body.message,
                 on_activity,
                 context=context_to_messages(body.context),
+                user_address=body.user_address,
             )
             response = Response(
                 status="done",
