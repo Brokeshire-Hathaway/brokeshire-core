@@ -121,6 +121,7 @@ def event_router(
                 yield ServerSentEvent(
                     {"message": "Operation aborted due to timeout"}, event="error"
                 )
+                return
 
             json = response.model_dump_json()
             match response.status:
