@@ -36,6 +36,7 @@ class ProjectInfo(BaseModel):
     liquidity: str | None = None
     token_contract_address: str | None
     pool_address: str | None = None
+    dex_screener_url: str | None = None
     # goplus
 
 
@@ -83,6 +84,11 @@ async def market_route(
         if info_of_token.ath and info_of_token.price is not None
         else None
     )
+    pool_address = (
+        f"📈 [Dexscreener]({info_of_token.dex_screener_url})"
+        if info_of_token.dex_screener_url is None
+        else info_of_token.pool_address
+    )
     if embers_description is None:
         return f"""
 **| {info_of_token.name} (${token_ticker}) |**
@@ -92,7 +98,7 @@ async def market_route(
 **💰 Market Cap ・** ${market_cap}
 **💧 Liquidity ・** {liquidity}
 **🔖 Token Contract Address ・** {info_of_token.token_contract_address}
-**🏊 Pool Address ・** {info_of_token.pool_address}
+**🏊 Pool Address ・** {pool_address}
 
 _Always do your own research_ 🧐💡🚀
 """
@@ -278,29 +284,36 @@ async def query_token_in_dexscreener(tokenAddressOrSymbol: str):
             params={"q": tokenAddressOrSymbol},
         )
 
-    jsonresp = get_largest_by_volume(
+    token_information = get_largest_by_volume(
         response.json(),
         lambda x: x.get("pairs", []),
         lambda y: y.get("volume", {})["h24"],
     )
-    if jsonresp is None:
+    if token_information is None:
         msg = "Could not find token address info"
         raise ValueError(msg)
 
+    apply_callback = lambda x, c: c(x) if x is not None else None
+    find_social = lambda x, t: next((x for x in x if x.get("type", "") == t), None)
+    base_token = token_information.get("base_token", {})
+    token_additional_info = token_information.get("info", {})
     return ProjectInfo(
-        token_contract_address=tokenAddressOrSymbol,
-        name=jsonresp.get("baseToken", {}).get("name"),
+        token_contract_address=base_token.get("address"),
+        name=base_token.get("name"),
         description=None,
-        website=None,
+        website=find_social(token_additional_info.get("websites", []), "Website"),
         ath=None,
-        network=jsonresp.get("chainId"),
-        twitter_handle=None,
-        symbol=jsonresp.get("baseToken", {}).get("symbol"),
-        price=jsonresp.get("priceUsd"),
-        price_change_24h=jsonresp.get("priceChange", {}).get("h24"),
-        market_cap=jsonresp.get("fdv"),
-        pool_address=jsonresp.get("pairAddress"),
-        liquidity=jsonresp.get("liquidity").get("usd"),
+        network=token_information.get("chainId"),
+        twitter_handle=find_social(token_additional_info.get("socials", []), "twitter"),
+        symbol=base_token.get("symbol"),
+        price=token_information.get("priceUsd"),
+        price_change_24h=token_information.get("priceChange", {}).get("h24"),
+        market_cap=token_information.get("marketCap"),
+        pool_address=token_information.get("pairAddress"),
+        liquidity=apply_callback(
+            token_information.get("liquidity", {}).get("usd"), str
+        ),
+        dex_screener_url=token_information.get("url"),
     )
 
 
