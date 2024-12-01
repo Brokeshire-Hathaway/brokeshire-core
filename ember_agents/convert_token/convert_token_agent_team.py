@@ -59,7 +59,7 @@ class ConvertTokenSchema(BaseModel):
     to_network: InferredEntity[str]
 
     @classmethod
-    def model_validate(cls, obj: Any, *, strict: bool = False) -> "ConvertTokenSchema":
+    def model_validate(cls, obj: Any, *args, **kwargs) -> "ConvertTokenSchema":
         if isinstance(obj, dict):
             amount_data = {}
             if "from_amount" in obj:
@@ -69,7 +69,7 @@ class ConvertTokenSchema(BaseModel):
 
             obj["amount"] = amount_data
 
-        return super().model_validate(obj, strict=strict)
+        return super().model_validate(obj, *args, **kwargs)
 
     """@classmethod
     def model_construct(cls, *args: Any, **kwargs: Any) -> "ConvertTokenSchema":
