@@ -121,6 +121,11 @@ _Always do your own research_ 🧐💡🚀
 **| {emoji} {info_of_token.name} (${token_ticker}) |**
 
 **🔗 Network ・** {network}{price_header}{market_cap_header}
+**💵 Price ・** ${price} (24hr {info_of_token.price_change_24h}${price_change_6hr}, 1hr {info_of_token.price_change_1h})
+**💰 Market Cap ・** ${market_cap}
+**💧 Liquidity ・** {liquidity}
+**🔖 Token Contract Address ・** {info_of_token.token_contract_address}
+{pool_address}
 
 {desc}
 
