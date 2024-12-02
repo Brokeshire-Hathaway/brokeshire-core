@@ -318,7 +318,7 @@ async def query_token_in_dexscreener(tokenAddressOrSymbol: str):
         symbol=base_token.get("symbol"),
         price=token_information.get("priceUsd"),
         price_change_24h=price_change.get("h24"),
-        price_change_6h=price_change.get("h24"),
+        price_change_6h=price_change.get("h6"),
         price_change_1h=price_change.get("h1"),
         market_cap=token_information.get("marketCap"),
         pool_address=token_information.get("pairAddress"),
