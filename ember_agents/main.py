@@ -50,6 +50,7 @@ class Response(BaseModel):
     status: ResponseStatus
     message: str
     sign_tx_url: str | None = None
+    transaction_hash: str | None = None
 
 
 @app.get("/")
@@ -102,6 +103,7 @@ def event_router(
                 status="done",
                 message=response_message["message"],
                 sign_tx_url=response_message["sign_url"],
+                transaction_hash=response_message["transaction_hash"],
             )
         except Exception as e:
             response = Response(status="error", message=str(e))
