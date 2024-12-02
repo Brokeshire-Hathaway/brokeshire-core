@@ -96,9 +96,9 @@ async def market_route(
         if info_of_token.price_change_6h is not None
         else ""
     )
-    ath = f"(ATH: ${ath} Δ: {ath_delta:.2%})" if ath is not None else ""
+    ath_text = f"(ATH: ${ath} Δ: {ath_delta:.2%})" if ath is not None else ""
     price_header = (
-        f"\n**💵 Price ・** ${price} (24hΔ: {info_of_token.price_change_24h}%{price_change_6hr}, 1hΔ: {info_of_token.price_change_1h}%)\n{ath}"
+        f"\n**💵 Price ・** ${price} (24hΔ: {info_of_token.price_change_24h}%{price_change_6hr}, 1hΔ: {info_of_token.price_change_1h}%)\n{ath_text}"
         if price
         else ""
     )
