@@ -5,7 +5,7 @@
 groups = ["default", "lint", "test"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:face2106114b97fba443f979a3d47accadf1bfa850018b0e07bc4e95d21b74ef"
+content_hash = "sha256:7c76156cf8c69b04fb8fb61e85fee534e6543d00cf368f552426e3af88a1794b"
 
 [[package]]
 name = "aiohappyeyeballs"
@@ -978,7 +978,7 @@ files = [
 
 [[package]]
 name = "langchain-core"
-version = "0.3.12"
+version = "0.3.15"
 requires_python = "<4.0,>=3.9"
 summary = "Building applications with LLMs through composability"
 groups = ["default"]
@@ -993,8 +993,8 @@ dependencies = [
     "typing-extensions>=4.7",
 ]
 files = [
-    {file = "langchain_core-0.3.12-py3-none-any.whl", hash = "sha256:46050d34f5fa36dc57dca971c6a26f505643dd05ee0492c7ac286d0a78a82037"},
-    {file = "langchain_core-0.3.12.tar.gz", hash = "sha256:98a3c078e375786aa84939bfd1111263af2f3bc402bbe2cac9fa18a387459cf2"},
+    {file = "langchain_core-0.3.15-py3-none-any.whl", hash = "sha256:3d4ca6dbb8ed396a6ee061063832a2451b0ce8c345570f7b086ffa7288e4fa29"},
+    {file = "langchain_core-0.3.15.tar.gz", hash = "sha256:b1a29787a4ffb7ec2103b4e97d435287201da7809b369740dd1e32f176325aba"},
 ]
 
 [[package]]
@@ -1013,18 +1013,18 @@ files = [
 
 [[package]]
 name = "langgraph"
-version = "0.2.39"
+version = "0.2.45"
 requires_python = "<4.0,>=3.9.0"
 summary = "Building stateful, multi-actor applications with LLMs"
 groups = ["default"]
 dependencies = [
-    "langchain-core<0.4,>=0.2.39",
+    "langchain-core!=0.3.0,!=0.3.1,!=0.3.10,!=0.3.11,!=0.3.12,!=0.3.13,!=0.3.14,!=0.3.2,!=0.3.3,!=0.3.4,!=0.3.5,!=0.3.6,!=0.3.7,!=0.3.8,!=0.3.9,<0.4.0,>=0.2.43",
     "langgraph-checkpoint<3.0.0,>=2.0.0",
     "langgraph-sdk<0.2.0,>=0.1.32",
 ]
 files = [
-    {file = "langgraph-0.2.39-py3-none-any.whl", hash = "sha256:5dfbdeefbf599f16d245799609f2b43c1ec7a7e8ed6e1d7981b1a7979a4ad7fe"},
-    {file = "langgraph-0.2.39.tar.gz", hash = "sha256:32af60291f9260c3acb8a3d4bec99e32abd89ddb6b4a10a79aa3dbc90fa920ac"},
+    {file = "langgraph-0.2.45-py3-none-any.whl", hash = "sha256:adfa9545c6c27180e995b654cb5817212c134a98407c7f34253a5fae58893f28"},
+    {file = "langgraph-0.2.45.tar.gz", hash = "sha256:939035e830506c5b662c9e61d95dbd1a5ef9d1fd35310dba68cebb33de2e7cdb"},
 ]
 
 [[package]]

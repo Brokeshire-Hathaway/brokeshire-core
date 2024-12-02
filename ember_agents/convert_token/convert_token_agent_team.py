@@ -8,6 +8,7 @@ import httpx
 import rich
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.errors import NodeInterrupt
 from langgraph.graph import END, StateGraph
 from openai.types.chat import (
     ChatCompletionMessageParam,
@@ -174,88 +175,7 @@ class ConvertTokenAgentTeam(AgentTeam):
 
         self._send_activity_update("Understanding your convert request...")
 
-        async def stream_updates(graph_input: dict[str, Any] | Any):
-            async for values in self._app.astream(
-                graph_input, self._config, stream_mode="values"
-            ):
-                messages = values.get("conversation", {}).get("history")
-                if messages is None or len(messages) == 0:
-                    continue
-
-                print(messages[-1])
-
-                next_node = values.get("next_node")
-                if next_node == "ask_user" or next_node is END:
-                    return values["conversation"]["history"][-1]["content"]
-
-        try:
-            intent_classification = "convert_token_action"
-            graph_input = {
-                "conversation": {
-                    "history": [
-                        {
-                            "sender_name": "user",
-                            "content": message,
-                            "is_visible_to_user": True,
-                        }
-                    ],
-                    "participants": [
-                        "user",
-                        "entity_extractor",
-                        "schema_validator",
-                        "clarifier",
-                        "transactor",
-                    ],
-                },
-                "user_utterance": message,
-                "intent_classification": intent_classification,
-            }
-
-            is_pending_interrupt = True
-            while is_pending_interrupt:
-                response = await stream_updates(graph_input)
-
-                snapshot = self._app.get_state(self._config)
-                sign_url = snapshot.values.get("sign_url", None)
-                transaction_hash = snapshot.values.get("transaction_hash", None)
-
-                if sign_url is not None or transaction_hash is not None:
-                    is_pending_interrupt = False
-                    self._send_team_response(
-                        snapshot.values["conversation"]["history"][-1]["content"],
-                        sign_url,
-                        transaction_hash,
-                    )
-                    continue
-
-                user_message_future = asyncio.create_task(self._get_human_messages())
-                if isinstance(response, str):
-                    self._send_team_response(response)
-
-                user_message = await user_message_future
-                node_name = "ask_user"
-                state_values = {
-                    "conversation": {
-                        "history": [
-                            {
-                                "sender_name": "user",
-                                "content": user_message,
-                                "is_visible_to_user": True,
-                            }
-                        ]
-                    }
-                }
-                self._app.update_state(
-                    self._config,
-                    state_values,
-                    as_node=node_name,
-                )
-                graph_input = None
-                # Manually print the user state update because it won't be printed by the stream
-                rich.print({node_name: state_values})
-
-        except Exception as error:
-            self._send_team_response(str(error))
+        await self._run_graph(self._app, self._config, message)
 
     async def _entity_extractor_action(self, state: AgentState):
         utterance = (
@@ -492,11 +412,12 @@ class ConvertTokenAgentTeam(AgentTeam):
                 msg = "Transaction preview not found"
                 raise Exception(msg)
         except Exception as e:
+            rich.print(f"ERROR: {e}")
             error_message = str(e) if str(e) else str(type(e))
             message = f"""Failed to prepare transaction. 😔
 
 Details: {error_message}"""
-            raise Exception(message) from e
+            raise NodeInterrupt(message) from e
 
         response_message = f"""Transaction *{transaction_preview.id}* is ready for you to sign! 💸
 

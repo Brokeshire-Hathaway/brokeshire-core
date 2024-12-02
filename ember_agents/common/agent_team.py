@@ -2,8 +2,12 @@ import asyncio
 from abc import ABC, abstractmethod
 from asyncio import Future, InvalidStateError, Queue
 from collections.abc import Callable
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
+import rich
+from langchain_core.runnables.config import RunnableConfig
+from langgraph.graph.state import CompiledStateGraph
+from langgraph.types import Interrupt
 from openai.types.chat import ChatCompletionMessageParam
 
 from ember_agents.bg_tasks import add_bg_task
@@ -30,6 +34,123 @@ class AgentTeam(ABC):
         self, message: str, context: list[ChatCompletionMessageParam] | None = None
     ):
         """Executes a conversation with a user."""
+
+    async def _run_graph(
+        self, app: CompiledStateGraph, config: RunnableConfig, message: str
+    ):
+        async def stream_updates(graph_input: dict[str, Any] | Any):
+            async for chunk in app.astream(graph_input, config, stream_mode="updates"):
+                for key, item in chunk.items():
+                    rich.print(f"=== Stream Update ===")
+                    rich.print(f"{key}: {item}")
+                    """rich.print(f"interrupt: {item[0]}")
+                    rich.print(
+                        f"is instance of Interrupt: {isinstance(item, Interrupt)}"
+                    )
+                    rich.print(
+                        f"item.value: {(interrupt_value := item.get('value', None))}"
+                    )"""
+                    if (
+                        key == "__interrupt__"
+                        and (interrupt := next(iter(item), None))
+                        and isinstance(interrupt, Interrupt)
+                    ):
+                        rich.print(f"=== Interrupt ===")
+                        rich.print(interrupt.value)
+                        raise Exception(interrupt.value)
+                        # self._send_team_response(interrupt.value)
+
+                    rich.print(
+                        f"""
+╭───┚ {key} ┖───
+╧═╾ State Update ╼══
+{item}
+╤═╾
+╰───"""
+                    )
+
+        try:
+            intent_classification = "earn_token_action"
+            graph_input = {
+                "conversation": {
+                    "history": [
+                        {
+                            "sender_name": "user",
+                            "content": message,
+                            "is_visible_to_user": True,
+                        }
+                    ],
+                    "participants": [
+                        "user",
+                        "entity_extractor",
+                        "schema_validator",
+                        "clarifier",
+                        "transactor",
+                    ],
+                },
+                "user_utterance": message,
+                "intent_classification": intent_classification,
+            }
+
+            is_pending_interrupt = True
+            while is_pending_interrupt:
+                await stream_updates(graph_input)
+
+                snapshot = app.get_state(config)
+
+                """interrupt = None
+                if snapshot.tasks and snapshot.tasks[0].interrupts:
+                    interrupt = snapshot.tasks[0].interrupts[0]
+                if interrupt is not None:
+                    is_pending_interrupt = False
+                    self._send_team_response(interrupt.value)
+                    continue"""
+
+                sign_url = snapshot.values.get("sign_url")
+                response = snapshot.values["conversation"]["history"][-1]["content"]
+
+                if sign_url is not None:
+                    rich.print("=== sign_url is not None ===")
+                    is_pending_interrupt = False
+                    self._send_team_response(response, sign_url)
+                    continue
+
+                rich.print("=== sign_url is None ===")
+
+                user_message_future = asyncio.create_task(self._get_human_messages())
+
+                if isinstance(response, str):
+                    self._send_team_response(response)
+
+                user_message = await user_message_future
+
+                rich.print(f"=== user_message ===")
+                rich.print(user_message)
+
+                node_name = "ask_user"
+                state_values = {
+                    "conversation": {
+                        "history": [
+                            {
+                                "sender_name": "user",
+                                "content": user_message,
+                                "is_visible_to_user": True,
+                            }
+                        ]
+                    }
+                }
+                rich.print(f"=== update state ===")
+                app.update_state(
+                    config,
+                    state_values,
+                    as_node=node_name,
+                )
+                graph_input = None
+
+        except Exception as error:
+            rich.print("=== Exception as error ===")
+            rich.print(error)
+            self._send_team_response(str(error))
 
     def _send_team_response(
         self,
