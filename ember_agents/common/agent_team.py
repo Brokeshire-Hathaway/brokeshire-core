@@ -12,6 +12,7 @@ from ember_agents.bg_tasks import add_bg_task
 class SendResponse(TypedDict):
     message: str
     sign_url: str | None
+    transaction_hash: str | None
 
 
 class AgentTeam(ABC):
@@ -30,10 +31,19 @@ class AgentTeam(ABC):
     ):
         """Executes a conversation with a user."""
 
-    def _send_team_response(self, message: str, sign_url: str | None = None):
+    def _send_team_response(
+        self,
+        message: str,
+        sign_url: str | None = None,
+        transaction_hash: str | None = None,
+    ):
         try:
             self._agent_team_response.set_result(
-                {"message": message, "sign_url": sign_url}
+                {
+                    "message": message,
+                    "sign_url": sign_url,
+                    "transaction_hash": transaction_hash,
+                }
             )
         except InvalidStateError as e:
             print(e, flush=True)

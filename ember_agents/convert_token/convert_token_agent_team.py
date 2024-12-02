@@ -116,6 +116,7 @@ class TxPreview(BaseModel):
     to_token_amount: str
     to_token_symbol: str
     to_token_explorer_url: str
+    transaction_hash: str | None
 
 
 Participant = Literal["entity_extractor", "schema_validator", "clarifier", "transactor"]
@@ -215,13 +216,15 @@ class ConvertTokenAgentTeam(AgentTeam):
                 response = await stream_updates(graph_input)
 
                 snapshot = self._app.get_state(self._config)
-                sign_url = snapshot.values.get("sign_url")
+                sign_url = snapshot.values.get("sign_url", None)
+                transaction_hash = snapshot.values.get("transaction_hash", None)
 
-                if sign_url is not None:
+                if sign_url is not None or transaction_hash is not None:
                     is_pending_interrupt = False
                     self._send_team_response(
                         snapshot.values["conversation"]["history"][-1]["content"],
                         sign_url,
+                        transaction_hash,
                     )
                     continue
 
@@ -378,7 +381,7 @@ class ConvertTokenAgentTeam(AgentTeam):
                 msg = "Amount is not present."
                 raise ValueError(msg)
             transaction_request = ConvertRequest(
-                amount=PositiveAmount(amount[1]),
+                amount=str(amount[1]),
                 token_address=linked_from_token_address,
                 user_chat_id=self._user_chat_id,
                 network_id=int(linked_from_chain_id),
@@ -495,7 +498,6 @@ class ConvertTokenAgentTeam(AgentTeam):
 Details: {error_message}"""
             raise Exception(message) from e
 
-        self.sign_url = transaction_preview.sign_url
         response_message = f"""Transaction *{transaction_preview.id}* is ready for you to sign! 💸
 
 ↩️ **Convert From ・** {transaction_preview.token_amount} [{transaction_preview.token_symbol}]({transaction_preview.token_explorer_url}) ({transaction_preview.network_name})
@@ -515,6 +517,7 @@ Details: {error_message}"""
             },
             "next_node": "default",
             "sign_url": transaction_preview.sign_url,
+            "transaction_hash": transaction_preview.transaction_hash,
         }
 
     def _ask_user_action(self, _: AgentState):

@@ -43,6 +43,7 @@ class TxPreview(BaseModel):
     network_name: str
     token_symbol: str
     token_explorer_url: str
+    transaction_hash: str
 
 
 class Transaction(BaseModel):
@@ -331,6 +332,11 @@ class SendTokenAgentTeam(AgentTeam):
         self._store_transaction_info = store_transaction_info
         self._user_chat_id = user_chat_id
         self._user_address = user_address
+        self._sign_url: str | None = None
+        self._transaction_hash: str | None = None
+
+    def send_response(self, message: str):
+        self._send_team_response(message, self._sign_url, self._transaction_hash)
 
     async def _run_conversation(
         self, message: str, context: list[ChatCompletionMessageParam] | None = None
@@ -342,7 +348,7 @@ class SendTokenAgentTeam(AgentTeam):
             is_termination_msg=lambda x: x.get("content", "")
             and x.get("content", "").rstrip().endswith("TERMINATE"),
             a_human_reply=self._get_human_messages,
-            assistant_reply=self._send_team_response,
+            assistant_reply=self.send_response,
         )
 
         # No system message needed for OpenAI completion API used by Guidance agent (Metis).
@@ -384,8 +390,8 @@ class SendTokenAgentTeam(AgentTeam):
                         url, json=self._transaction_request.model_dump()
                     )
 
+                response_json = response.json()
                 try:
-                    response_json = response.json()
                     self._transaction_preview = TxPreview.model_validate(response_json)
                 except ValidationError as err:
                     raise ValueError(
@@ -401,7 +407,8 @@ Details: {error_message}
 TERMINATE""",
                 )
 
-            self.sign_url = self._transaction_preview.sign_url
+            self._sign_url = self._transaction_preview.sign_url
+            self._transaction_hash = self._transaction_preview.transaction_hash
             response_message = f"""Transaction {self._transaction_preview.id} is ready for you to sign! 💸
 
 💸 **Send ・** {self._transaction.amount} [{self._transaction_preview.token_symbol}]({self._transaction_preview.token_explorer_url}) ({self._transaction_preview.network_name})
@@ -494,7 +501,7 @@ TERMINATE"""
             linked_token_results = await link_token(
                 self._transaction.token, chain_match["entity"]["id"]
             )
-            token_fuzzy_matches = linked_token_results["fuzzy_matches"]
+            token_fuzzy_matches = linked_token_results["fuzzy_matches"] or []
             token_llm_matches = linked_token_results["llm_matches"]
             token_match = (
                 token_fuzzy_matches[0]
