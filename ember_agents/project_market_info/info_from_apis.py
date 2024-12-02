@@ -32,6 +32,8 @@ class ProjectInfo(BaseModel):
     price: float | None
     ath: float | None
     price_change_24h: float | None
+    price_change_6h: float | None
+    price_change_1h: float | None
     market_cap: float | None
     liquidity: str | None = None
     token_contract_address: str | None
@@ -89,12 +91,17 @@ async def market_route(
         if info_of_token.dex_screener_url is not None
         else f"**🏊 Pool Address ・** {info_of_token.pool_address}"
     )
+    price_change_6hr = (
+        f", 6hr {info_of_token.price_change_6h}"
+        if info_of_token.price_change_6h is not None
+        else ""
+    )
     if embers_description is None:
         return f"""
 **| {info_of_token.name} (${token_ticker}) |**
 
 **🔗 Network ・** {network}
-**💵 Price ・** ${price} (24hr {info_of_token.price_change_24h})
+**💵 Price ・** ${price} (24hr {info_of_token.price_change_24h}${price_change_6hr}, 1hr {info_of_token.price_change_1h})
 **💰 Market Cap ・** ${market_cap}
 **💧 Liquidity ・** {liquidity}
 **🔖 Token Contract Address ・** {info_of_token.token_contract_address}
@@ -300,6 +307,7 @@ async def query_token_in_dexscreener(tokenAddressOrSymbol: str):
     )
     base_token = token_information.get("baseToken", {})
     token_additional_info = token_information.get("info", {})
+    price_change = token_information.get("priceChange", {})
     return ProjectInfo(
         token_contract_address=base_token.get("address"),
         name=base_token.get("name"),
@@ -310,7 +318,9 @@ async def query_token_in_dexscreener(tokenAddressOrSymbol: str):
         twitter_handle=find_social(token_additional_info.get("socials", []), "twitter"),
         symbol=base_token.get("symbol"),
         price=token_information.get("priceUsd"),
-        price_change_24h=token_information.get("priceChange", {}).get("h24"),
+        price_change_24h=price_change.get("h24"),
+        price_change_6h=price_change.get("h24"),
+        price_change_1h=price_change.get("h1"),
         market_cap=token_information.get("marketCap"),
         pool_address=token_information.get("pairAddress"),
         liquidity=apply_callback(
@@ -385,6 +395,9 @@ async def search_coingecko_with_id(coingecko_id: str) -> ProjectInfo:
     price = json_response["market_data"]["current_price"].get("usd", None)
     ath = json_response["market_data"]["ath"].get("usd", None)
     price_change_24h = json_response["market_data"]["price_change_percentage_24h"]
+    price_change_1h = json_response["market_data"]["price_change_percentage_1h"].get(
+        "usd", None
+    )
     market_cap = json_response["market_data"]["market_cap"].get("usd", None)
     asset_platform_id = (
         "_Native to its own blockchain._"
@@ -400,6 +413,8 @@ async def search_coingecko_with_id(coingecko_id: str) -> ProjectInfo:
         ath=ath,
         price=price,
         price_change_24h=price_change_24h,
+        price_change_6h=None,
+        price_change_1h=price_change_1h,
         market_cap=market_cap,
         website=homepage,
         twitter_handle=twitter_screen_name,
