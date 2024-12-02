@@ -395,9 +395,9 @@ async def search_coingecko_with_id(coingecko_id: str) -> ProjectInfo:
     price = json_response["market_data"]["current_price"].get("usd", None)
     ath = json_response["market_data"]["ath"].get("usd", None)
     price_change_24h = json_response["market_data"]["price_change_percentage_24h"]
-    price_change_1h = json_response["market_data"]["price_change_percentage_1h"].get(
-        "usd", None
-    )
+    price_change_1h = json_response["market_data"][
+        "price_change_percentage_1h_in_currency"
+    ].get("usd", None)
     market_cap = json_response["market_data"]["market_cap"].get("usd", None)
     asset_platform_id = (
         "_Native to its own blockchain._"
