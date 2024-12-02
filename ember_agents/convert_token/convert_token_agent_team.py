@@ -116,7 +116,7 @@ class TxPreview(BaseModel):
     to_token_amount: str
     to_token_symbol: str
     to_token_explorer_url: str
-    transaction_hash: str | None
+    transaction_hash: str | None = None
 
 
 Participant = Literal["entity_extractor", "schema_validator", "clarifier", "transactor"]

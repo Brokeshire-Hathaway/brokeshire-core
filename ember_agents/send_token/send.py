@@ -43,7 +43,7 @@ class TxPreview(BaseModel):
     network_name: str
     token_symbol: str
     token_explorer_url: str
-    transaction_hash: str
+    transaction_hash: str | None = None
 
 
 class Transaction(BaseModel):
