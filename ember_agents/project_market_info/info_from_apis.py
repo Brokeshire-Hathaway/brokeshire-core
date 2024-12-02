@@ -92,16 +92,21 @@ async def market_route(
         else f"**🏊 Pool Address ・** {info_of_token.pool_address}"
     )
     price_change_6hr = (
-        f", 6hr {info_of_token.price_change_6h}"
+        f", 6hrΔ: {info_of_token.price_change_6h}%"
         if info_of_token.price_change_6h is not None
         else ""
     )
+    price_header = (
+        f"\n**💵 Price ・** ${price} (24hΔ: {info_of_token.price_change_24h}%{price_change_6hr}, 1hΔ: {info_of_token.price_change_1h}%)\n(ATH: ${ath} Δ: {ath_delta:.2%})"
+        if price
+        else ""
+    )
+    market_cap_header = f"\n**💰 Market Cap ・** ${market_cap}" if market_cap else ""
     if embers_description is None:
         return f"""
 **| {info_of_token.name} (${token_ticker}) |**
 
-**🔗 Network ・** {network}
-**💵 Price ・** ${price} (24hr {info_of_token.price_change_24h}${price_change_6hr}, 1hr {info_of_token.price_change_1h})
+**🔗 Network ・** {network}{price_header}{market_cap_header}
 **💰 Market Cap ・** ${market_cap}
 **💧 Liquidity ・** {liquidity}
 **🔖 Token Contract Address ・** {info_of_token.token_contract_address}
@@ -111,21 +116,10 @@ _Always do your own research_ 🧐💡🚀
 """
     desc = embers_description.project_description
     emoji = embers_description.project_emoji
-    price_header = (
-        f"\n**💵 Price ・** ${price} (24hΔ: {info_of_token.price_change_24h}%)\n(ATH: ${ath} Δ: {ath_delta:.2%})"
-        if price
-        else ""
-    )
-    market_cap_header = f"\n**💰 Market Cap ・** ${market_cap}" if market_cap else ""
     return f"""
 **| {emoji} {info_of_token.name} (${token_ticker}) |**
 
 **🔗 Network ・** {network}{price_header}{market_cap_header}
-**💵 Price ・** ${price} (24hr {info_of_token.price_change_24h}${price_change_6hr}, 1hr {info_of_token.price_change_1h})
-**💰 Market Cap ・** ${market_cap}
-**💧 Liquidity ・** {liquidity}
-**🔖 Token Contract Address ・** {info_of_token.token_contract_address}
-{pool_address}
 
 {desc}
 
