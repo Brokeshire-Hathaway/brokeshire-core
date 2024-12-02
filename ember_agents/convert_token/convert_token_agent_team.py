@@ -424,7 +424,7 @@ Details: {error_message}"""
 ↩️ **Convert From ・** {transaction_preview.token_amount} [{transaction_preview.token_symbol}]({transaction_preview.token_explorer_url}) ({transaction_preview.network_name})
 ↪️ **To ・** {transaction_preview.to_token_amount} [{transaction_preview.to_token_symbol}]({transaction_preview.to_token_explorer_url}) ({transaction_preview.to_network_name})
 
-🔏 **{format_transaction_url(transaction_preview.sign_url)}"""
+🔏 {format_transaction_url(transaction_preview.sign_url)}"""
 
         return {
             "conversation": {

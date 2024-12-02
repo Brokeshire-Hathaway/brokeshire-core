@@ -35,7 +35,7 @@ from ember_agents.common.transaction import (
     link_chain,
     link_token,
 )
-from ember_agents.common.utils import format_currency_string
+from ember_agents.common.utils import format_currency_string, format_transaction_url
 from ember_agents.common.validators import PositiveAmount
 from ember_agents.settings import SETTINGS
 
@@ -543,7 +543,7 @@ Details: {error_message}"""
 ╭ Fees&Tab;${fees_usd}
 ╰ Total&Tab;${total_usd}
 
-🔏 **[Sign here]({transaction_preview.signUrl})** to complete your transaction."""
+🔏 {format_transaction_url(transaction_preview.signUrl)}"""
 
         return {
             "conversation": {
