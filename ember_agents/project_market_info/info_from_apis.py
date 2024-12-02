@@ -108,7 +108,6 @@ async def market_route(
 **| {info_of_token.name} (${token_ticker}) |**
 
 **🔗 Network ・** {network}{price_header}{market_cap_header}
-**💰 Market Cap ・** ${market_cap}
 **💧 Liquidity ・** {liquidity}
 **🔖 Token Contract Address ・** {info_of_token.token_contract_address}
 {pool_address}
