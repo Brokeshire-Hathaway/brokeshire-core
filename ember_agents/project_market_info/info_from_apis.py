@@ -87,7 +87,7 @@ async def market_route(
     pool_address = (
         f"📈 [Dexscreener]({info_of_token.dex_screener_url})"
         if info_of_token.dex_screener_url is not None
-        else info_of_token.pool_address
+        else f"**🏊 Pool Address ・** {info_of_token.pool_address}"
     )
     if embers_description is None:
         return f"""
@@ -98,7 +98,7 @@ async def market_route(
 **💰 Market Cap ・** ${market_cap}
 **💧 Liquidity ・** {liquidity}
 **🔖 Token Contract Address ・** {info_of_token.token_contract_address}
-**🏊 Pool Address ・** {pool_address}
+{pool_address}
 
 _Always do your own research_ 🧐💡🚀
 """
