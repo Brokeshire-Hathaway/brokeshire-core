@@ -210,8 +210,12 @@ async def education(user_request: str, context: list[Message] | None = None) -> 
         Message(role="user", content=user_request),
     ]
     model: Model = "google/gemini-pro-1.5"
-    chat_completion = await get_openrouter_response(messages, [model])
-    response = chat_completion.choices[0].message.content
+    try:
+        chat_completion = await get_openrouter_response(messages, [model])
+        response = chat_completion.choices[0].message.content
+    except Exception as e:
+        logger.error(f"Error getting OpenRouter response: {e!s}")
+        return f"I apologize, but I encountered an error while processing your request: {e!s}"
 
     # Parse response to extract content within <response> tags
     try:

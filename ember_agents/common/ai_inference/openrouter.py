@@ -38,7 +38,7 @@ class OpenRouterResponse(BaseModel):
     id: str
     model: Model
     object: str
-    system_fingerprint: str
+    system_fingerprint: str | None = None
     usage: OpenRouterUsage
 
 
