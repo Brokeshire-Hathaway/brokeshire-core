@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 from datetime import UTC, datetime
@@ -162,6 +163,10 @@ Help Ember AI (Ember) users with their crypto and DeFi needs, taking actions for
 - If a cancel or terminate message is found, always be grateful and ask to help for something else."""
 
 
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+
 async def education(
     user_request: str, context: list[ChatCompletionMessageParam] | None = None
 ) -> str:
@@ -216,12 +221,16 @@ async def education(
 
         response_match = re.search(r"<response>(.*?)</response>", response, re.DOTALL)
         if response_match:
-            return response_match.group(1).strip()
-        return "Error: Response not properly formatted with <response> tags"
-    except Exception as e:
-        return f"Error parsing response: {e!s}"
+            sanitized = response_match.group(1).strip()
+            logger.debug(f"Extracted response: {sanitized}")
+            return sanitized
 
-    return response
+        sanitized_response = re.sub(r"</?response>", "", response).strip()
+        logger.debug(f"Sanitized response: {sanitized_response}")
+        return sanitized_response
+    except Exception as e:
+        logger.error(f"Error parsing response: {e!s}")
+        return f"Error parsing response: {e!s}"
 
 
 async def upload_doc_memory():
