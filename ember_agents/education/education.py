@@ -125,7 +125,7 @@ After completing your thought process, provide your response in <response> tags,
 </response>"""
 
 
-f"""# Mission
+"""# Mission
 Help Ember AI (Ember) users with their crypto and DeFi needs, taking actions for them when possible.
 
 # Identity
@@ -209,6 +209,17 @@ async def education(
         **openai_settings,
     )
     response = chat_completion.choices[0].message.content
+
+    # Parse response to extract content within <response> tags
+    try:
+        import re
+
+        response_match = re.search(r"<response>(.*?)</response>", response, re.DOTALL)
+        if response_match:
+            return response_match.group(1).strip()
+        return "Error: Response not properly formatted with <response> tags"
+    except Exception as e:
+        return f"Error parsing response: {e!s}"
 
     return response
 
