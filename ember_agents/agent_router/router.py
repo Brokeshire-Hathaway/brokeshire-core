@@ -75,7 +75,7 @@ class Router:
         intent = await classify_intent(message)
         route = intent.name
         if self._requested_intents is not None and route not in self._requested_intents:
-            msg = f"Requested intents {",".join(self._requested_intents)} mismatches with matched intent {route}"
+            msg = f"Requested intents {', '.join(self._requested_intents)} mismatches with matched intent {route}"
             raise ValueError(msg)
 
         rich.print(f"Intent Name: {route}")
