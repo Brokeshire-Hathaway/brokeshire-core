@@ -24,12 +24,13 @@ class EducationAgentTeam(AgentTeam):
         self, message: str, context: list[ChatCompletionMessageParam] | None = None
     ):
         self._send_activity_update("💭 thinking...")
+        # Reverse the context because it's provided with newest messages first instead of last. The most recent message is the last one of the list.
         converted_context = [
             Message(
                 role=typing.cast(Role, msg.get("role", "user")),
                 content=str(msg.get("content", "")),
             )
-            for msg in (context or [])
+            for msg in reversed(context or [])
         ]
         response = await education(message, context=converted_context)
         self._send_team_response(response)
