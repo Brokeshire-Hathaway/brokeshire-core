@@ -543,7 +543,7 @@ Details: {error_message}"""
 ╭ Fees&Tab;${fees_usd}
 ╰ Total&Tab;${total_usd}
 
-🔏 {format_transaction_url(transaction_preview.signUrl)}"""
+🔏 Sign transaction (coming soon)"""
 
         return {
             "conversation": {
