@@ -222,13 +222,23 @@ async def education(user_request: str, context: list[Message] | None = None) -> 
     try:
         import re
 
+        # Remove response planning sections and any following whitespace up to the next tag
+        response = re.sub(
+            r'<response_planning>.*?</response_planning>\s*',
+            '',
+            response,
+            flags=re.DOTALL,
+        )
+
+        # Then try to extract content from response tags
         response_match = re.search(r"<response>(.*?)</response>", response, re.DOTALL)
         if response_match:
             sanitized = response_match.group(1).strip()
             logger.debug(f"Extracted response: {sanitized}")
             return sanitized
 
-        sanitized_response = re.sub(r"</?response>", "", response).strip()
+        # If no tags found, remove any remaining tags and normalize whitespace
+        sanitized_response = re.sub(r"</?[^>]+>\s*", "", response).strip()
         logger.debug(f"Sanitized response: {sanitized_response}")
         return sanitized_response
     except Exception as e:
