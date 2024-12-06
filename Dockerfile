@@ -1,4 +1,4 @@
-ARG PYTHON_BASE=3.12-bullseye
+ARG PYTHON_BASE=3.11-bullseye
 
 # Building phase for dependencies
 FROM python:$PYTHON_BASE as builder
