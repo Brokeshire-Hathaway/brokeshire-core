@@ -44,7 +44,7 @@ async def get_openai_response(
     top_logprobs: int | None = None,
 ) -> ChatCompletion:
     """
-    Get a response from the OpenRouter API.
+    Get a response from the OpenAI API.
     """
 
     temperature = Temperature(value=0.7) if temperature is None else temperature

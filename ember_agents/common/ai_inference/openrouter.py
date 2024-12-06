@@ -13,7 +13,11 @@ class Message(BaseModel):
     content: str
 
 
-Model = Literal["openai/gpt-4o-2024-05-13", "anthropic/claude-3.5-sonnet"]
+Model = Literal[
+    "openai/gpt-4o-2024-05-13",
+    "anthropic/claude-3.5-sonnet",
+    "google/gemini-pro-1.5",
+]
 
 
 class OpenRouterChoice(BaseModel):

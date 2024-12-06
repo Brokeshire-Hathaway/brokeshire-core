@@ -1,5 +1,6 @@
 import logging
 import os
+import typing
 import uuid
 from datetime import UTC, datetime
 
@@ -9,6 +10,12 @@ from openai.types.chat import ChatCompletionMessageParam
 from pinecone import Pinecone
 
 from ember_agents.common.agent_team import AgentTeam
+from ember_agents.common.ai_inference.openrouter import (
+    Message,
+    Model,
+    Role,
+    get_openrouter_response,
+)
 from ember_agents.settings import SETTINGS
 
 
@@ -17,7 +24,14 @@ class EducationAgentTeam(AgentTeam):
         self, message: str, context: list[ChatCompletionMessageParam] | None = None
     ):
         self._send_activity_update("💭 thinking...")
-        response = await education(message, context=context)
+        converted_context = [
+            Message(
+                role=typing.cast(Role, msg.get("role", "user")),
+                content=str(msg.get("content", "")),
+            )
+            for msg in (context or [])
+        ]
+        response = await education(message, context=converted_context)
         self._send_team_response(response)
 
 
@@ -25,13 +39,6 @@ pc = Pinecone(SETTINGS.pinecone_api_key)
 index = pc.Index("ember")
 
 client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
-
-openai_settings = {
-    "model": "gpt-4o-2024-05-13",
-    # "response_format": {"type": "json_object"},
-    "temperature": 0.7,
-    # "seed": 1,
-}
 
 ember_bot_name = "Ember_test_bot" if True else os.environ.get("EMBER_BOT_NAME")
 
@@ -167,9 +174,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
-async def education(
-    user_request: str, context: list[ChatCompletionMessageParam] | None = None
-) -> str:
+async def education(user_request: str, context: list[Message] | None = None) -> str:
     """Return an educational response to the user's request."""
 
     embedding_response = await client.embeddings.create(
@@ -199,20 +204,13 @@ async def education(
 {datetime.now(UTC)}{search_results}"""
 
     system_message = system_message_base + f"\n\n{context_search}"
-    chat_completion = await client.chat.completions.create(
-        messages=[
-            {
-                "role": "system",
-                "content": system_message,
-            },
-            *(context or []),
-            {
-                "role": "user",
-                "content": user_request,
-            },
-        ],
-        **openai_settings,
-    )
+    messages: list[Message] = [
+        Message(role="system", content=system_message),
+        *(context or []),
+        Message(role="user", content=user_request),
+    ]
+    model: Model = "google/gemini-pro-1.5"
+    chat_completion = await get_openrouter_response(messages, [model])
     response = chat_completion.choices[0].message.content
 
     # Parse response to extract content within <response> tags
