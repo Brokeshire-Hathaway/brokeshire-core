@@ -210,7 +210,7 @@ async def education(user_request: str, context: list[Message] | None = None) -> 
         *(context or []),
         Message(role="user", content=user_request),
     ]
-    model: Model = "anthropic/claude-3.5-sonnet"
+    model: Model = "anthropic/claude-3.5-sonnet:beta"
     try:
         chat_completion = await get_openrouter_response(messages, [model])
         response = chat_completion.choices[0].message.content
@@ -224,8 +224,8 @@ async def education(user_request: str, context: list[Message] | None = None) -> 
 
         # Remove response planning sections and any following whitespace up to the next tag
         response = re.sub(
-            r'<response_planning>.*?</response_planning>\s*',
-            '',
+            r"<response_planning>.*?</response_planning>\s*",
+            "",
             response,
             flags=re.DOTALL,
         )

@@ -15,6 +15,7 @@ class Message(BaseModel):
 
 Model = Literal[
     "openai/gpt-4o-2024-05-13",
+    "anthropic/claude-3.5-sonnet:beta",
     "anthropic/claude-3.5-sonnet",
     "google/gemini-pro-1.5",
 ]
