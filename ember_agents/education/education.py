@@ -210,7 +210,7 @@ async def education(user_request: str, context: list[Message] | None = None) -> 
         *(context or []),
         Message(role="user", content=user_request),
     ]
-    model: Model = "anthropic/claude-3.5-sonnet:beta"
+    model: Model = "google/gemini-pro-1.5"
     try:
         chat_completion = await get_openrouter_response(messages, [model])
         response = chat_completion.choices[0].message.content
