@@ -1,7 +1,7 @@
 import asyncio
 import json
 from collections.abc import Callable
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, get_args
 
 import httpx
 import rich
@@ -127,6 +127,7 @@ class AgentState(BaseModel):
     extracted_entities: ExtractedEntities | None = None
     transaction_request: EarnRequest | None = None
     sign_url: str | None = None
+    is_run_complete: bool = False
 
     model_config = {
         "arbitrary_types_allowed": True,
@@ -167,7 +168,11 @@ class EarnAgentTeam(AgentTeam):
 
         self._send_activity_update("Understanding your earn request...")
 
-        await self._run_graph(self._app, self._config, message)
+        participants = list(get_args(Participant))
+
+        await self._run_graph(
+            self._app, self._config, message, participants=participants
+        )
 
     async def _entity_extractor_action(self, state: AgentState):
         self._send_activity_update("Reading your transaction details...")
@@ -557,6 +562,7 @@ Details: {error_message}"""
             },
             "next_node": "default",
             "sign_url": transaction_preview.signUrl,
+            "is_run_complete": True,
         }
 
     def _ask_user_action(self, _: AgentState):

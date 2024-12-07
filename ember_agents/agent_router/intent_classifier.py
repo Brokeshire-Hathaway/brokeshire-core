@@ -15,6 +15,7 @@ INTENT = Literal[
     "explanation_query",
     "advice_query",
     "market_news_query",
+    "token_analysis_query",
     "terminate",
     "unclear",
     "out_of_scope",
@@ -30,14 +31,15 @@ client = Fireworks(api_key=SETTINGS.fireworks_api_key)
 
 
 descriptions: dict[INTENT, str] = {
-    "capabilities_query": "Reply to any questions about me. Help the user understand what this assistant can do, it's features and functionalies, and how to use it. Its name is Ember.",
+    "capabilities_query": "Reply to any questions about me. Help the user understand what this assistant can do, it's features and functionalies, and how to use it. Its name is Brokeshire.",
     "crypto_price_query": "Get the price of a cryptocurrency or token",
-    "convert_crypto_action": "Convert one cryptocurrency or token to another. Buy cryptocurrency, token or noun. This includes 'I want <noun>' or 'buy <noun>'. User can use any noun for this intent.",
+    "convert_crypto_action": "Convert one cryptocurrency or token to another. Buy cryptocurrency, token or noun. This includes 'buy <noun>'. User can use any noun for this intent.",
     "transfer_crypto_action": "Send cryptocurrency or tokens to someone else. Someone else requests a cryptocurrency or token.",
     "earn_crypto_action": "Earn yield on your cryptocurrency or token by depositing it in a yield-generating strategy.",
     "explanation_query": "Describe a concept or term",
-    "advice_query": "Provide guidance on a decision or make predictions.",
+    "advice_query": "Provide general guidance on a decision not related to specific tokens or assets",
     "market_news_query": "Get the latest news on the crypto market",
+    "token_analysis_query": "Provide an opinion, technical analysis or prediction on a token's performance. You either assess the specified token, or return a hidden gem if no token is specified.",
     "terminate": "End the current intent conversation",
     "unclear": "User message is gibberish, ambiguous or unclear",
     "out_of_scope": "Does not fit any of the other intents",

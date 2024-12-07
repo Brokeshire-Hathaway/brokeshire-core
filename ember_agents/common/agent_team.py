@@ -36,7 +36,11 @@ class AgentTeam(ABC):
         """Executes a conversation with a user."""
 
     async def _run_graph(
-        self, app: CompiledStateGraph, config: RunnableConfig, message: str
+        self,
+        app: CompiledStateGraph,
+        config: RunnableConfig,
+        message: str,
+        participants: list[str],
     ):
         async def stream_updates(graph_input: dict[str, Any] | Any):
             async for chunk in app.astream(graph_input, config, stream_mode="updates"):
@@ -80,13 +84,7 @@ class AgentTeam(ABC):
                             "is_visible_to_user": True,
                         }
                     ],
-                    "participants": [
-                        "user",
-                        "entity_extractor",
-                        "schema_validator",
-                        "clarifier",
-                        "transactor",
-                    ],
+                    "participants": participants,
                 },
                 "user_utterance": message,
                 "intent_classification": intent_classification,
@@ -106,16 +104,18 @@ class AgentTeam(ABC):
                     self._send_team_response(interrupt.value)
                     continue"""
 
-                sign_url = snapshot.values.get("sign_url")
+                is_run_complete = snapshot.values.get("is_run_complete")
                 response = snapshot.values["conversation"]["history"][-1]["content"]
 
-                if sign_url is not None:
-                    rich.print("=== sign_url is not None ===")
+                if is_run_complete:
+                    rich.print("=== is_run_complete is True ===")
                     is_pending_interrupt = False
-                    self._send_team_response(response, sign_url)
+                    sign_url = snapshot.values.get("sign_url")
+                    transaction_hash = snapshot.values.get("transaction_hash")
+                    self._send_team_response(response, sign_url, transaction_hash)
                     continue
 
-                rich.print("=== sign_url is None ===")
+                rich.print("=== is_run_complete is False ===")
 
                 user_message_future = asyncio.create_task(self._get_human_messages())
 

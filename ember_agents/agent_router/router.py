@@ -12,6 +12,7 @@ from ember_agents.earn.earn_agent_team import EarnAgentTeam
 from ember_agents.education.education import EducationAgentTeam
 from ember_agents.project_market_info.market_agent_team import MarketAgentTeam
 from ember_agents.send_token.send import SendTokenAgentTeam
+from ember_agents.token_tech_analysis.token_ta_agent_team import TokenTaAgentTeam
 
 
 class AgentTeamSessionManager:
@@ -115,6 +116,8 @@ class Router:
                 )
             case "crypto_price_query" | "market_news_query":
                 agent_team = MarketAgentTeam(on_complete)
+            case "token_analysis_query":
+                agent_team = TokenTaAgentTeam(on_complete, user_chat_id)
             case (
                 "explanation_query"
                 | "capabilities_query"
