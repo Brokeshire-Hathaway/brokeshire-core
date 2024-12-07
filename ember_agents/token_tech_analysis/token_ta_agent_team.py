@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from random import choice
 from typing import Annotated, Any, Literal, get_args
 
 import rich
@@ -223,12 +224,15 @@ class TokenTaAgentTeam(AgentTeam):
         if state.selected_tokens_data is None or len(state.selected_tokens_data) == 0:
             msg = "Selected tokens data is empty or not present"
             raise ValueError(msg)
-        selected_token = state.selected_tokens_data[0]
-        formatted_token = self.format_token_data(selected_token)
+        # Randomly select one token from the available tokens
+        selected_token = choice(state.selected_tokens_data)  # noqa: S311
+        formatted_token = self._format_token_data(selected_token)
         system_prompt = f"""
         You are an expert technical analyst for a crypto investment firm called Brokeshire Hathaway. Your job is to analyze a <token> and provide a technical analysis report for users seeking exclusive investment opportunities. The <token> has been identified as having high potential for growth, which you may or may not agree with.
 
-        Keep your response concise and to the point for a Twitter post. It should be no more than 270 characters. Include only the data points that are relevant to your specific analysis. Separate any data using something other than a forward slash (/).
+        Liquidity refers to the AMM pool size. Anything above $500,000 should be considered sufficient, but generally the higher the better. You're an expert on AMMs, so you know best.
+
+        Keep your response concise and to the point for a Twitter post. It should be no more than 270 characters. Include only the data points that are relevant to your specific analysis. Separate any data using something other than a forward slash (/). Do not include "DYOR" or "NFA" in your response.
 
         Analyze the <token> below.
 
@@ -257,7 +261,7 @@ class TokenTaAgentTeam(AgentTeam):
 
     # TODO: Error needs to trigger on_complete and stop this agent team
 
-    def format_token_data(self, token: TokenData) -> str:
+    def _format_token_data(self, token: TokenData) -> str:
         if not token.token_info.symbol:
             return ""
 
