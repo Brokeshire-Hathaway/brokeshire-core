@@ -185,7 +185,7 @@ async def _get_supported_chains():
         msg = f"An error occurred while requesting {url}: {e}"
         raise Exception(msg) from e
     # rich.print(response.json())
-    return [Chain(**chain) for chain in response.json()]
+    return [Chain.model_validate(chain) for chain in response.json()]
 
 
 async def _get_supported_abstract_tokens():
@@ -196,7 +196,7 @@ async def _get_supported_abstract_tokens():
     except Exception as e:
         msg = f"An error occurred while requesting {url}: {e}"
         raise Exception(msg) from e
-    return [AbstractToken(**token) for token in response.json()]
+    return [AbstractToken.model_validate(token) for token in response.json()]
 
 
 async def _get_supported_tokens(chain_id: str):
@@ -207,7 +207,7 @@ async def _get_supported_tokens(chain_id: str):
     except Exception as e:
         msg = f"An error occurred while requesting {url}: {e}"
         raise Exception(msg) from e
-    return [Token(**token) for token in response.json()]
+    return [Token.model_validate(token) for token in response.json()]
 
 
 def _select_optimal_yield_strategy(
