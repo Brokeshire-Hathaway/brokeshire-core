@@ -394,7 +394,7 @@ class EarnAgentTeam(AgentTeam):
             transaction_request = EarnRequest(
                 fromToken=from_token,
                 depositToken=deposit_token,
-                strategyId=self._best_yield_strategy.id,
+                strategyId=self._best_yield_strategy.vault_id,
                 userChatId=self._user_chat_id,
                 storeTransaction=self._store_transaction_info,
             )
