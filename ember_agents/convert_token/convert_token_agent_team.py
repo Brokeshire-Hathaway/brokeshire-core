@@ -390,7 +390,7 @@ class ConvertTokenAgentTeam(AgentTeam):
     async def _prepare_transaction_preview(self, request: ConvertRequest):
         url = f"{SETTINGS.transaction_service_url}/swap/preview"
         async with httpx.AsyncClient(http2=True, timeout=65) as client:
-            response = await client.post(url, json=request.model_dump())
+            response = await client.post(url, json=request.model_dump(by_alias=True))
 
         response_json = response.json()
         if not response_json["success"]:

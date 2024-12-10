@@ -38,7 +38,7 @@ class RpcUrls(BaseModel):
 
 
 class Chain(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel)
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     chain_id: str
     chain_type: str
@@ -55,7 +55,7 @@ class AbstractToken(BaseModel):
 
 
 class Token(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel)
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     address: str
     name: str
     symbol: str
@@ -72,7 +72,7 @@ class Token(BaseModel):
 
 
 class YieldStrategy(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel)
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     vault_id: str
     name: str
@@ -109,6 +109,7 @@ async def link_abstract_token(token: str):
 
 async def link_token(token: str, chain_id: str):
     supported_tokens = await _get_supported_tokens(chain_id)
+    print("Token length", len(supported_tokens))
     supported_tokens_dict = [token.model_dump() for token in supported_tokens]
 
     if Web3.is_address(token):
