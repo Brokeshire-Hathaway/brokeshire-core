@@ -236,7 +236,7 @@ class ConvertTokenAgentTeam(AgentTeam):
         if token_match["confidence_percentage"] < token_confidence_threshold:
             msg = f"You entered '{token}' token, but it's not supported. Did you mean '{token_match['entity']['name']}'?"
             raise ValueError(msg)
-        return Token(**token_match["entity"])
+        return Token.model_validate(token_match["entity"])
 
     async def _get_linked_entities(self, schema: ConvertTokenSchema):
         async def link_from():
