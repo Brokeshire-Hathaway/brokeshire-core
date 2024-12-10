@@ -214,7 +214,7 @@ class ConvertTokenAgentTeam(AgentTeam):
         if chain_match["confidence_percentage"] < chain_confidence_threshold:
             msg = f"You entered '{chain_name}' network, but it's not supported. Did you mean '{chain_match['entity']['name']}'?"
             raise ValueError(msg)
-        return chain_match["entity"]["id"]
+        return chain_match["entity"]["chain_id"]
 
     async def _get_linked_token(
         self, token: str, chain_id: str, chain_name: str

@@ -212,7 +212,7 @@ class EarnAgentTeam(AgentTeam):
         if chain_match["confidence_percentage"] < chain_confidence_threshold:
             msg = f"You entered '{chain_name}' network, but it's not supported. Did you mean '{chain_match['entity']['name']}'?"
             raise ValueError(msg)
-        return chain_match["entity"]["id"]
+        return chain_match["entity"]["chain_id"]
 
     async def _get_linked_abstract_token_symbol(self, token: str) -> str:
         linked_abstract_token_results = await link_abstract_token(token)
