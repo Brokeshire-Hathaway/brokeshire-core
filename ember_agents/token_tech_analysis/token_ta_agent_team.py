@@ -12,10 +12,7 @@ from openai.types.chat import (
 from pydantic import BaseModel, ValidationError
 
 from ember_agents.common.agent_team import AgentTeam
-from ember_agents.common.agents.entity_extractor import (
-    ExtractedEntities,
-    extract_entities,
-)
+from ember_agents.common.agents.entity_extractor import extract_entities
 from ember_agents.common.agents.schema_validator import (
     InferredEntity,
     convert_to_schema,
@@ -30,7 +27,11 @@ from ember_agents.common.transaction import (
     link_abstract_token,
     link_chain,
 )
-from ember_agents.token_tech_analysis.curate_tokens import get_trending_tokens
+from ember_agents.token_tech_analysis.curate_tokens import (
+    PoolData,
+    find_token,
+    get_trending_tokens,
+)
 
 
 class TokenTaSchema(BaseModel):
@@ -88,8 +89,7 @@ class AgentState(BaseModel):
     user_utterance: str
     intent_classification: str
     next_node: str | None = None
-    extracted_entities: ExtractedEntities | None = None
-    requested_token_symbol: str | None = None
+    requested_token_entity_name: str | None = None
     selected_tokens_data: list[TokenData] | None = None
     token_analysis: str | None = None
     is_run_complete: bool = False
@@ -150,14 +150,19 @@ class TokenTaAgentTeam(AgentTeam):
         rich.print(f"reasoning: {reasoning}")
         rich.print(f"extracted_entities: {extracted_entities}")
 
-        next_node = (
-            "token_data_collector"
-            if len(extracted_entities.extracted_entities) > 0
-            else "token_curator"
-        )
+        if (
+            len(extracted_entities.extracted_entities) > 0
+            and extracted_entities.extracted_entities[0].category == "requested_token"
+        ):
+            state.requested_token_entity_name = extracted_entities.extracted_entities[
+                0
+            ].named_entity
+            next_node = "token_data_collector"
+        else:
+            next_node = "token_curator"
 
         return {
-            "extracted_entities": extracted_entities,
+            "requested_token_entity_name": state.requested_token_entity_name,
             "next_node": next_node,
         }
 
@@ -165,42 +170,8 @@ class TokenTaAgentTeam(AgentTeam):
         trending_tokens = await get_trending_tokens()
 
         curated_tokens = []
-        for token in trending_tokens:
-            # Extract base token data
-            base_token = token.relationships.base_token.data
-            token_attrs = token.attributes
-
-            # Create TokenData instance for each trending token
-            token_data = TokenData(
-                token_info=TokenInfo(
-                    symbol=(
-                        token_attrs.name.split(" / ")[0]
-                        if token_attrs.name
-                        else "Unknown"
-                    ),
-                    address=base_token.id,
-                    chain_name=token.relationships.network.data.id,
-                ),
-                market_data=TokenMarketData(
-                    price=str(token_attrs.base_token_price_usd or "0"),
-                    price_change_percentage_5m=str(
-                        token_attrs.price_change_percentage.m5 or "0"
-                    ),
-                    price_change_percentage_1h=str(
-                        token_attrs.price_change_percentage.h1 or "0"
-                    ),
-                    price_change_percentage_6h=str(
-                        token_attrs.price_change_percentage.h6 or "0"
-                    ),
-                    price_change_percentage_24h=str(
-                        token_attrs.price_change_percentage.h24 or "0"
-                    ),
-                    volume_24h=str(token_attrs.volume_usd.h24 or "0"),
-                    fdv=str(token_attrs.fdv_usd or "0"),
-                    market_cap=str(token_attrs.reserve_in_usd or "0"),
-                    liquidity_in_usd=str(token_attrs.reserve_in_usd or "0"),
-                ),
-            )
+        for pool in trending_tokens:
+            token_data = self._convert_pool_data_to_token_data(pool)
             curated_tokens.append(token_data)
 
         return {
@@ -209,7 +180,14 @@ class TokenTaAgentTeam(AgentTeam):
 
     async def _token_data_collector_action(self, state: AgentState):
         rich.print("_token_data_collector_action")
-        pass
+        if state.requested_token_entity_name is None:
+            msg = "Requested token symbol is empty or not present"
+            raise ValueError(msg)
+        pool_data = await find_token(state.requested_token_entity_name)
+        token_data = self._convert_pool_data_to_token_data(pool_data)
+        return {
+            "selected_tokens_data": [token_data],
+        }
 
     async def _token_scorer_action(self, state: AgentState):
         rich.print("_token_scorer_action")
@@ -260,6 +238,43 @@ class TokenTaAgentTeam(AgentTeam):
         }
 
     # TODO: Error needs to trigger on_complete and stop this agent team
+
+    def _convert_pool_data_to_token_data(self, pool_data: PoolData) -> TokenData:
+        token_attrs = pool_data.attributes
+        base_token = pool_data.relationships.base_token.data
+        chain_name = (
+            pool_data.relationships.network.data.id
+            if pool_data.relationships.network
+            else "Unknown"
+        )
+        return TokenData(
+            token_info=TokenInfo(
+                symbol=(
+                    token_attrs.name.split(" / ")[0] if token_attrs.name else "Unknown"
+                ),
+                address=base_token.id,
+                chain_name=chain_name,
+            ),
+            market_data=TokenMarketData(
+                price=str(token_attrs.base_token_price_usd or "0"),
+                price_change_percentage_5m=str(
+                    token_attrs.price_change_percentage.m5 or "0"
+                ),
+                price_change_percentage_1h=str(
+                    token_attrs.price_change_percentage.h1 or "0"
+                ),
+                price_change_percentage_6h=str(
+                    token_attrs.price_change_percentage.h6 or "0"
+                ),
+                price_change_percentage_24h=str(
+                    token_attrs.price_change_percentage.h24 or "0"
+                ),
+                volume_24h=str(token_attrs.volume_usd.h24 or "0"),
+                fdv=str(token_attrs.fdv_usd or "0"),
+                market_cap=str(token_attrs.reserve_in_usd or "0"),
+                liquidity_in_usd=str(token_attrs.reserve_in_usd or "0"),
+            ),
+        )
 
     def _format_token_data(self, token: TokenData) -> str:
         if not token.token_info.symbol:
@@ -355,7 +370,7 @@ class TokenTaAgentTeam(AgentTeam):
         )
         return linked_token_symbol
 
-    async def _populate_schema_action(self, state: AgentState):
+    """async def _populate_schema_action(self, state: AgentState):
         try:
             if state.extracted_entities is None:
                 msg = "Extracted entities are empty or not present."
@@ -379,7 +394,7 @@ class TokenTaAgentTeam(AgentTeam):
             }
         except Exception as e:
             rich.print(f"ERROR: {e}")
-            raise e
+            raise e"""
 
     def _ask_user_action(self, _: AgentState):
         pass
@@ -414,11 +429,22 @@ class TokenTaAgentTeam(AgentTeam):
         self._graph.add_edge("token_risk_analyst", "token_strategist")
         self._graph.add_edge("token_strategist", END)"""
 
+        self._graph.add_node("entity_extractor", self._entity_extractor_action)
+        self._graph.add_node("token_data_collector", self._token_data_collector_action)
         self._graph.add_node("token_curator", self._token_curator_action)
         self._graph.add_node("token_strategist", self._token_strategist_action)
 
-        self._graph.set_entry_point("token_curator")
+        self._graph.set_entry_point("entity_extractor")
 
+        self._graph.add_conditional_edges(
+            "entity_extractor",
+            self._choose_next_node,
+            {
+                "token_curator": "token_curator",
+                "token_data_collector": "token_data_collector",
+            },
+        )
+        self._graph.add_edge("token_data_collector", "token_strategist")
         self._graph.add_edge("token_curator", "token_strategist")
         self._graph.add_edge("token_strategist", END)
 

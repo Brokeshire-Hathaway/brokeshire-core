@@ -15,7 +15,7 @@ console = Console()
 SINGLE_TOKEN_PROBABILITY = 0.7
 
 
-class TokenData(BaseModel):
+class TokenResponseData(BaseModel):
     id: str
     type: str
 
@@ -84,14 +84,14 @@ class Transactions(BaseModel):
 
 
 class BaseToken(BaseModel):
-    data: TokenData
+    data: TokenResponseData
 
 
 class Relationships(BaseModel):
     base_token: BaseToken
     quote_token: BaseToken
-    network: BaseToken
     dex: BaseToken
+    network: BaseToken | None = None
 
 
 class PoolAttributes(BaseModel):
@@ -147,8 +147,12 @@ async def query_gecko_terminal(
     route: str, parameters: dict[str, Any] | None = None
 ) -> GeckoTerminalResponse:
     url = f"https://api.geckoterminal.com/api/v2{route}"
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (compatible; MyBot/1.0)",
+    }
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=30.0, headers=headers, verify=False) as client:
         try:
             response = await client.get(url, params=parameters)
             response.raise_for_status()
@@ -162,6 +166,23 @@ async def query_gecko_terminal(
         except Exception as error:
             msg = f"Failed querying gecko terminal: {error!s}"
             raise Exception(msg) from error
+
+
+async def find_token(search_term: str) -> PoolData:
+    console.print(f"[yellow]Searching for token: {search_term}[/yellow]")
+    search_parameters = {"query": search_term, "page": 1}
+    console.print(f"[blue]Search parameters: {search_parameters}[/blue]")
+    response = await query_gecko_terminal("/search/pools", search_parameters)
+
+    if not response.data:
+        msg = f"No pools found for search term: {search_term}"
+        raise Exception(msg)
+
+    highest_reserve_pool = max(
+        response.data, key=lambda pool: float(pool.attributes.reserve_in_usd or 0)
+    )
+
+    return highest_reserve_pool
 
 
 def get_top_tokens(pool_data: list[PoolData]) -> list[PoolDataWithScore]:
