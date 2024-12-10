@@ -48,9 +48,6 @@ class Chain(BaseModel):
     last_updated: str
     supported_protocols: list[str]
 
-    class Config:
-        populate_by_name = True
-
 
 class AbstractToken(BaseModel):
     name: list[str]
@@ -72,9 +69,6 @@ class Token(BaseModel):
     is_vetted_by_primary_data_source: bool
     last_updated: str
     supported_protocols: list[str]
-
-    class Config:
-        populate_by_name = True
 
 
 class YieldStrategy(BaseModel):
