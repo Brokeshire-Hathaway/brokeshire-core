@@ -1,7 +1,6 @@
 import math
 
 import httpx
-import rich
 from pydantic import BaseModel, Field, HttpUrl
 from web3 import Web3
 

@@ -1,6 +1,5 @@
 import asyncio
 import json
-import operator
 from collections.abc import Callable
 from typing import Annotated, Any, Literal, get_args
 
@@ -32,7 +31,7 @@ from ember_agents.common.conversation import (
     conversation_reducer,
     get_context,
 )
-from ember_agents.common.transaction import link_chain, link_token
+from ember_agents.common.transaction import link_chain, link_token, Token
 from ember_agents.common.utils import format_transaction_url
 from ember_agents.common.validators import PositiveAmount
 from ember_agents.settings import SETTINGS
@@ -90,14 +89,14 @@ class TokenConvertTo(BaseModel):
     """Request for doing cross chain convert"""
 
     network_id: int
-    token_address: str
+    token: Token
 
 
 class ConvertRequest(BaseModel):
     """Request for doing cross chain convert"""
 
     amount: PositiveAmount
-    token_address: str
+    token: Token
     user_chat_id: str
     network_id: int
     to: TokenConvertTo
@@ -217,9 +216,9 @@ class ConvertTokenAgentTeam(AgentTeam):
             raise ValueError(msg)
         return chain_match["entity"]["id"]
 
-    async def _get_linked_token_address(
+    async def _get_linked_token(
         self, token: str, chain_id: str, chain_name: str
-    ) -> str:
+    ) -> Token:
         # TODO: Mock link_token for testing
         linked_from_token_results = await link_token(token, chain_id)
         token_fuzzy_matches = linked_from_token_results["fuzzy_matches"]
@@ -237,26 +236,26 @@ class ConvertTokenAgentTeam(AgentTeam):
         if token_match["confidence_percentage"] < token_confidence_threshold:
             msg = f"You entered '{token}' token, but it's not supported. Did you mean '{token_match['entity']['name']}'?"
             raise ValueError(msg)
-        return token_match["entity"]["address"]
+        return Token(**token_match["entity"])
 
     async def _get_linked_entities(self, schema: ConvertTokenSchema):
         async def link_from():
             from_network_entity = schema.from_network.named_entity
             linked_from_chain_id = await self._get_linked_chain_id(from_network_entity)
-            linked_from_token_address = await self._get_linked_token_address(
+            linked_from_token = await self._get_linked_token(
                 schema.from_token.named_entity,
                 linked_from_chain_id,
                 from_network_entity,
             )
-            return linked_from_chain_id, linked_from_token_address
+            return linked_from_chain_id, linked_from_token
 
         async def link_to():
             to_network_entity = schema.to_network.named_entity
             linked_to_chain_id = await self._get_linked_chain_id(to_network_entity)
-            linked_to_token_address = await self._get_linked_token_address(
+            linked_to_token = await self._get_linked_token(
                 schema.to_token.named_entity, linked_to_chain_id, to_network_entity
             )
-            return linked_to_chain_id, linked_to_token_address
+            return linked_to_chain_id, linked_to_token
 
         results = await asyncio.gather(link_from(), link_to(), return_exceptions=True)
 
@@ -280,7 +279,7 @@ class ConvertTokenAgentTeam(AgentTeam):
             schema = convert_to_schema(ConvertTokenSchema, state.extracted_entities)
             (
                 linked_from_chain_id,
-                linked_from_token_address,
+                linked_from_token,
                 linked_to_chain_id,
                 linked_to_token_address,
             ) = await self._get_linked_entities(schema)
@@ -288,10 +287,10 @@ class ConvertTokenAgentTeam(AgentTeam):
             rich.print(f"linked_to_chain_id: {linked_to_chain_id}")
             rich.print(f"linked_to_token_address: {linked_to_token_address}")
             rich.print(f"linked_from_chain_id: {linked_from_chain_id}")
-            rich.print(f"linked_from_token_address: {linked_from_token_address}")
+            rich.print(f"linked_from_token_address: {linked_from_token}")
             token_convert_to = TokenConvertTo(
                 network_id=int(linked_to_chain_id),
-                token_address=linked_to_token_address,
+                token=linked_to_token_address,
             )
             amount = (
                 ("buy", schema.amount.to_amount.named_entity)
@@ -307,7 +306,7 @@ class ConvertTokenAgentTeam(AgentTeam):
                 raise ValueError(msg)
             transaction_request = ConvertRequest(
                 amount=str(amount[1]),
-                token_address=linked_from_token_address,
+                token=linked_from_token,
                 user_chat_id=self._user_chat_id,
                 network_id=int(linked_from_chain_id),
                 to=token_convert_to,
