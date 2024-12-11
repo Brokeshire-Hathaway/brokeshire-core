@@ -635,14 +635,14 @@ TERMINATE"""
                 raise ValueError(msg)
 
             token_swap_to = TokenSwapTo(
-                network_id=to_chain_match["entity"]["id"],
+                network_id=to_chain_match["entity"]["chain_id"],
                 token_address=to_token_match["entity"]["address"],
             )
             self._transaction_request = SwapRequest(
                 amount=self._transaction.amount,
                 token_address=token_match["entity"]["address"],
                 user_chat_id=self._user_chat_id,
-                network_id=chain_match["entity"]["id"],
+                network_id=chain_match["entity"]["chain_id"],
                 to=token_swap_to,
                 type=self._transaction.type,
                 store_transaction=self._store_transaction_info,

@@ -212,7 +212,7 @@ class EarnAgentTeam(AgentTeam):
         if chain_match["confidence_percentage"] < chain_confidence_threshold:
             msg = f"You entered '{chain_name}' network, but it's not supported. Did you mean '{chain_match['entity']['name']}'?"
             raise ValueError(msg)
-        return chain_match["entity"]["id"]
+        return chain_match["entity"]["chain_id"]
 
     async def _get_linked_abstract_token_symbol(self, token: str) -> str:
         linked_abstract_token_results = await link_abstract_token(token)
@@ -394,7 +394,7 @@ class EarnAgentTeam(AgentTeam):
             transaction_request = EarnRequest(
                 fromToken=from_token,
                 depositToken=deposit_token,
-                strategyId=self._best_yield_strategy.id,
+                strategyId=self._best_yield_strategy.vault_id,
                 userChatId=self._user_chat_id,
                 storeTransaction=self._store_transaction_info,
             )

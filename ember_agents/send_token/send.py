@@ -499,7 +499,7 @@ TERMINATE"""
                 raise ValueError(msg)
 
             linked_token_results = await link_token(
-                self._transaction.token, chain_match["entity"]["id"]
+                self._transaction.token, chain_match["entity"]["chain_id"]
             )
             token_fuzzy_matches = linked_token_results["fuzzy_matches"] or []
             token_llm_matches = linked_token_results["llm_matches"]
@@ -515,7 +515,7 @@ TERMINATE"""
 
             self._transaction_request = TxRequest(
                 user_chat_id=self._user_chat_id,
-                network_id=chain_match["entity"]["id"],
+                network_id=chain_match["entity"]["chain_id"],
                 recipient_address=self._transaction.recipient_address,
                 amount=self._transaction.amount,
                 token_address=token_match["entity"]["address"],

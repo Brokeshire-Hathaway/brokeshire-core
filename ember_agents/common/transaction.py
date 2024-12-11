@@ -1,8 +1,8 @@
 import math
 
 import httpx
-import rich
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, ConfigDict, HttpUrl
+from pydantic.alias_generators import to_camel
 from web3 import Web3
 
 from ember_agents.common.entity_linker import link_entity
@@ -38,16 +38,15 @@ class RpcUrls(BaseModel):
 
 
 class Chain(BaseModel):
-    id: str = Field(..., alias="chainId")
-    chain_type: str = Field(..., alias="chainType")
-    icon_uri: str = Field(..., alias="iconUri")
-    name: str
-    block_explorer_urls: list[str] = Field(..., alias="blockExplorerUrls")
-    last_updated: str = Field(..., alias="lastUpdated")
-    supported_protocols: list[str] = Field(..., alias="supportedProtocols")
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
-    class Config:
-        populate_by_name = True
+    chain_id: str
+    chain_type: str
+    icon_uri: str
+    name: str
+    block_explorer_urls: list[str]
+    last_updated: str
+    supported_protocols: list[str]
 
 
 class AbstractToken(BaseModel):
@@ -56,38 +55,36 @@ class AbstractToken(BaseModel):
 
 
 class Token(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
     address: str
     name: str
     symbol: str
     decimals: int
-    chain_id: str = Field(..., alias="chainId")
-    chain_name: str = Field(..., alias="chainName")
-    icon_uri: str | None = Field(None, alias="iconUri")
-    coingecko_id: str | None = Field(None, alias="coingeckoId")
-    usd_price: float | None = Field(None, alias="usdPrice")
-    primary_data_source: str = Field(..., alias="primaryDataSource")
-    is_vetted_by_primary_data_source: bool = Field(
-        ..., alias="isVettedByPrimaryDataSource"
-    )
-    last_updated: str = Field(..., alias="lastUpdated")
-    supported_protocols: list[str] = Field(..., alias="supportedProtocols")
-
-    class Config:
-        populate_by_name = True
+    chain_id: str
+    chain_name: str
+    icon_uri: str | None = None
+    coingecko_id: str | None = None
+    usd_price: float | None = None
+    primary_data_source: str
+    is_vetted_by_primary_data_source: bool
+    last_updated: str
+    supported_protocols: list[str]
 
 
 class YieldStrategy(BaseModel):
-    id: str = Field(..., alias="vaultId")
-    name: str = Field(..., alias="name")
-    token_address: str = Field(..., alias="tokenAddress")
-    chain_id: str = Field(..., alias="chainId")
-    protocol_name: str = Field(..., alias="protocolName")
-    wrapped_protocol_name: str | None = Field(None, alias="wrappedProtocolName")
-    apy: str = Field(..., alias="apyDay")
-    points_yield: str | None = Field(None, alias="pointsYield")
-    tvl: str = Field(..., alias="tvl")
-    last_updated: str = Field(..., alias="lastUpdated")
-    lockup_period: str | None = Field(None, alias="lockupPeriod")
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    vault_id: str
+    name: str
+    token_address: str
+    chain_id: str
+    protocol_name: str
+    wrapped_protocol_name: str | None = None
+    apy_day: str
+    points_yield: str | None = None
+    tvl: str
+    last_updated: str
+    lockup_period: str | None = None
 
 
 async def link_chain(chain_name: str):
@@ -112,6 +109,7 @@ async def link_abstract_token(token: str):
 
 async def link_token(token: str, chain_id: str):
     supported_tokens = await _get_supported_tokens(chain_id)
+    print("Token length", len(supported_tokens))
     supported_tokens_dict = [token.model_dump() for token in supported_tokens]
 
     if Web3.is_address(token):
@@ -188,7 +186,7 @@ async def _get_supported_chains():
         msg = f"An error occurred while requesting {url}: {e}"
         raise Exception(msg) from e
     # rich.print(response.json())
-    return [Chain(**chain) for chain in response.json()]
+    return [Chain.model_validate(chain) for chain in response.json()]
 
 
 async def _get_supported_abstract_tokens():
@@ -199,7 +197,7 @@ async def _get_supported_abstract_tokens():
     except Exception as e:
         msg = f"An error occurred while requesting {url}: {e}"
         raise Exception(msg) from e
-    return [AbstractToken(**token) for token in response.json()]
+    return [AbstractToken.model_validate(token) for token in response.json()]
 
 
 async def _get_supported_tokens(chain_id: str):
@@ -210,7 +208,7 @@ async def _get_supported_tokens(chain_id: str):
     except Exception as e:
         msg = f"An error occurred while requesting {url}: {e}"
         raise Exception(msg) from e
-    return [Token(**token) for token in response.json()]
+    return [Token.model_validate(token) for token in response.json()]
 
 
 def _select_optimal_yield_strategy(
@@ -233,7 +231,7 @@ def _select_optimal_yield_strategy(
     """
 
     # Filter out strategies with negative yields
-    positive_yield_strategies = [s for s in strategies if float(s.apy) > 0]
+    positive_yield_strategies = [s for s in strategies if float(s.apy_day) > 0]
 
     if not positive_yield_strategies:
         return None
@@ -253,7 +251,7 @@ def _select_optimal_yield_strategy(
 
     # Iterate through each strategy to calculate its score
     for strategy in positive_yield_strategies:
-        apy = float(strategy.apy)
+        apy = float(strategy.apy_day)
         tvl = float(strategy.tvl)
 
         # Calculate the exponential term
@@ -268,7 +266,7 @@ def _select_optimal_yield_strategy(
         score = (apy**alpha) * (exp_term**beta)
 
         # Debugging: Print intermediate values (optional)
-        print(f"Strategy: {strategy.id}, APY: {apy}, TVL: {tvl}, Score: {score}")
+        print(f"Strategy: {strategy.vault_id}, APY: {apy}, TVL: {tvl}, Score: {score}")
 
         # Update the best strategy if current score is higher
         if score > highest_score:
