@@ -18,6 +18,7 @@ from ember_agents.common.agents.schema_validator import (
     convert_to_schema,
 )
 from ember_agents.common.ai_inference import openrouter
+from ember_agents.common.ai_inference.parse_response import parse_response
 from ember_agents.common.conversation import (
     Conversation,
     conversation_reducer,
@@ -52,10 +53,32 @@ class TokenMarketData(BaseModel):
     price_change_percentage_1h: str | None = None
     price_change_percentage_6h: str | None = None
     price_change_percentage_24h: str | None = None
+    volume_5m: str
+    volume_1h: str
+    volume_6h: str
     volume_24h: str
-    volume_change_percentage_24h: str | None = None
+    buys_5m: str
+    sells_5m: str
+    buyers_5m: str
+    sellers_5m: str
+    buys_15m: str
+    sells_15m: str
+    buyers_15m: str
+    sellers_15m: str
+    buys_30m: str
+    sells_30m: str
+    buyers_30m: str
+    sellers_30m: str
+    buys_1h: str
+    sells_1h: str
+    buyers_1h: str
+    sellers_1h: str
+    buys_24h: str
+    sells_24h: str
+    buyers_24h: str
+    sellers_24h: str
     fdv: str
-    market_cap: str
+    market_cap: str | None = None
     market_cap_change_percentage_24h: str | None = None
     liquidity_in_usd: str | None = None
     holders: str | None = None
@@ -135,8 +158,6 @@ class TokenTaAgentTeam(AgentTeam):
         )
 
     async def _entity_extractor_action(self, state: AgentState):
-        self._send_activity_update("Reading your request...")
-
         utterance = state.user_utterance
         additional_context = "- User may be requesting a technical analysis on a specific token\n - If there is no specific token requested, the user is likely asking for a token recommendation"
         entity_extractor_context = get_context(state.conversation, "entity_extractor")
@@ -167,6 +188,7 @@ class TokenTaAgentTeam(AgentTeam):
         }
 
     async def _token_curator_action(self, state: AgentState):
+        self._send_activity_update("Finding opportunities...")
         trending_tokens = await get_trending_tokens()
 
         curated_tokens = []
@@ -180,10 +202,12 @@ class TokenTaAgentTeam(AgentTeam):
 
     async def _token_data_collector_action(self, state: AgentState):
         rich.print("_token_data_collector_action")
-        if state.requested_token_entity_name is None:
+        token_symbol = state.requested_token_entity_name
+        if token_symbol is None:
             msg = "Requested token symbol is empty or not present"
             raise ValueError(msg)
-        pool_data = await find_token(state.requested_token_entity_name)
+        self._send_activity_update(f"Collecting token data for {token_symbol}...")
+        pool_data = await find_token(token_symbol)
         token_data = self._convert_pool_data_to_token_data(pool_data)
         return {
             "selected_tokens_data": [token_data],
@@ -204,19 +228,58 @@ class TokenTaAgentTeam(AgentTeam):
             raise ValueError(msg)
         # Randomly select one token from the available tokens
         selected_token = choice(state.selected_tokens_data)  # noqa: S311
+        self._send_activity_update(f"Analyzing ${selected_token.token_info.symbol}...")
         formatted_token = self._format_token_data(selected_token)
-        system_prompt = f"""
-        You are an expert technical analyst for a crypto investment firm called Brokeshire Hathaway. Your job is to analyze a <token> and provide a technical analysis report for users seeking exclusive investment opportunities. The <token> has been identified as having high potential for growth, which you may or may not agree with.
 
-        Liquidity refers to the AMM pool size. Anything above $500,000 should be considered sufficient, but generally the higher the better. You're an expert on AMMs, so you know best.
+        rich.print(f"formatted_token:\n{formatted_token}")
 
-        Keep your response concise and to the point for a Twitter post. It should be no more than 270 characters. Include only the data points that are relevant to your specific analysis. Separate any data using something other than a forward slash (/). Do not include "DYOR" or "NFA" in your response.
-
-        Analyze the <token> below.
-
-        {formatted_token}
+        system_prompt = """
+        You are an expert analyst for Brokeshire Hathaway, a crypto investment firm. Your task is to analyze a token and provide a concise report for Twitter, aimed at potential investors seeking exclusive opportunities.
         """
-        user_prompt = "Provide a technical analysis report for the token above."
+        user_prompt = f"""
+        Here is the token data you need to analyze:
+
+        <token_data>
+        {formatted_token}
+        </token_data>
+
+        Please follow these steps to complete your analysis:
+
+        1. Review the token data provided above.
+
+        2. Conduct a detailed analysis of the token. Wrap your analysis in <detailed_analysis> tags:
+        - List out key metrics extracted from the token data.
+        - Compare these metrics to industry benchmarks. If you don't have exact benchmarks, make reasonable estimates.
+        - Evaluate the significance of each data point for potential investors.
+        - List specific growth indicators you've identified.
+        - Consider any technical factors not explicitly mentioned in the data.
+        - Identify and list potential risk factors associated with this token.
+        - Ignore the token address when considering potential risks.
+        - Don't consider a lack of provided information as a risk factor.
+        - Propose a tentative assessment of the token's potential.
+        - Reconsider your initial assessment for flaws in your arguments.
+
+        3. Based on your analysis, compose a tweet-length report (maximum 270 characters) following these guidelines:
+        - Use conversational language with a human-like, casual style while maintaining the key information
+        - Avoid analytical labels like "Analysis," "Report," or any similar terms.
+        - Avoid using forward slashes (/) to separate data points.
+        - Do not include statements with similar or exact meaning to 'DYOR', 'NFA', 'caution' or 'high risk, high reward'.
+        - Use emojis only when they add significant value.
+        - Do not end the tweet with emojis.
+        - Avoid common emojis like rockets 🚀 and flames 🔥.
+        - Include risk factors if they are significant.
+        - Substantiate all claims with data.
+
+        4. Present your findings in the following format:
+
+        <detailed_analysis>
+        [Your comprehensive evaluation of the token data, including key metrics, growth potential, risk factors, and other relevant information]
+        </detailed_analysis>
+
+        <tweet>
+        [Your concise, 270-character max analysis suitable for Twitter, using newline separations for better readability]
+        </tweet>
+        """
         response = await openrouter.get_openrouter_response(
             messages=[
                 openrouter.Message(role="system", content=system_prompt),
@@ -224,12 +287,16 @@ class TokenTaAgentTeam(AgentTeam):
             ],
             models=["google/gemini-pro-1.5"],
         )
+
+        response_content = response.choices[0].message.content
+        parsed_response = parse_response(response_content, "detailed_analysis", "tweet")
+
         return {
             "conversation": {
                 "history": [
                     {
                         "sender_name": "transactor",
-                        "content": response.choices[0].message.content,
+                        "content": parsed_response,
                         "is_visible_to_user": True,
                     }
                 ]
@@ -247,12 +314,18 @@ class TokenTaAgentTeam(AgentTeam):
             if pool_data.relationships.network
             else "Unknown"
         )
+        token_address = (
+            base_token.id.split("_", 1)[1] if "_" in base_token.id else base_token.id
+        )
+
+        # Get symbol and clean it up
+        raw_symbol = token_attrs.name.split(" / ")[0] if token_attrs.name else "Unknown"
+        cleaned_symbol = raw_symbol.lstrip("$").upper()
+
         return TokenData(
             token_info=TokenInfo(
-                symbol=(
-                    token_attrs.name.split(" / ")[0] if token_attrs.name else "Unknown"
-                ),
-                address=base_token.id,
+                symbol=cleaned_symbol,
+                address=token_address,
                 chain_name=chain_name,
             ),
             market_data=TokenMarketData(
@@ -269,7 +342,30 @@ class TokenTaAgentTeam(AgentTeam):
                 price_change_percentage_24h=str(
                     token_attrs.price_change_percentage.h24 or "0"
                 ),
+                volume_5m=str(token_attrs.volume_usd.m5 or "0"),
+                volume_1h=str(token_attrs.volume_usd.h1 or "0"),
+                volume_6h=str(token_attrs.volume_usd.h6 or "0"),
                 volume_24h=str(token_attrs.volume_usd.h24 or "0"),
+                buys_5m=str(token_attrs.transactions.m5.buys or "0"),
+                sells_5m=str(token_attrs.transactions.m5.sells or "0"),
+                buyers_5m=str(token_attrs.transactions.m5.buyers or "0"),
+                sellers_5m=str(token_attrs.transactions.m5.sellers or "0"),
+                buys_15m=str(token_attrs.transactions.m15.buys or "0"),
+                sells_15m=str(token_attrs.transactions.m15.sells or "0"),
+                buyers_15m=str(token_attrs.transactions.m15.buyers or "0"),
+                sellers_15m=str(token_attrs.transactions.m15.sellers or "0"),
+                buys_30m=str(token_attrs.transactions.m30.buys or "0"),
+                sells_30m=str(token_attrs.transactions.m30.sells or "0"),
+                buyers_30m=str(token_attrs.transactions.m30.buyers or "0"),
+                sellers_30m=str(token_attrs.transactions.m30.sellers or "0"),
+                buys_1h=str(token_attrs.transactions.h1.buys or "0"),
+                sells_1h=str(token_attrs.transactions.h1.sells or "0"),
+                buyers_1h=str(token_attrs.transactions.h1.buyers or "0"),
+                sellers_1h=str(token_attrs.transactions.h1.sellers or "0"),
+                buys_24h=str(token_attrs.transactions.h24.buys or "0"),
+                sells_24h=str(token_attrs.transactions.h24.sells or "0"),
+                buyers_24h=str(token_attrs.transactions.h24.buyers or "0"),
+                sellers_24h=str(token_attrs.transactions.h24.sellers or "0"),
                 fdv=str(token_attrs.fdv_usd or "0"),
                 market_cap=str(token_attrs.reserve_in_usd or "0"),
                 liquidity_in_usd=str(token_attrs.reserve_in_usd or "0"),
@@ -285,17 +381,40 @@ class TokenTaAgentTeam(AgentTeam):
             rich.print(f"[blue]Token: {symbol}[/blue]")
 
             token_xml = f"""
-        <token>
+        <token_data>
             <symbol>${symbol}</symbol>
-            <contractAddress>{token.token_info.address}</contractAddress>
-            <price>{token.market_data.price}</price>
-            <priceChange5m>{token.market_data.price_change_percentage_5m or "0"}%</priceChange5m>
-            <priceChange1h>{token.market_data.price_change_percentage_1h or "0"}%</priceChange1h>
-            <priceChange6h>{token.market_data.price_change_percentage_6h or "0"}%</priceChange6h>
-            <priceChange24h>{token.market_data.price_change_percentage_24h or "0"}%</priceChange24h>
-            <volumeUsd>{token.market_data.volume_24h}</volumeUsd>
-            <liquidityUsd>{token.market_data.liquidity_in_usd}</liquidityUsd>
-        </token>"""
+            <contract_address>{token.token_info.address}</contract_address>
+            <fully_diluted_valuation>{token.market_data.fdv}</fully_diluted_valuation>
+            <market_cap>{token.market_data.market_cap or "unknown"}</market_cap>
+            <price_change_5m>{token.market_data.price_change_percentage_5m or "unknown"}%</price_change_5m>
+            <price_change_1h>{token.market_data.price_change_percentage_1h or "unknown"}%</price_change_1h>
+            <price_change_6h>{token.market_data.price_change_percentage_6h or "unknown"}%</price_change_6h>
+            <price_change_24h>{token.market_data.price_change_percentage_24h or "unknown"}%</price_change_24h>
+            <volume_usd_5m>{token.market_data.volume_5m or "unknown"}</volume_usd_5m>
+            <volume_usd_1h>{token.market_data.volume_1h or "unknown"}</volume_usd_1h>
+            <volume_usd_6h>{token.market_data.volume_6h or "unknown"}</volume_usd_6h>
+            <volume_usd_24h>{token.market_data.volume_24h or "unknown"}</volume_usd_24h>
+            <buys_5m>{token.market_data.buys_5m or "unknown"}</buys_5m>
+            <sells_5m>{token.market_data.sells_5m or "unknown"}</sells_5m>
+            <buyers_5m>{token.market_data.buyers_5m or "unknown"}</buyers_5m>
+            <sellers_5m>{token.market_data.sellers_5m or "unknown"}</sellers_5m>
+            <buys_15m>{token.market_data.buys_15m or "unknown"}</buys_15m>
+            <sells_15m>{token.market_data.sells_15m or "unknown"}</sells_15m>
+            <buyers_15m>{token.market_data.buyers_15m or "unknown"}</buyers_15m>
+            <sellers_15m>{token.market_data.sellers_15m or "unknown"}</sellers_15m>
+            <buys_30m>{token.market_data.buys_30m or "unknown"}</buys_30m>
+            <sells_30m>{token.market_data.sells_30m or "unknown"}</sells_30m>
+            <buyers_30m>{token.market_data.buyers_30m or "unknown"}</buyers_30m>
+            <sellers_30m>{token.market_data.sellers_30m or "unknown"}</sellers_30m>
+            <buys_1h>{token.market_data.buys_1h or "unknown"}</buys_1h>
+            <sells_1h>{token.market_data.sells_1h or "unknown"}</sells_1h>
+            <buyers_1h>{token.market_data.buyers_1h or "unknown"}</buyers_1h>
+            <sellers_1h>{token.market_data.sellers_1h or "unknown"}</sellers_1h>
+            <buys_24h>{token.market_data.buys_24h or "unknown"}</buys_24h>
+            <sells_24h>{token.market_data.sells_24h or "unknown"}</sells_24h>
+            <buyers_24h>{token.market_data.buyers_24h or "unknown"}</buyers_24h>
+            <sellers_24h>{token.market_data.sellers_24h or "unknown"}</sellers_24h>
+        </token_data>"""
             return token_xml
         except Exception as e:
             rich.print(f"[red]Error formatting token data: {e!s}[/red]")

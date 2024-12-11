@@ -58,7 +58,7 @@ class VolumeUSD(BaseModel):
             return 0
 
 
-class TransactionData(TypedDict):
+class TransactionData(BaseModel):
     buys: int
     sells: int
     buyers: int
@@ -66,32 +66,22 @@ class TransactionData(TypedDict):
 
 
 class Transactions(BaseModel):
-    m5: TransactionData | None = Field(
-        default_factory=lambda: {"buys": 0, "sells": 0, "buyers": 0, "sellers": 0}
-    )
-    m15: TransactionData | None = Field(
-        default_factory=lambda: {"buys": 0, "sells": 0, "buyers": 0, "sellers": 0}
-    )
-    m30: TransactionData | None = Field(
-        default_factory=lambda: {"buys": 0, "sells": 0, "buyers": 0, "sellers": 0}
-    )
-    h1: TransactionData | None = Field(
-        default_factory=lambda: {"buys": 0, "sells": 0, "buyers": 0, "sellers": 0}
-    )
-    h24: TransactionData | None = Field(
-        default_factory=lambda: {"buys": 0, "sells": 0, "buyers": 0, "sellers": 0}
-    )
+    m5: TransactionData
+    m15: TransactionData
+    m30: TransactionData
+    h1: TransactionData
+    h24: TransactionData
 
 
-class BaseToken(BaseModel):
+class Relationship(BaseModel):
     data: TokenResponseData
 
 
 class Relationships(BaseModel):
-    base_token: BaseToken
-    quote_token: BaseToken
-    dex: BaseToken
-    network: BaseToken | None = None
+    base_token: Relationship
+    quote_token: Relationship
+    dex: Relationship
+    network: Relationship | None = None
 
 
 class PoolAttributes(BaseModel):
@@ -100,7 +90,7 @@ class PoolAttributes(BaseModel):
     volume_usd: VolumeUSD
     reserve_in_usd: str
     price_change_percentage: PriceChangePercentage
-    transactions: Transactions | None = None
+    transactions: Transactions
     base_token_price_usd: str | None = None
     base_token_price_native_currency: str | None = None
     quote_token_price_usd: str | None = None
@@ -152,7 +142,7 @@ async def query_gecko_terminal(
         "User-Agent": "Mozilla/5.0 (compatible; MyBot/1.0)",
     }
 
-    async with httpx.AsyncClient(timeout=30.0, headers=headers, verify=False) as client:
+    async with httpx.AsyncClient(timeout=30.0, headers=headers) as client:
         try:
             response = await client.get(url, params=parameters)
             response.raise_for_status()

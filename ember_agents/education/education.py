@@ -1,4 +1,3 @@
-import logging
 import os
 import typing
 import uuid
@@ -8,6 +7,7 @@ from langchain_text_splitters import CharacterTextSplitter
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 from pinecone import Pinecone
+from rich.console import Console
 
 from ember_agents.common.agent_team import AgentTeam
 from ember_agents.common.ai_inference.openrouter import (
@@ -16,6 +16,7 @@ from ember_agents.common.ai_inference.openrouter import (
     Role,
     get_openrouter_response,
 )
+from ember_agents.common.ai_inference.parse_response import parse_response
 from ember_agents.settings import SETTINGS
 
 
@@ -171,8 +172,7 @@ Help Ember AI (Ember) users with their crypto and DeFi needs, taking actions for
 - If a cancel or terminate message is found, always be grateful and ask to help for something else."""
 
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+console = Console()
 
 
 async def education(user_request: str, context: list[Message] | None = None) -> str:
@@ -215,34 +215,15 @@ async def education(user_request: str, context: list[Message] | None = None) -> 
         chat_completion = await get_openrouter_response(messages, [model])
         response = chat_completion.choices[0].message.content
     except Exception as e:
-        logger.error(f"Error getting OpenRouter response: {e!s}")
+        console.print(f"[red]Error getting OpenRouter response: {e!s}[/red]")
         return f"I apologize, but I encountered an error while processing your request: {e!s}"
 
     # Parse response to extract content within <response> tags
     try:
-        import re
-
-        # Remove response planning sections and any following whitespace up to the next tag
-        response = re.sub(
-            r"<response_planning>.*?</response_planning>\s*",
-            "",
-            response,
-            flags=re.DOTALL,
-        )
-
-        # Then try to extract content from response tags
-        response_match = re.search(r"<response>(.*?)</response>", response, re.DOTALL)
-        if response_match:
-            sanitized = response_match.group(1).strip()
-            logger.debug(f"Extracted response: {sanitized}")
-            return sanitized
-
-        # If no tags found, remove any remaining tags and normalize whitespace
-        sanitized_response = re.sub(r"</?[^>]+>\s*", "", response).strip()
-        logger.debug(f"Sanitized response: {sanitized_response}")
-        return sanitized_response
+        parsed_response = parse_response(response, "response_planning", "response")
+        return parsed_response
     except Exception as e:
-        logger.error(f"Error parsing response: {e!s}")
+        console.print(f"[red]Error parsing response: {e!s}[/red]")
         return f"Error parsing response: {e!s}"
 
 
