@@ -184,7 +184,7 @@ class TokenTaAgentTeam(AgentTeam):
         risk_level = risk_score.risk_level
 
         high_risks = risk_score.high_risk_factors
-        medium_risks = risk_score.moderate_risk_factors
+        moderate_risks = risk_score.moderate_risk_factors
         low_risks = risk_score.low_risk_factors
 
         risk_report = f"""╭─
@@ -196,9 +196,9 @@ class TokenTaAgentTeam(AgentTeam):
             for factor in high_risks:
                 risk_report += f"\n&nbsp;&nbsp;&nbsp;• {factor.message} {factor.emoji}"
 
-        if medium_risks:
-            risk_report += f"\n\n{RiskSeverity.MODERATE.emoji} Medium Risk Factors"
-            for factor in medium_risks:
+        if moderate_risks:
+            risk_report += f"\n\n{RiskSeverity.MODERATE.emoji} Moderate Risk Factors"
+            for factor in moderate_risks:
                 risk_report += f"\n&nbsp;&nbsp;&nbsp;• {factor.message} {factor.emoji}"
 
         if low_risks:
