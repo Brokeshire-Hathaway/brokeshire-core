@@ -9,14 +9,11 @@ from langgraph.graph import END, StateGraph
 from openai.types.chat import (
     ChatCompletionMessageParam,
 )
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 from ember_agents.common.agent_team import AgentTeam
 from ember_agents.common.agents.entity_extractor import extract_entities
-from ember_agents.common.agents.schema_validator import (
-    InferredEntity,
-    convert_to_schema,
-)
+from ember_agents.common.agents.schema_validator import InferredEntity
 from ember_agents.common.ai_inference import openrouter
 from ember_agents.common.ai_inference.parse_response import parse_response
 from ember_agents.common.conversation import (
@@ -29,72 +26,23 @@ from ember_agents.common.transaction import (
     link_chain,
 )
 from ember_agents.token_tech_analysis.curate_tokens import (
-    PoolData,
     find_token,
     get_trending_tokens,
+)
+from ember_agents.token_tech_analysis.risk_data_adapter import (
+    convert_token_to_risk_data,
+)
+from ember_agents.token_tech_analysis.risk_scoring import RiskScore, RiskSeverity
+from ember_agents.token_tech_analysis.token_metrics import TokenMetrics
+from ember_agents.token_tech_analysis.token_models import (
+    TokenData,
+    TokenInfo,
+    TokenMarketData,
 )
 
 
 class TokenTaSchema(BaseModel):
     requested_token: InferredEntity[str]
-
-
-class TokenInfo(BaseModel):
-    symbol: str
-    address: str
-    chain_id: str | None = None
-    chain_name: str
-    explorer_uri: str | None = None
-
-
-class TokenMarketData(BaseModel):
-    price: str
-    price_change_percentage_5m: str | None = None
-    price_change_percentage_1h: str | None = None
-    price_change_percentage_6h: str | None = None
-    price_change_percentage_24h: str | None = None
-    volume_5m: str
-    volume_1h: str
-    volume_6h: str
-    volume_24h: str
-    buys_5m: str
-    sells_5m: str
-    buyers_5m: str
-    sellers_5m: str
-    buys_15m: str
-    sells_15m: str
-    buyers_15m: str
-    sellers_15m: str
-    buys_30m: str
-    sells_30m: str
-    buyers_30m: str
-    sellers_30m: str
-    buys_1h: str
-    sells_1h: str
-    buyers_1h: str
-    sellers_1h: str
-    buys_24h: str
-    sells_24h: str
-    buyers_24h: str
-    sellers_24h: str
-    fdv: str
-    market_cap: str | None = None
-    market_cap_change_percentage_24h: str | None = None
-    liquidity_in_usd: str | None = None
-    holders: str | None = None
-    holders_change_percentage_24h: str | None = None
-
-
-class TokenRiskMetrics(BaseModel):
-    locked_liquidity_percentage: str
-    bundled_wallet_percentage: str
-    whale_holder_percentage: str
-
-
-class TokenData(BaseModel):
-    token_info: TokenInfo
-    market_data: TokenMarketData
-    risk_metrics: TokenRiskMetrics | None = None
 
 
 Participant = Literal[
@@ -115,6 +63,7 @@ class AgentState(BaseModel):
     requested_token_entity_name: str | None = None
     selected_tokens_data: list[TokenData] | None = None
     token_analysis: str | None = None
+    risk_report: str | None = None
     is_run_complete: bool = False
 
     model_config = {
@@ -193,7 +142,7 @@ class TokenTaAgentTeam(AgentTeam):
 
         curated_tokens = []
         for pool in trending_tokens:
-            token_data = self._convert_pool_data_to_token_data(pool)
+            token_data = self._convert_metrics_data_to_token_data(pool)
             curated_tokens.append(token_data)
 
         return {
@@ -207,8 +156,8 @@ class TokenTaAgentTeam(AgentTeam):
             msg = "Requested token symbol is empty or not present"
             raise ValueError(msg)
         self._send_activity_update(f"Collecting token data for {token_symbol}...")
-        pool_data = await find_token(token_symbol)
-        token_data = self._convert_pool_data_to_token_data(pool_data)
+        token_metrics = await find_token(token_symbol)
+        token_data = self._convert_metrics_data_to_token_data(token_metrics)
         return {
             "selected_tokens_data": [token_data],
         }
@@ -218,8 +167,72 @@ class TokenTaAgentTeam(AgentTeam):
         pass
 
     async def _token_risk_analyst_action(self, state: AgentState):
-        rich.print("_token_risk_analyst_action")
-        pass
+        if not state.selected_tokens_data:
+            msg = "No token data available for risk analysis"
+            raise ValueError(msg)
+
+        token = state.selected_tokens_data[0]
+        if not token.market_data:
+            msg = "Token market data is missing"
+            raise ValueError(msg)
+
+        risk_data = convert_token_to_risk_data(token.token_metrics)
+
+        rich.print(f"risk_data: {risk_data}")
+
+        risk_score = RiskScore(risk_data)
+        risk_level = risk_score.risk_level
+
+        high_risks = risk_score.high_risk_factors
+        medium_risks = risk_score.moderate_risk_factors
+        low_risks = risk_score.low_risk_factors
+
+        risk_report = f"""╭─
+&nbsp;&nbsp;{risk_level.emoji} {risk_level.to_string().title()} Overall Risk ({round(risk_score.risk_percentage)} / 100)
+╰─"""
+
+        if high_risks:
+            risk_report += f"\n\n{RiskSeverity.HIGH.emoji} High Risk Factors"
+            for factor in high_risks:
+                risk_report += f"\n&nbsp;&nbsp;&nbsp;• {factor.message} {factor.emoji}"
+
+        if medium_risks:
+            risk_report += f"\n\n{RiskSeverity.MODERATE.emoji} Medium Risk Factors"
+            for factor in medium_risks:
+                risk_report += f"\n&nbsp;&nbsp;&nbsp;• {factor.message} {factor.emoji}"
+
+        if low_risks:
+            risk_report += f"\n\n{RiskSeverity.LOW.emoji} Low Risk Factors"
+            for factor in low_risks:
+                risk_report += f"\n&nbsp;&nbsp;&nbsp;• {factor.message} {factor.emoji}"
+
+        if not risk_score.factors:
+            risk_report += f"\n\n{RiskSeverity.MINIMAL.emoji} No significant risk factors identified."
+
+        rich.print(f"risk_report: {risk_report}")
+
+        # Update token data with risk metrics
+        """try:
+            fdv = float(getattr(token.market_data, "fdv", 0))
+            liquidity = float(getattr(token.market_data, "liquidity_in_usd", 0))
+            locked_liquidity_pct = str(liquidity / fdv * 100) if fdv > 0 else "0"
+        except (TypeError, ValueError, ZeroDivisionError):
+            locked_liquidity_pct = "0"
+
+        token.risk_metrics = TokenRiskMetrics(
+            locked_liquidity_percentage=locked_liquidity_pct,
+            bundled_wallet_percentage=str(
+                getattr(token.market_data, "top10_user_percent", 0)
+            ),
+            whale_holder_percentage=str(
+                getattr(token.market_data, "top10_holder_percent", 0)
+            ),
+        )"""
+
+        return {
+            "selected_tokens_data": [token],
+            "risk_report": risk_report,
+        }
 
     async def _token_strategist_action(self, state: AgentState):
         rich.print("_token_strategist_action")
@@ -291,12 +304,18 @@ class TokenTaAgentTeam(AgentTeam):
         response_content = response.choices[0].message.content
         parsed_response = parse_response(response_content, "detailed_analysis", "tweet")
 
+        final_response = f"""{parsed_response}
+
+{state.risk_report}"""
+
+        rich.print(final_response)
+
         return {
             "conversation": {
                 "history": [
                     {
                         "sender_name": "transactor",
-                        "content": parsed_response,
+                        "content": final_response,
                         "is_visible_to_user": True,
                     }
                 ]
@@ -306,70 +325,56 @@ class TokenTaAgentTeam(AgentTeam):
 
     # TODO: Error needs to trigger on_complete and stop this agent team
 
-    def _convert_pool_data_to_token_data(self, pool_data: PoolData) -> TokenData:
-        token_attrs = pool_data.attributes
-        base_token = pool_data.relationships.base_token.data
-        chain_name = (
-            pool_data.relationships.network.data.id
-            if pool_data.relationships.network
-            else "Unknown"
-        )
-        token_address = (
-            base_token.id.split("_", 1)[1] if "_" in base_token.id else base_token.id
-        )
-
+    def _convert_metrics_data_to_token_data(
+        self, token_metrics: TokenMetrics
+    ) -> TokenData:
         # Get symbol and clean it up
-        raw_symbol = token_attrs.name.split(" / ")[0] if token_attrs.name else "Unknown"
+        raw_symbol = (
+            token_metrics.name.split(" / ")[0] if token_metrics.name else "Unknown"
+        )
         cleaned_symbol = raw_symbol.lstrip("$").upper()
 
         return TokenData(
             token_info=TokenInfo(
                 symbol=cleaned_symbol,
-                address=token_address,
-                chain_name=chain_name,
+                address=token_metrics.address,
+                chain_name=token_metrics.chain_id or "Unknown",
             ),
             market_data=TokenMarketData(
-                price=str(token_attrs.base_token_price_usd or "0"),
-                price_change_percentage_5m=str(
-                    token_attrs.price_change_percentage.m5 or "0"
-                ),
-                price_change_percentage_1h=str(
-                    token_attrs.price_change_percentage.h1 or "0"
-                ),
-                price_change_percentage_6h=str(
-                    token_attrs.price_change_percentage.h6 or "0"
-                ),
-                price_change_percentage_24h=str(
-                    token_attrs.price_change_percentage.h24 or "0"
-                ),
-                volume_5m=str(token_attrs.volume_usd.m5 or "0"),
-                volume_1h=str(token_attrs.volume_usd.h1 or "0"),
-                volume_6h=str(token_attrs.volume_usd.h6 or "0"),
-                volume_24h=str(token_attrs.volume_usd.h24 or "0"),
-                buys_5m=str(token_attrs.transactions.m5.buys or "0"),
-                sells_5m=str(token_attrs.transactions.m5.sells or "0"),
-                buyers_5m=str(token_attrs.transactions.m5.buyers or "0"),
-                sellers_5m=str(token_attrs.transactions.m5.sellers or "0"),
-                buys_15m=str(token_attrs.transactions.m15.buys or "0"),
-                sells_15m=str(token_attrs.transactions.m15.sells or "0"),
-                buyers_15m=str(token_attrs.transactions.m15.buyers or "0"),
-                sellers_15m=str(token_attrs.transactions.m15.sellers or "0"),
-                buys_30m=str(token_attrs.transactions.m30.buys or "0"),
-                sells_30m=str(token_attrs.transactions.m30.sells or "0"),
-                buyers_30m=str(token_attrs.transactions.m30.buyers or "0"),
-                sellers_30m=str(token_attrs.transactions.m30.sellers or "0"),
-                buys_1h=str(token_attrs.transactions.h1.buys or "0"),
-                sells_1h=str(token_attrs.transactions.h1.sells or "0"),
-                buyers_1h=str(token_attrs.transactions.h1.buyers or "0"),
-                sellers_1h=str(token_attrs.transactions.h1.sellers or "0"),
-                buys_24h=str(token_attrs.transactions.h24.buys or "0"),
-                sells_24h=str(token_attrs.transactions.h24.sells or "0"),
-                buyers_24h=str(token_attrs.transactions.h24.buyers or "0"),
-                sellers_24h=str(token_attrs.transactions.h24.sellers or "0"),
-                fdv=str(token_attrs.fdv_usd or "0"),
-                market_cap=str(token_attrs.reserve_in_usd or "0"),
-                liquidity_in_usd=str(token_attrs.reserve_in_usd or "0"),
+                price=str(token_metrics.base_token_price_usd or "0"),
+                price_change_percentage_5m=str(token_metrics.price_change_5m or "0"),
+                price_change_percentage_1h=str(token_metrics.price_change_1h or "0"),
+                price_change_percentage_6h=str(token_metrics.price_change_6h or "0"),
+                price_change_percentage_24h=str(token_metrics.price_change_24h or "0"),
+                volume_5m=str(token_metrics.volume_5m or "0"),
+                volume_1h=str(token_metrics.volume_1h or "0"),
+                volume_6h=str(token_metrics.volume_6h or "0"),
+                volume_24h=str(token_metrics.volume_24h or "0"),
+                buys_5m=str(token_metrics.buys_5m or "0"),
+                sells_5m=str(token_metrics.sells_5m or "0"),
+                buyers_5m=str(token_metrics.buyers_5m or "0"),
+                sellers_5m=str(token_metrics.sellers_5m or "0"),
+                buys_15m=str(token_metrics.buys_15m or "0"),
+                sells_15m=str(token_metrics.sells_15m or "0"),
+                buyers_15m=str(token_metrics.buyers_15m or "0"),
+                sellers_15m=str(token_metrics.sellers_15m or "0"),
+                buys_30m=str(token_metrics.buys_30m or "0"),
+                sells_30m=str(token_metrics.sells_30m or "0"),
+                buyers_30m=str(token_metrics.buyers_30m or "0"),
+                sellers_30m=str(token_metrics.sellers_30m or "0"),
+                buys_1h=str(token_metrics.buys_1h or "0"),
+                sells_1h=str(token_metrics.sells_1h or "0"),
+                buyers_1h=str(token_metrics.buyers_1h or "0"),
+                sellers_1h=str(token_metrics.sellers_1h or "0"),
+                buys_24h=str(token_metrics.buys_24h or "0"),
+                sells_24h=str(token_metrics.sells_24h or "0"),
+                buyers_24h=str(token_metrics.buyers_24h or "0"),
+                sellers_24h=str(token_metrics.sellers_24h or "0"),
+                fdv=str(token_metrics.fdv_usd or "0"),
+                market_cap=str(token_metrics.market_cap_usd or "0"),
+                liquidity_in_usd=str(token_metrics.liquidity_usd or "0"),
             ),
+            token_metrics=token_metrics,
         )
 
     def _format_token_data(self, token: TokenData) -> str:
@@ -551,6 +556,7 @@ class TokenTaAgentTeam(AgentTeam):
         self._graph.add_node("entity_extractor", self._entity_extractor_action)
         self._graph.add_node("token_data_collector", self._token_data_collector_action)
         self._graph.add_node("token_curator", self._token_curator_action)
+        self._graph.add_node("token_risk_analyst", self._token_risk_analyst_action)
         self._graph.add_node("token_strategist", self._token_strategist_action)
 
         self._graph.set_entry_point("entity_extractor")
@@ -563,8 +569,9 @@ class TokenTaAgentTeam(AgentTeam):
                 "token_data_collector": "token_data_collector",
             },
         )
-        self._graph.add_edge("token_data_collector", "token_strategist")
-        self._graph.add_edge("token_curator", "token_strategist")
+        self._graph.add_edge("token_data_collector", "token_risk_analyst")
+        self._graph.add_edge("token_curator", "token_risk_analyst")
+        self._graph.add_edge("token_risk_analyst", "token_strategist")
         self._graph.add_edge("token_strategist", END)
 
         checkpointer = MemorySaver()

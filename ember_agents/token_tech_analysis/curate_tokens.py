@@ -1,120 +1,32 @@
 import asyncio
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from functools import partial
 from math import log
 from typing import Any, TypedDict
 
-import httpx
-import rich
-from pydantic import BaseModel, Field, field_validator
 from rich.console import Console
 
-console = Console()
+from ember_agents.token_tech_analysis.birdeye_client import query_birdeye_security
+from ember_agents.token_tech_analysis.dex_screener_client import (
+    query_dex_screener,
+)
+from ember_agents.token_tech_analysis.gecko_terminal_client import (
+    GeckoTerminalResponse,
+    PoolData,
+    PoolDataWithScore,
+    query_gecko_terminal,
+)
+from ember_agents.token_tech_analysis.token_metrics import (
+    Boosts,
+    DexScreenerPayments,
+    QuoteToken,
+    TokenMetrics,
+)
+
+console = Console(force_terminal=True)
 
 SINGLE_TOKEN_PROBABILITY = 0.7
-
-
-class TokenResponseData(BaseModel):
-    id: str
-    type: str
-
-
-class PriceChangePercentage(BaseModel):
-    m5: float | None = Field(default=0)
-    m15: float | None = Field(default=0)
-    m30: float | None = Field(default=0)
-    h1: float | None = Field(default=0)
-    h6: float | None = Field(default=0)
-    h24: float | None = Field(default=0)
-
-    @field_validator("m5", "m15", "m30", "h1", "h6", "h24", mode="before")
-    @classmethod
-    def validate_price_change(cls, v):
-        if v is None:
-            return 0
-        try:
-            return float(v)
-        except (ValueError, TypeError):
-            return 0
-
-
-class VolumeUSD(BaseModel):
-    m5: float | None = Field(default=0)
-    m15: float | None = Field(default=0)
-    m30: float | None = Field(default=0)
-    h1: float | None = Field(default=0)
-    h6: float | None = Field(default=0)
-    h24: float | None = Field(default=0)
-
-    @field_validator("m5", "m15", "m30", "h1", "h6", "h24", mode="before")
-    @classmethod
-    def validate_volume(cls, v):
-        if v is None:
-            return 0
-        try:
-            return float(v)
-        except (ValueError, TypeError):
-            return 0
-
-
-class TransactionData(BaseModel):
-    buys: int
-    sells: int
-    buyers: int
-    sellers: int
-
-
-class Transactions(BaseModel):
-    m5: TransactionData
-    m15: TransactionData
-    m30: TransactionData
-    h1: TransactionData
-    h24: TransactionData
-
-
-class Relationship(BaseModel):
-    data: TokenResponseData
-
-
-class Relationships(BaseModel):
-    base_token: Relationship
-    quote_token: Relationship
-    dex: Relationship
-    network: Relationship | None = None
-
-
-class PoolAttributes(BaseModel):
-    name: str | None = None
-    pool_created_at: str
-    volume_usd: VolumeUSD
-    reserve_in_usd: str
-    price_change_percentage: PriceChangePercentage
-    transactions: Transactions
-    base_token_price_usd: str | None = None
-    base_token_price_native_currency: str | None = None
-    quote_token_price_usd: str | None = None
-    quote_token_price_native_currency: str | None = None
-    base_token_price_quote_token: str | None = None
-    quote_token_price_base_token: str | None = None
-    address: str
-    fdv_usd: str | None = None
-    market_cap_usd: str | None = None
-
-
-class PoolData(BaseModel):
-    id: str
-    type: str
-    attributes: PoolAttributes
-    relationships: Relationships
-
-
-class PoolDataWithScore(PoolData):
-    score: float = 0
-
-
-class GeckoTerminalResponse(BaseModel):
-    data: list[PoolData]
 
 
 class ComputedValues(TypedDict):
@@ -133,46 +45,32 @@ class TokenScore(TypedDict):
     score: float
 
 
-async def query_gecko_terminal(
-    route: str, parameters: dict[str, Any] | None = None
-) -> GeckoTerminalResponse:
-    url = f"https://api.geckoterminal.com/api/v2{route}"
-    headers = {
-        "Accept": "application/json",
-        "User-Agent": "Mozilla/5.0 (compatible; MyBot/1.0)",
-    }
-
-    async with httpx.AsyncClient(timeout=30.0, headers=headers) as client:
-        try:
-            response = await client.get(url, params=parameters)
-            response.raise_for_status()
-            return GeckoTerminalResponse.model_validate(response.json())
-        except httpx.TimeoutException as e:
-            msg = "Gecko Terminal API request timed out"
-            raise Exception(msg) from e
-        except httpx.HTTPStatusError as e:
-            msg = f"Gecko Terminal API returned status code: {e.response.status_code}"
-            raise Exception(msg) from e
-        except Exception as error:
-            msg = f"Failed querying gecko terminal: {error!s}"
-            raise Exception(msg) from error
-
-
-async def find_token(search_term: str) -> PoolData:
+async def find_token(search_term: str) -> TokenMetrics:
     console.print(f"[yellow]Searching for token: {search_term}[/yellow]")
     search_parameters = {"query": search_term, "page": 1}
-    console.print(f"[blue]Search parameters: {search_parameters}[/blue]")
     response = await query_gecko_terminal("/search/pools", search_parameters)
 
     if not response.data:
         msg = f"No pools found for search term: {search_term}"
         raise Exception(msg)
 
+    # Get the pool with highest reserves
     highest_reserve_pool = max(
         response.data, key=lambda pool: float(pool.attributes.reserve_in_usd or 0)
     )
 
-    return highest_reserve_pool
+    # Get base token address
+    base_token = highest_reserve_pool.relationships.base_token.data
+    token_address = (
+        base_token.id.split("_", 1)[1] if "_" in base_token.id else base_token.id
+    )
+
+    # Create tasks for parallel API calls
+    tasks = [query_dex_screener(token_address), query_birdeye_security(token_address)]
+    api_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    # Use the shared create_token_metrics function
+    return create_token_metrics(highest_reserve_pool, api_results[0], api_results[1])
 
 
 def get_top_tokens(pool_data: list[PoolData]) -> list[PoolDataWithScore]:
@@ -240,7 +138,7 @@ def get_top_tokens(pool_data: list[PoolData]) -> list[PoolDataWithScore]:
                 }
             )
         except Exception as e:
-            rich.print(f"[red]Error processing pool data: {e!s}[/red]")
+            console.print(f"[red]Error processing pool data: {e!s}[/red]")
             continue
 
     # Collect all values for normalization
@@ -337,7 +235,7 @@ def get_top_tokens(pool_data: list[PoolData]) -> list[PoolDataWithScore]:
                 + transactions_score * 0.1
             )
         except Exception as e:
-            rich.print(f"[red]Error calculating score: {e!s}[/red]")
+            console.print(f"[red]Error calculating score: {e!s}[/red]")
             token["score"] = 0
 
     # Sort tokens by descending score
@@ -350,40 +248,237 @@ def get_top_tokens(pool_data: list[PoolData]) -> list[PoolDataWithScore]:
     ]
 
 
-async def get_trending_tokens() -> list[PoolDataWithScore]:
+async def get_trending_tokens() -> list[TokenMetrics]:
     try:
-        aggregated_data: list[PoolData] = []
-        tasks = []
-
-        # Create tasks for parallel execution
-        for page in range(1, 6):
-            search_parameters = {"page": page}
-            tasks.append(
-                query_gecko_terminal("/networks/trending_pools", search_parameters)
-            )
-
-        # Execute API calls in parallel
-        responses = await asyncio.gather(*tasks, return_exceptions=True)
-
-        for i, response in enumerate(responses, 1):
-            if isinstance(response, Exception):
-                rich.print(f"[red]Error fetching page {i}: {response!s}[/red]")
-                continue
-            if isinstance(response, GeckoTerminalResponse):
-                rich.print(
-                    f"[green]Gecko Terminal returned {len(response.data)} trending pools on page {i}[/green]"
-                )
-                aggregated_data.extend(response.data)
-
-        if not aggregated_data:
-            return []
-
-        top_tokens = get_top_tokens(aggregated_data)
-        rich.print(
-            f"Top tokens: {', '.join(t.attributes.name for t in top_tokens if t.attributes.name)}"
+        # Get trending pools from GeckoTerminal (first page should be enough)
+        search_parameters = {"page": 1}
+        response = await query_gecko_terminal(
+            "/networks/trending_pools", search_parameters
         )
 
-        return top_tokens
+        if not isinstance(response, GeckoTerminalResponse) or not response.data:
+            console.print("[red]No trending pools found[/red]")
+            return []
+
+        # Get base token addresses from the pool data
+        tasks = []
+        for pool in response.data[:10]:  # Limit to top 10 pools
+            base_token = pool.relationships.base_token.data
+            token_address = (
+                base_token.id.split("_", 1)[1]
+                if "_" in base_token.id
+                else base_token.id
+            )
+
+            # Create tasks for DexScreener and Birdeye API calls
+            tasks.append(query_dex_screener(token_address))
+            tasks.append(query_birdeye_security(token_address))
+
+        # Execute API calls in parallel
+        api_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Process results and create TokenMetrics objects
+        token_metrics = []
+        for i in range(0, len(api_results), 2):  # Process results in pairs
+            pool = response.data[i // 2]
+            dex_result = api_results[i]
+            birdeye_result = api_results[i + 1]
+
+            # Create TokenMetrics using the pool data and API results
+            metrics = create_token_metrics(pool, dex_result, birdeye_result)
+            token_metrics.append(metrics)
+
+        return token_metrics
+
     except Exception as error:
-        rich.print(f"[red]Error in get_trending_tokens: {error!s}[/red]")
+        console.print(f"[red]Error in get_trending_tokens: {error!s}[/red]")
         return []
+
+
+def create_token_metrics(
+    pool: PoolData,
+    dex_result: Any,
+    birdeye_result: Any,
+) -> TokenMetrics:
+    """Create TokenMetrics object from pool data and API results"""
+
+    console.print(
+        f"[yellow]DexScreener token metrics for {pool.attributes.name}[/yellow]"
+    )
+    console.print(f"[yellow]DexScreener result: {dex_result}[/yellow]")
+    console.print(f"[yellow]Birdeye token metrics for {pool.attributes.name}[/yellow]")
+    console.print(f"[yellow]Birdeye result: {birdeye_result}[/yellow]")
+
+    attrs = pool.attributes
+    raw_symbol = attrs.name.split(" / ")[0] if attrs.name else "Unknown"
+    cleaned_symbol = raw_symbol.lstrip("$").upper()
+
+    base_token = pool.relationships.base_token.data
+    token_address = (
+        base_token.id.split("_", 1)[1] if "_" in base_token.id else base_token.id
+    )
+
+    # Initialize with GeckoTerminal data
+    metadata = TokenMetrics(
+        name=attrs.name or "",
+        symbol=cleaned_symbol,
+        address=token_address,
+        pool_address=attrs.address,
+        pool_created_at=datetime.fromisoformat(
+            attrs.pool_created_at.replace("Z", "+00:00")
+        ),
+        liquidity_usd=attrs.reserve_in_usd,
+        # Price changes
+        price_change_5m=(
+            str(attrs.price_change_percentage.m5)
+            if attrs.price_change_percentage.m5 is not None
+            else None
+        ),
+        price_change_15m=(
+            str(attrs.price_change_percentage.m15)
+            if attrs.price_change_percentage.m15 is not None
+            else None
+        ),
+        price_change_30m=(
+            str(attrs.price_change_percentage.m30)
+            if attrs.price_change_percentage.m30 is not None
+            else None
+        ),
+        price_change_1h=(
+            str(attrs.price_change_percentage.h1)
+            if attrs.price_change_percentage.h1 is not None
+            else None
+        ),
+        price_change_6h=(
+            str(attrs.price_change_percentage.h6)
+            if attrs.price_change_percentage.h6 is not None
+            else None
+        ),
+        price_change_24h=(
+            str(attrs.price_change_percentage.h24)
+            if attrs.price_change_percentage.h24 is not None
+            else None
+        ),
+        # Volume metrics
+        volume_5m=str(attrs.volume_usd.m5) if attrs.volume_usd.m5 is not None else "0",
+        volume_15m=(
+            str(attrs.volume_usd.m15) if attrs.volume_usd.m15 is not None else "0"
+        ),
+        volume_30m=(
+            str(attrs.volume_usd.m30) if attrs.volume_usd.m30 is not None else "0"
+        ),
+        volume_1h=str(attrs.volume_usd.h1) if attrs.volume_usd.h1 is not None else "0",
+        volume_6h=str(attrs.volume_usd.h6) if attrs.volume_usd.h6 is not None else "0",
+        volume_24h=(
+            str(attrs.volume_usd.h24) if attrs.volume_usd.h24 is not None else "0"
+        ),
+        # Transaction metrics
+        buys_5m=attrs.transactions.m5.buys if attrs.transactions else None,
+        sells_5m=attrs.transactions.m5.sells if attrs.transactions else None,
+        buyers_5m=attrs.transactions.m5.buyers if attrs.transactions else None,
+        sellers_5m=attrs.transactions.m5.sellers if attrs.transactions else None,
+        buys_15m=attrs.transactions.m15.buys if attrs.transactions else None,
+        sells_15m=attrs.transactions.m15.sells if attrs.transactions else None,
+        buyers_15m=attrs.transactions.m15.buyers if attrs.transactions else None,
+        sellers_15m=attrs.transactions.m15.sellers if attrs.transactions else None,
+        buys_30m=attrs.transactions.m30.buys if attrs.transactions else None,
+        sells_30m=attrs.transactions.m30.sells if attrs.transactions else None,
+        buyers_30m=attrs.transactions.m30.buyers if attrs.transactions else None,
+        sellers_30m=attrs.transactions.m30.sellers if attrs.transactions else None,
+        buys_1h=attrs.transactions.h1.buys if attrs.transactions else None,
+        sells_1h=attrs.transactions.h1.sells if attrs.transactions else None,
+        buyers_1h=attrs.transactions.h1.buyers if attrs.transactions else None,
+        sellers_1h=attrs.transactions.h1.sellers if attrs.transactions else None,
+        buys_24h=attrs.transactions.h24.buys if attrs.transactions else None,
+        sells_24h=attrs.transactions.h24.sells if attrs.transactions else None,
+        buyers_24h=attrs.transactions.h24.buyers if attrs.transactions else None,
+        sellers_24h=attrs.transactions.h24.sellers if attrs.transactions else None,
+        # Token prices
+        base_token_price_usd=attrs.base_token_price_usd or "0",
+        base_token_price_native_currency=attrs.base_token_price_native_currency or "0",
+        quote_token_price_usd=attrs.quote_token_price_usd or "0",
+        quote_token_price_native_currency=attrs.quote_token_price_native_currency
+        or "0",
+        gecko_terminal_data=True,
+    )
+
+    # Add DexScreener data if available
+    if isinstance(dex_result, tuple) and not isinstance(dex_result[0], BaseException):
+        dex_data, orders_data = dex_result
+        if hasattr(dex_data, "pairs") and dex_data.pairs:
+            pair = dex_data.pairs[0]
+            metadata.chain_id = pair.chain_id
+            metadata.price_usd = pair.price_usd or "0"
+            metadata.price_native = pair.price_native or "0"
+            metadata.market_cap_usd = (
+                str(pair.market_cap) if pair.market_cap is not None else "0"
+            )
+            metadata.fdv_usd = str(pair.fdv) if pair.fdv is not None else "0"
+
+            if pair.quote_token:
+                metadata.quote_token = QuoteToken(
+                    address=pair.quote_token.address,
+                    name=pair.quote_token.name,
+                    symbol=pair.quote_token.symbol,
+                )
+
+            if pair.liquidity:
+                metadata.liquidity_usd = (
+                    str(pair.liquidity.usd) if pair.liquidity.usd is not None else "0"
+                )
+                metadata.liquidity_base = (
+                    str(pair.liquidity.base) if pair.liquidity.base is not None else "0"
+                )
+                metadata.liquidity_quote = (
+                    str(pair.liquidity.quote)
+                    if pair.liquidity.quote is not None
+                    else "0"
+                )
+
+            metadata.dex_id = pair.dex_id
+            metadata.dex_url = pair.url
+            metadata.labels = pair.labels
+
+            if pair.info:
+                metadata.image_url = pair.info.image_url
+                if pair.info.websites:
+                    metadata.websites = [w.url for w in pair.info.websites]
+                if pair.info.socials:
+                    metadata.socials = [s.url for s in pair.info.socials]
+
+            if pair.boosts:
+                metadata.boosts = Boosts(active=pair.boosts.active)
+
+            if orders_data:
+                metadata.dex_screener_payments = [
+                    DexScreenerPayments(
+                        payment_timestamp=status.payment_timestamp,
+                        type=status.type,
+                        status=status.status,
+                    )
+                    for status in orders_data.data
+                ]
+
+        metadata.dex_screener_data = True
+
+    # Add Birdeye data if available
+    if isinstance(birdeye_result, dict) and birdeye_result.get("success"):
+        security_data = birdeye_result["data"]
+        metadata.creator_address = security_data["creatorAddress"]
+        metadata.creator_balance = str(security_data["creatorBalance"])
+        metadata.creator_percentage = str(security_data["creatorPercentage"])
+        metadata.creation_time = datetime.fromtimestamp(
+            security_data["creationTime"], tz=UTC
+        )
+        metadata.top10_holder_balance = str(security_data["top10HolderBalance"])
+        metadata.top10_holder_percent = str(security_data["top10HolderPercent"])
+        metadata.top10_user_balance = str(security_data["top10UserBalance"])
+        metadata.top10_user_percent = str(security_data["top10UserPercent"])
+        metadata.total_supply = str(security_data["totalSupply"])
+        metadata.is_token2022 = security_data["isToken2022"]
+        metadata.mutable_metadata = security_data["mutableMetadata"]
+        metadata.freezeable = security_data["freezeable"]
+        metadata.transfer_fee_enable = security_data["transferFeeEnable"]
+        metadata.birdeye_data = True
+
+    return metadata

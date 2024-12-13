@@ -29,6 +29,7 @@ class Environment(BaseSettings):
     coingecko_api_key: SensitiveField
     use_coingecko_pro_api: bool = False
     disable_transaction_signing_url: bool = False
+    birdeye_api_key: SensitiveField
 
 
 SETTINGS = Environment()  # type: ignore
