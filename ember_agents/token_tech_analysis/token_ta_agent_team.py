@@ -171,12 +171,16 @@ class TokenTaAgentTeam(AgentTeam):
             msg = "No token data available for risk analysis"
             raise ValueError(msg)
 
-        token = state.selected_tokens_data[0]
-        if not token.market_data:
+        if state.selected_tokens_data is None or len(state.selected_tokens_data) == 0:
+            msg = "Selected tokens data is empty or not present"
+            raise ValueError(msg)
+        # Randomly select one token from the available tokens
+        selected_token = choice(state.selected_tokens_data)  # noqa: S311
+        if not selected_token.market_data:
             msg = "Token market data is missing"
             raise ValueError(msg)
 
-        risk_data = convert_token_to_risk_data(token.token_metrics)
+        risk_data = convert_token_to_risk_data(selected_token.token_metrics)
 
         rich.print(f"risk_data: {risk_data}")
 
@@ -230,17 +234,17 @@ class TokenTaAgentTeam(AgentTeam):
         )"""
 
         return {
-            "selected_tokens_data": [token],
+            "selected_tokens_data": [selected_token],
             "risk_report": risk_report,
         }
 
     async def _token_strategist_action(self, state: AgentState):
         rich.print("_token_strategist_action")
-        if state.selected_tokens_data is None or len(state.selected_tokens_data) == 0:
+        if not state.selected_tokens_data:
             msg = "Selected tokens data is empty or not present"
             raise ValueError(msg)
-        # Randomly select one token from the available tokens
-        selected_token = choice(state.selected_tokens_data)  # noqa: S311
+
+        selected_token = state.selected_tokens_data[0]
         self._send_activity_update(f"Analyzing ${selected_token.token_info.symbol}...")
         formatted_token = self._format_token_data(selected_token)
 
