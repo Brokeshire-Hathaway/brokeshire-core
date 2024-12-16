@@ -45,8 +45,8 @@ class AgentTeam(ABC):
         async def stream_updates(graph_input: dict[str, Any] | Any):
             async for chunk in app.astream(graph_input, config, stream_mode="updates"):
                 for key, item in chunk.items():
-                    rich.print(f"=== Stream Update ===")
-                    rich.print(f"{key}: {item}")
+                    # rich.print(f"=== Stream Update ===")
+                    # rich.print(f"{key}: {item}")
                     """rich.print(f"interrupt: {item[0]}")
                     rich.print(
                         f"is instance of Interrupt: {isinstance(item, Interrupt)}"
@@ -59,8 +59,8 @@ class AgentTeam(ABC):
                         and (interrupt := next(iter(item), None))
                         and isinstance(interrupt, Interrupt)
                     ):
-                        rich.print(f"=== Interrupt ===")
-                        rich.print(interrupt.value)
+                        # rich.print(f"=== Interrupt ===")
+                        # rich.print(interrupt.value)
                         raise Exception(interrupt.value)
                         # self._send_team_response(interrupt.value)
 

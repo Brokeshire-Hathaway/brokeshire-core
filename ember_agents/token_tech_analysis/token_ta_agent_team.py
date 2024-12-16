@@ -182,7 +182,7 @@ class TokenTaAgentTeam(AgentTeam):
 
         risk_data = convert_token_to_risk_data(selected_token.token_metrics)
 
-        rich.print(f"risk_data: {risk_data}")
+        # rich.print(f"risk_data: {risk_data}")
 
         risk_score = RiskScore(risk_data)
         risk_level = risk_score.risk_level
@@ -248,7 +248,7 @@ class TokenTaAgentTeam(AgentTeam):
         self._send_activity_update(f"Analyzing ${selected_token.token_info.symbol}...")
         formatted_token = self._format_token_data(selected_token)
 
-        rich.print(f"formatted_token:\n{formatted_token}")
+        # rich.print(f"formatted_token:\n{formatted_token}")
 
         system_prompt = """
         You are an expert analyst for Brokeshire Hathaway, a crypto investment firm. Your task is to analyze a token and provide a concise report for Twitter, aimed at potential investors seeking exclusive opportunities.

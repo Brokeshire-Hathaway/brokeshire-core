@@ -3,9 +3,9 @@ from rich import print
 
 from ember_agents.common.ai_inference.openai import (
     Temperature,
-    extract_xml_content,
     get_openai_response,
 )
+from ember_agents.common.ai_inference.parse_response import extract_xml_content
 from ember_agents.common.conversation import ContextMessage
 
 

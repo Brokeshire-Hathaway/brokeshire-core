@@ -2,7 +2,6 @@ import json
 from math import exp
 from typing import Annotated, Any, Literal, TypedDict
 
-from defusedxml import ElementTree
 from openai import NOT_GIVEN, AsyncOpenAI, NotGiven
 from openai.types.chat import (
     ChatCompletion,
@@ -116,18 +115,6 @@ def get_chat_completion_logprobs(
         raise ValueError(msg)
 
     return logprobs.content
-
-
-def extract_xml_content(xml_string: str, tag_name: str) -> str | None:
-    # Wrap the input in a root element
-    wrapped_xml = f"<root>{xml_string}</root>"
-    root = ElementTree.fromstring(wrapped_xml)
-    element = root.find(f".//{tag_name}")
-    return (
-        element.text.strip()
-        if element is not None and element.text is not None
-        else None
-    )
 
 
 def find_json_logprobs(

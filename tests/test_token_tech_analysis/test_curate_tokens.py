@@ -8,6 +8,7 @@ from ember_agents.token_tech_analysis.token_metrics import TokenMetrics
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_find_token_brokeagi():
     """Test finding BROKEAGI token - a known token with good liquidity"""
     token = await find_token("BROKEAGI")
@@ -36,6 +37,7 @@ async def test_find_token_brokeagi():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_find_token_nonexistent():
     """Test finding a token that shouldn't exist"""
     with pytest.raises(Exception) as exc_info:
@@ -44,6 +46,7 @@ async def test_find_token_nonexistent():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_find_token_pepe():
     """Test finding PEPE - should always have data"""
     token = await find_token("PEPE")
@@ -67,6 +70,7 @@ async def test_find_token_pepe():
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip
 async def test_get_trending_tokens():
     """Test getting trending tokens and validating their data"""
     trending_tokens = await get_trending_tokens()

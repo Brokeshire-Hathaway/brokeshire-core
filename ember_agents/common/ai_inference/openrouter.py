@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 import httpx
 from pydantic import BaseModel, Field
@@ -18,6 +18,7 @@ Model = Literal[
     "anthropic/claude-3.5-sonnet:beta",
     "anthropic/claude-3.5-sonnet",
     "google/gemini-pro-1.5",
+    "google/gemini-2.0-flash-exp:free",
 ]
 
 
@@ -25,6 +26,7 @@ class OpenRouterChoice(BaseModel):
     finish_reason: str
     index: int
     message: Message
+    logprobs: dict[str, Any] | None
 
 
 class OpenRouterUsage(BaseModel):
@@ -37,7 +39,7 @@ class OpenRouterResponse(BaseModel):
     choices: list[OpenRouterChoice]
     created: int
     id: str
-    model: Model
+    model: str
     object: str
     system_fingerprint: str | None = None
     usage: OpenRouterUsage
@@ -92,3 +94,42 @@ async def get_openrouter_response(
         )
 
     return OpenRouterResponse.model_validate_json(response.text)
+
+
+class NoChoicesError(Exception):
+    """Raised when there are no choices in the OpenRouterResponse."""
+
+    pass
+
+
+class NoContentError(Exception):
+    """Raised when no content could be extracted from the OpenRouterResponse."""
+
+    pass
+
+
+def get_chat_completion_message(completion: OpenRouterResponse) -> str:
+    """
+    Extract the message from an OpenRouterResponse object.
+
+    Args:
+        completion: The OpenRouterResponse object to extract the message from
+
+    Returns:
+        str: The content of the message
+
+    Raises:
+        NoChoicesError: If there are no choices in the completion
+        NoContentError: If no content could be extracted from the completion
+    """
+    if not completion.choices:
+        msg = "The OpenRouterResponse object contains no choices."
+        raise NoChoicesError(msg)
+
+    choice = completion.choices[0]
+
+    if choice.message.content:
+        return choice.message.content
+
+    msg = "No content could be extracted from the OpenRouterResponse."
+    raise NoContentError(msg)

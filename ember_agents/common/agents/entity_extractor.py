@@ -3,14 +3,13 @@ from collections.abc import Sequence
 from typing import Literal, TypedDict, TypeVar, get_args
 
 from pydantic import BaseModel
+from rich.console import Console
 
-from ember_agents.common.ai_inference.openai import (
-    Temperature,
-    extract_xml_content,
-    get_chat_completion_message,
-    get_openai_response,
-)
+from ember_agents.common.ai_inference import openrouter
+from ember_agents.common.ai_inference.parse_response import extract_xml_content
 from ember_agents.common.conversation import ContextMessage
+
+console = Console()
 
 T = TypeVar("T", bound=str)
 
@@ -193,7 +192,7 @@ async def extract_entities(
     message_history: list[ContextMessage],
 ) -> tuple[ExtractedEntities, Reasoning]:
     instructions_prompt = get_instructions_prompt(text, categories, additional_context)
-    messages = [
+    """messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": instructions_prompt},
         *message_history,
@@ -203,9 +202,23 @@ async def extract_entities(
         "gpt-4o-2024-08-06",
         Temperature(value=0),
         seed=42,
+    )"""
+    response = await openrouter.get_openrouter_response(
+        messages=[
+            openrouter.Message(role="system", content=SYSTEM_PROMPT),
+            *[
+                openrouter.Message(role=msg["role"], content=msg["content"])
+                for msg in message_history
+                if msg["role"] in ("system", "user", "assistant")
+            ],
+            openrouter.Message(role="user", content=instructions_prompt),
+        ],
+        models=["google/gemini-2.0-flash-exp:free"],
+        temperature=openrouter.Temperature(value=0),
+        seed=42,
     )
 
-    message_content = get_chat_completion_message(response)
+    message_content = openrouter.get_chat_completion_message(response)
 
     scratchpad_content = extract_xml_content(message_content, "scratchpad")
 

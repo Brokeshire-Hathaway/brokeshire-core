@@ -1,5 +1,6 @@
 import re
 
+from defusedxml import ElementTree
 from rich.console import Console
 
 console = Console()
@@ -36,3 +37,15 @@ def parse_response(response: str, thinking_tag: str, response_tag: str):
     console.print(f"[green]Sanitized response: {sanitized_response}[/green]")
 
     return sanitized_response
+
+
+def extract_xml_content(xml_string: str, tag_name: str) -> str | None:
+    # Wrap the input in a root element
+    wrapped_xml = f"<root>{xml_string}</root>"
+    root = ElementTree.fromstring(wrapped_xml)
+    element = root.find(f".//{tag_name}")
+    return (
+        element.text.strip()
+        if element is not None and element.text is not None
+        else None
+    )
