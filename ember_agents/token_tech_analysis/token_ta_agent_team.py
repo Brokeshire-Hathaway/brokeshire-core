@@ -26,9 +26,11 @@ from ember_agents.common.transaction import (
     link_chain,
 )
 from ember_agents.token_tech_analysis.curate_tokens import (
-    find_token,
+    build_token_metrics,
+    find_top_pools,
     get_trending_tokens,
 )
+from ember_agents.token_tech_analysis.gecko_terminal_client import PoolData
 from ember_agents.token_tech_analysis.risk_data_adapter import (
     convert_token_to_risk_data,
 )
@@ -40,6 +42,11 @@ from ember_agents.token_tech_analysis.token_models import (
     TokenMarketData,
 )
 
+"""class TokenId(BaseModel):
+    symbol: str
+    chain_name: str
+    address: str"""
+
 
 class TokenTaSchema(BaseModel):
     requested_token: InferredEntity[str]
@@ -48,6 +55,7 @@ class TokenTaSchema(BaseModel):
 Participant = Literal[
     "entity_extractor",
     "token_curator",
+    "token_finder",
     "token_data_collector",
     "token_scorer",
     "token_risk_analyst",
@@ -57,10 +65,12 @@ Participant = Literal[
 
 class AgentState(BaseModel):
     conversation: Annotated[Conversation[Participant], conversation_reducer]
+    suggestions: list[str] | None = None
     user_utterance: str
     intent_classification: str
     next_node: str | None = None
     requested_token_entity_name: str | None = None
+    selected_token_pools: list[PoolData] | None = None
     selected_tokens_data: list[TokenData] | None = None
     token_analysis: str | None = None
     risk_report: str | None = None
@@ -127,7 +137,7 @@ class TokenTaAgentTeam(AgentTeam):
             state.requested_token_entity_name = extracted_entities.extracted_entities[
                 0
             ].named_entity
-            next_node = "token_data_collector"
+            next_node = "token_finder"
         else:
             next_node = "token_curator"
 
@@ -149,14 +159,84 @@ class TokenTaAgentTeam(AgentTeam):
             "selected_tokens_data": curated_tokens,
         }
 
-    async def _token_data_collector_action(self, state: AgentState):
-        rich.print("_token_data_collector_action")
-        token_symbol = state.requested_token_entity_name
-        if token_symbol is None:
+    async def _token_finder_action(self, state: AgentState):
+        rich.print("_token_finder_action")
+        token_name = state.requested_token_entity_name
+        if token_name is None:
             msg = "Requested token symbol is empty or not present"
             raise ValueError(msg)
-        self._send_activity_update(f"Collecting token data for {token_symbol}...")
-        token_metrics = await find_token(token_symbol)
+        pools = await find_top_pools(token_name)
+
+        suggestions: list[str] | None = None
+        if len(pools) > 1:
+            suggestions = []
+            for pool in pools:
+                # Get token address from pool relationships
+                base_token = pool.relationships.base_token.data
+                chain_name, token_address = (
+                    base_token.id.split("_", 1)
+                    if "_" in base_token.id
+                    else ("Chain unknown", base_token.id)
+                )
+
+                # Truncate address to first 6 and last 4 chars
+                truncated_address = (
+                    f"{token_address[:6]}...{token_address[-4:]}"
+                    if token_address
+                    else "Address unknown"
+                )
+                raw_symbol = (
+                    pool.attributes.name.split(" / ")[0]
+                    if pool.attributes.name
+                    else token_name
+                )
+                cleaned_symbol = raw_symbol.lstrip("$").upper()
+                suggestion = (
+                    f"${cleaned_symbol}・{truncated_address}・{chain_name.capitalize()}"
+                )
+                suggestions.append(suggestion)
+            next_node = "ask_user"
+        else:
+            next_node = "token_data_collector"
+
+        return {
+            "conversation": {
+                "history": [
+                    {
+                        "sender_name": "token_finder",
+                        "content": "Which token would you like to analyze?",
+                        "is_visible_to_user": True,
+                    }
+                ]
+            },
+            "suggestions": suggestions,
+            "selected_token_pools": pools,
+            "next_node": next_node,
+        }
+
+    async def _token_data_collector_action(self, state: AgentState):
+        rich.print("_token_data_collector_action")
+
+        if state.selected_token_pools is None:
+            msg = "Selected token pools are empty or not present"
+            raise ValueError(msg)
+
+        selected_token_pool: PoolData
+        if len(state.selected_token_pools) > 1:
+            # User message should be a number returned from the previous node
+            last_message = state.conversation["history"][-1].get("content", None)
+            if not isinstance(last_message, str):
+                msg = "User message is not a number"
+                raise ValueError(msg)
+            index = int(last_message)
+            selected_token_pool = state.selected_token_pools[index]
+        else:
+            selected_token_pool = state.selected_token_pools[0]
+
+        self._send_activity_update(
+            f"Collecting token data for {state.requested_token_entity_name}..."
+        )
+        token_metrics = await build_token_metrics(selected_token_pool)
         token_data = self._convert_metrics_data_to_token_data(token_metrics)
         return {
             "selected_tokens_data": [token_data],
@@ -234,6 +314,7 @@ class TokenTaAgentTeam(AgentTeam):
         )"""
 
         return {
+            "suggestions": None,
             "selected_tokens_data": [selected_token],
             "risk_report": risk_report,
         }
@@ -318,7 +399,7 @@ class TokenTaAgentTeam(AgentTeam):
             "conversation": {
                 "history": [
                     {
-                        "sender_name": "transactor",
+                        "sender_name": "token_strategist",
                         "content": final_response,
                         "is_visible_to_user": True,
                     }
@@ -558,6 +639,8 @@ class TokenTaAgentTeam(AgentTeam):
         self._graph.add_edge("token_strategist", END)"""
 
         self._graph.add_node("entity_extractor", self._entity_extractor_action)
+        self._graph.add_node("token_finder", self._token_finder_action)
+        self._graph.add_node("ask_user", self._ask_user_action)
         self._graph.add_node("token_data_collector", self._token_data_collector_action)
         self._graph.add_node("token_curator", self._token_curator_action)
         self._graph.add_node("token_risk_analyst", self._token_risk_analyst_action)
@@ -570,9 +653,18 @@ class TokenTaAgentTeam(AgentTeam):
             self._choose_next_node,
             {
                 "token_curator": "token_curator",
-                "token_data_collector": "token_data_collector",
+                "token_finder": "token_finder",
             },
         )
+        self._graph.add_conditional_edges(
+            "token_finder",
+            self._choose_next_node,
+            {
+                "token_data_collector": "token_data_collector",
+                "ask_user": "ask_user",
+            },
+        )
+        self._graph.add_edge("ask_user", "token_data_collector")
         self._graph.add_edge("token_data_collector", "token_risk_analyst")
         self._graph.add_edge("token_curator", "token_risk_analyst")
         self._graph.add_edge("token_risk_analyst", "token_strategist")
@@ -580,4 +672,6 @@ class TokenTaAgentTeam(AgentTeam):
 
         checkpointer = MemorySaver()
 
-        self._app = self._graph.compile(checkpointer=checkpointer)
+        self._app = self._graph.compile(
+            checkpointer=checkpointer, interrupt_before=["ask_user"]
+        )

@@ -15,6 +15,7 @@ from ember_agents.bg_tasks import add_bg_task
 
 class SendResponse(TypedDict):
     message: str
+    suggestions: list[str] | None
     sign_url: str | None
     transaction_hash: str | None
 
@@ -45,24 +46,12 @@ class AgentTeam(ABC):
         async def stream_updates(graph_input: dict[str, Any] | Any):
             async for chunk in app.astream(graph_input, config, stream_mode="updates"):
                 for key, item in chunk.items():
-                    # rich.print(f"=== Stream Update ===")
-                    # rich.print(f"{key}: {item}")
-                    """rich.print(f"interrupt: {item[0]}")
-                    rich.print(
-                        f"is instance of Interrupt: {isinstance(item, Interrupt)}"
-                    )
-                    rich.print(
-                        f"item.value: {(interrupt_value := item.get('value', None))}"
-                    )"""
                     if (
                         key == "__interrupt__"
                         and (interrupt := next(iter(item), None))
                         and isinstance(interrupt, Interrupt)
                     ):
-                        # rich.print(f"=== Interrupt ===")
-                        # rich.print(interrupt.value)
                         raise Exception(interrupt.value)
-                        # self._send_team_response(interrupt.value)
 
                     rich.print(
                         f"""
@@ -106,26 +95,24 @@ class AgentTeam(ABC):
 
                 is_run_complete = snapshot.values.get("is_run_complete")
                 response = snapshot.values["conversation"]["history"][-1]["content"]
+                suggestions = snapshot.values.get("suggestions")
 
                 if is_run_complete:
                     rich.print("=== is_run_complete is True ===")
                     is_pending_interrupt = False
                     sign_url = snapshot.values.get("sign_url")
                     transaction_hash = snapshot.values.get("transaction_hash")
-                    self._send_team_response(response, sign_url, transaction_hash)
+                    self._send_team_response(
+                        response, suggestions, sign_url, transaction_hash
+                    )
                     continue
-
-                rich.print("=== is_run_complete is False ===")
 
                 user_message_future = asyncio.create_task(self._get_human_messages())
 
                 if isinstance(response, str):
-                    self._send_team_response(response)
+                    self._send_team_response(response, suggestions)
 
                 user_message = await user_message_future
-
-                rich.print(f"=== user_message ===")
-                rich.print(user_message)
 
                 node_name = "ask_user"
                 state_values = {
@@ -155,6 +142,7 @@ class AgentTeam(ABC):
     def _send_team_response(
         self,
         message: str,
+        suggestions: list[str] | None = None,
         sign_url: str | None = None,
         transaction_hash: str | None = None,
     ):
@@ -162,6 +150,7 @@ class AgentTeam(ABC):
             self._agent_team_response.set_result(
                 {
                     "message": message,
+                    "suggestions": suggestions,
                     "sign_url": sign_url,
                     "transaction_hash": transaction_hash,
                 }

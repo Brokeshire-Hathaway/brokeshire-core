@@ -192,17 +192,6 @@ async def extract_entities(
     message_history: list[ContextMessage],
 ) -> tuple[ExtractedEntities, Reasoning]:
     instructions_prompt = get_instructions_prompt(text, categories, additional_context)
-    """messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": instructions_prompt},
-        *message_history,
-    ]
-    response = await get_openai_response(
-        messages,
-        "gpt-4o-2024-08-06",
-        Temperature(value=0),
-        seed=42,
-    )"""
     response = await openrouter.get_openrouter_response(
         messages=[
             openrouter.Message(role="system", content=SYSTEM_PROMPT),

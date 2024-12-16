@@ -49,6 +49,7 @@ ResponseStatus = Literal["done", "processing", "error"]
 class Response(BaseModel):
     status: ResponseStatus
     message: str
+    suggestions: list[str] | None = None
     sign_tx_url: str | None = None
     transaction_hash: str | None = None
 
@@ -102,6 +103,7 @@ def event_router(
             response = Response(
                 status="done",
                 message=response_message["message"],
+                suggestions=response_message["suggestions"],
                 sign_tx_url=response_message["sign_url"],
                 transaction_hash=response_message["transaction_hash"],
             )

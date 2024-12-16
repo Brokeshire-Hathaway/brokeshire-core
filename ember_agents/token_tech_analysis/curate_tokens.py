@@ -7,6 +7,7 @@ from typing import Any, TypedDict
 
 from rich.console import Console
 
+from ember_agents.common.transaction import Token, link_token
 from ember_agents.token_tech_analysis.birdeye_client import query_birdeye_security
 from ember_agents.token_tech_analysis.dex_screener_client import (
     query_dex_screener,
@@ -45,8 +46,10 @@ class TokenScore(TypedDict):
     score: float
 
 
-async def find_token(search_term: str) -> TokenMetrics:
+async def find_top_pools(search_term: str, limit: int = 3) -> list[PoolData]:
+    """Find top pools by volume for a given search term."""
     console.print(f"[yellow]Searching for token: {search_term}[/yellow]")
+
     search_parameters = {"query": search_term, "page": 1}
     response = await query_gecko_terminal("/search/pools", search_parameters)
 
@@ -54,23 +57,60 @@ async def find_token(search_term: str) -> TokenMetrics:
         msg = f"No pools found for search term: {search_term}"
         raise Exception(msg)
 
-    # Get the pool with highest reserves
-    highest_reserve_pool = max(
-        response.data, key=lambda pool: float(pool.attributes.reserve_in_usd or 0)
+    # Get top pools by volume
+    sorted_pools = sorted(
+        response.data,
+        key=lambda pool: pool.attributes.volume_usd.h24 or 0,
+        reverse=True,
+    )[:limit]
+
+    return sorted_pools
+
+
+async def build_token_metrics(pool: PoolData) -> TokenMetrics:
+    """Build TokenMetrics objects for a list of pools."""
+
+    base_token = pool.relationships.base_token.data
+    chain_name, token_address = (
+        base_token.id.split("_", 1)
+        if "_" in base_token.id
+        else ("Chain unknown", base_token.id)
     )
 
-    # Get base token address
-    base_token = highest_reserve_pool.relationships.base_token.data
-    token_address = (
-        base_token.id.split("_", 1)[1] if "_" in base_token.id else base_token.id
-    )
+    dex_result = await query_dex_screener(token_address)
+    if chain_name == "solana":
+        birdeye_result = await query_birdeye_security(token_address)
+    else:
+        birdeye_result = None
 
-    # Create tasks for parallel API calls
-    tasks = [query_dex_screener(token_address), query_birdeye_security(token_address)]
-    api_results = await asyncio.gather(*tasks, return_exceptions=True)
+    return create_token_metrics(pool, dex_result, birdeye_result)
 
-    # Use the shared create_token_metrics function
-    return create_token_metrics(highest_reserve_pool, api_results[0], api_results[1])
+
+"""async def find_token(search_term: str) -> list[TokenMetrics]:
+    # Find top 3 tokens by volume and return their metrics.
+    pools = await find_top_pools(search_term)
+    return await build_token_metrics(pools)"""
+
+
+"""async def _get_linked_token(self, token: str, chain_id: str, chain_name: str) -> Token:
+    # TODO: Mock link_token for testing
+    linked_from_token_results = await link_token(token, chain_id)
+    token_fuzzy_matches = linked_from_token_results["fuzzy_matches"]
+    token_llm_matches = linked_from_token_results["llm_matches"]
+
+    if token_llm_matches is not None and len(token_llm_matches) > 0:
+        token_match = token_llm_matches[0]
+    elif token_fuzzy_matches is not None and len(token_fuzzy_matches) > 0:
+        token_match = token_fuzzy_matches[0]
+    else:
+        msg = f"{token} is not a supported token on chain {chain_name}"
+        raise ValueError(msg)
+
+    token_confidence_threshold = 60
+    if token_match["confidence_percentage"] < token_confidence_threshold:
+        msg = f"You entered '{token}' token, but it's not supported. Did you mean '{token_match['entity']['name']}'?"
+        raise ValueError(msg)
+    return Token.model_validate(token_match["entity"])"""
 
 
 def get_top_tokens(pool_data: list[PoolData]) -> list[PoolDataWithScore]:
@@ -264,10 +304,10 @@ async def get_trending_tokens() -> list[TokenMetrics]:
         tasks = []
         for pool in response.data[:10]:  # Limit to top 10 pools
             base_token = pool.relationships.base_token.data
-            token_address = (
-                base_token.id.split("_", 1)[1]
+            chain_name, token_address = (
+                base_token.id.split("_", 1)
                 if "_" in base_token.id
-                else base_token.id
+                else ("Chain unknown", base_token.id)
             )
 
             # Create tasks for DexScreener and Birdeye API calls
@@ -301,13 +341,6 @@ def create_token_metrics(
     birdeye_result: Any,
 ) -> TokenMetrics:
     """Create TokenMetrics object from pool data and API results"""
-
-    console.print(
-        f"[yellow]DexScreener token metrics for {pool.attributes.name}[/yellow]"
-    )
-    console.print(f"[yellow]DexScreener result: {dex_result}[/yellow]")
-    console.print(f"[yellow]Birdeye token metrics for {pool.attributes.name}[/yellow]")
-    console.print(f"[yellow]Birdeye result: {birdeye_result}[/yellow]")
 
     attrs = pool.attributes
     raw_symbol = attrs.name.split(" / ")[0] if attrs.name else "Unknown"
