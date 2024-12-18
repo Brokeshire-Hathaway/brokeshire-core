@@ -202,7 +202,7 @@ async def extract_entities(
             ],
             openrouter.Message(role="user", content=instructions_prompt),
         ],
-        models=["google/gemini-2.0-flash-exp:free"],
+        models=["google/gemini-flash-1.5-8b"],
         temperature=openrouter.Temperature(value=0),
         seed=42,
     )

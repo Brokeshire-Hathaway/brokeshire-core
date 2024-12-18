@@ -18,6 +18,7 @@ Model = Literal[
     "anthropic/claude-3.5-sonnet:beta",
     "anthropic/claude-3.5-sonnet",
     "google/gemini-pro-1.5",
+    "google/gemini-flash-1.5-8b",
     "google/gemini-2.0-flash-exp:free",
 ]
 
@@ -68,8 +69,11 @@ async def get_openrouter_response(
 ) -> OpenRouterResponse:
     """
     Get a response from the OpenRouter API.
-    """
 
+    Raises:
+        httpx.HTTPError: If the HTTP request fails
+        ValueError: If the API returns an error response
+    """
     temperature = Temperature(value=0.7) if temperature is None else temperature
 
     async with httpx.AsyncClient(timeout=5.0) as client:
@@ -77,8 +81,8 @@ async def get_openrouter_response(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
                 "Authorization": f"Bearer {SETTINGS.openrouter_api_key}",
-                "HTTP-Referer": SITE_URL,  # Optional, for including your app on openrouter.ai rankings.
-                "X-Title": APP_NAME,  # Optional. Shows in rankings on openrouter.ai.
+                "HTTP-Referer": SITE_URL,
+                "X-Title": APP_NAME,
             },
             json={
                 "models": models,
@@ -93,7 +97,19 @@ async def get_openrouter_response(
             },
         )
 
-    return OpenRouterResponse.model_validate_json(response.text)
+        # Raise for HTTP status errors
+        response.raise_for_status()
+
+        # Parse the response JSON
+        data = response.json()
+
+        # Check if the response contains an error
+        if "error" in data:
+            raise ValueError(
+                f"OpenRouter API error: {data['error'].get('message', 'Unknown error')}"
+            )
+
+    return OpenRouterResponse.model_validate(data)
 
 
 class NoChoicesError(Exception):

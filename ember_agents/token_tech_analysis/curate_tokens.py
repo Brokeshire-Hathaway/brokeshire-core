@@ -347,14 +347,15 @@ def create_token_metrics(
     cleaned_symbol = raw_symbol.lstrip("$").upper()
 
     base_token = pool.relationships.base_token.data
-    token_address = (
-        base_token.id.split("_", 1)[1] if "_" in base_token.id else base_token.id
+    chain_name, token_address = (
+        base_token.id.split("_", 1) if "_" in base_token.id else (None, base_token.id)
     )
 
     # Initialize with GeckoTerminal data
     metadata = TokenMetrics(
         name=attrs.name or "",
         symbol=cleaned_symbol,
+        chain_name=chain_name.title() if chain_name else None,
         address=token_address,
         pool_address=attrs.address,
         pool_created_at=datetime.fromisoformat(
@@ -474,10 +475,26 @@ def create_token_metrics(
 
             if pair.info:
                 metadata.image_url = pair.info.image_url
+
+                # Extract specific URLs
                 if pair.info.websites:
                     metadata.websites = [w.url for w in pair.info.websites]
+                    # Take first website URL if available
+                    metadata.website_url = (
+                        pair.info.websites[0].url if pair.info.websites else None
+                    )
+
                 if pair.info.socials:
                     metadata.socials = [s.url for s in pair.info.socials]
+
+                    # Extract specific social URLs
+                    for social in pair.info.socials:
+                        if social.type.lower() in ['twitter', 'x']:
+                            metadata.x_url = social.url
+                        elif social.type.lower() == 'telegram':
+                            metadata.telegram_url = social.url
+                        elif social.type.lower() == 'discord':
+                            metadata.discord_url = social.url
 
             if pair.boosts:
                 metadata.boosts = Boosts(active=pair.boosts.active)

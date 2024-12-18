@@ -19,6 +19,39 @@ def format_currency_string(amount_str: str, decimal_places: int = 2) -> str:
         raise ValueError(f"Invalid currency amount: {amount_str}") from e
 
 
+def format_metric_suffix(number: str | int | float | None) -> str | None:
+    """Format numbers using metric suffix notation (K, M, B, T).
+
+    Args:
+        number: A number as string, int, or float
+
+    Returns:
+        Formatted string with appropriate metric suffix (K, M, B, T)
+        Examples: 1234 -> "1.2K", "1234567" -> "1.2M"
+    """
+    if number is None:
+        return None
+
+    try:
+        # Convert to float if string, otherwise use directly
+        num = float(number) if isinstance(number, str) else float(number)
+
+        if num < 1000:  # noqa: PLR2004
+            return f"{num:.1f}"
+        elif num < 1_000_000:  # noqa: PLR2004
+            return f"{num/1000:.1f}K"
+        elif num < 1_000_000_000:  # noqa: PLR2004
+            return f"{num/1_000_000:.1f}M"
+        elif num < 1_000_000_000_000:  # noqa: PLR2004
+            return f"{num/1_000_000_000:.1f}B"
+        else:
+            return f"{num/1_000_000_000_000:.1f}T"
+
+    except (ValueError, TypeError) as e:
+        msg = f"Invalid number input: {number}"
+        raise ValueError(msg) from e
+
+
 def format_transaction_url(transaction_url: str) -> str:
     """Formats the transaction url for signing."""
 

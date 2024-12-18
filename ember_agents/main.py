@@ -11,6 +11,8 @@ from sse_starlette.sse import EventSourceResponse, ServerSentEvent
 from ember_agents.agent_router.intent_classifier import INTENT
 from ember_agents.agent_router.router import AgentTeamSessionManager, Router
 from ember_agents.bg_tasks import add_bg_task, delete_task
+from ember_agents.common.agent_team import ExpressionSuggestion
+from ember_agents.common.types import MessageType
 from ember_agents.education.education import upload_doc_memory
 
 app = FastAPI()
@@ -21,10 +23,11 @@ class MessageContext(BaseModel):
     message: str
 
 
-class Message(BaseModel):
+class RequestMessage(BaseModel):
     user_chat_id: str
     client_id: int
     message: str
+    message_type: MessageType
     context: list[MessageContext]
     store_transaction: Any
     requested_routes: list[INTENT] | None = None
@@ -49,7 +52,8 @@ ResponseStatus = Literal["done", "processing", "error"]
 class Response(BaseModel):
     status: ResponseStatus
     message: str
-    suggestions: list[str] | None = None
+    intent_suggestions: list[str] | None = None
+    expression_suggestions: list[ExpressionSuggestion] | None = None
     sign_tx_url: str | None = None
     transaction_hash: str | None = None
 
@@ -66,7 +70,10 @@ ONE_MINUTE_TIMEOUT = 60
 
 
 def event_router(
-    thread_id: str, body: Message, request: Request, routes: list[INTENT] | None = None
+    thread_id: str,
+    body: RequestMessage,
+    request: Request,
+    routes: list[INTENT] | None = None,
 ):
     """Default event router for the threads API."""
 
@@ -96,6 +103,7 @@ def event_router(
                 body.store_transaction,
                 session_id,
                 body.message,
+                body.message_type,
                 on_activity,
                 context=context_to_messages(body.context),
                 user_address=body.user_address,
@@ -103,7 +111,8 @@ def event_router(
             response = Response(
                 status="done",
                 message=response_message["message"],
-                suggestions=response_message["suggestions"],
+                intent_suggestions=response_message["intent_suggestions"],
+                expression_suggestions=response_message["expression_suggestions"],
                 sign_tx_url=response_message["sign_url"],
                 transaction_hash=response_message["transaction_hash"],
             )
@@ -153,12 +162,12 @@ def event_router(
 
 
 @app.post("/v1/threads/{thread_id}/private")
-async def create_message(thread_id: str, body: Message, request: Request):
+async def create_message(thread_id: str, body: RequestMessage, request: Request):
     return event_router(thread_id, body, request)
 
 
 @app.post("/v1/threads/{thread_id}/group")
-async def create_message_group(thread_id: str, body: Message, request: Request):
+async def create_message_group(thread_id: str, body: RequestMessage, request: Request):
     return event_router(
         thread_id,
         body,

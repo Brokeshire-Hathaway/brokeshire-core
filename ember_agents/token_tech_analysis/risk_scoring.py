@@ -27,6 +27,10 @@ class RiskSeverity(IntEnum):
         return self.name
 
     @property
+    def label(self) -> str:
+        return self.name.capitalize()
+
+    @property
     def emoji(self) -> str:
         emoji_map = {
             RiskSeverity.LOW: "🔵",

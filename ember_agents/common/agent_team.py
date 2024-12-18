@@ -2,7 +2,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from asyncio import Future, InvalidStateError, Queue
 from collections.abc import Callable
-from typing import Any, TypedDict, cast
+from typing import Any, TypedDict
 
 import rich
 from langchain_core.runnables.config import RunnableConfig
@@ -11,24 +11,39 @@ from langgraph.types import Interrupt
 from openai.types.chat import ChatCompletionMessageParam
 
 from ember_agents.bg_tasks import add_bg_task
+from ember_agents.common.types import MessageType
+
+
+class ExpressionSuggestion(TypedDict):
+    label: str
+    id: str
 
 
 class SendResponse(TypedDict):
     message: str
-    suggestions: list[str] | None
+    intent_suggestions: list[str] | None
+    expression_suggestions: list[ExpressionSuggestion] | None
     sign_url: str | None
     transaction_hash: str | None
+
+
+class UserMessage(TypedDict):
+    message: str | None
+    message_type: MessageType | None
+    context: Any | None
 
 
 class AgentTeam(ABC):
     # TODO: might update to be a queue in case of an API reconnection
 
     def __init__(self, on_complete: Callable[[], Any]):
-        self._user_message_queue: Queue[dict[str, Any]] = Queue()
+        self._user_message_queue: Queue[UserMessage] = Queue()
         self._is_initialized: bool = False
         self._on_activity: Callable[[str], None] | None = None
         self._on_complete = on_complete
         self._agent_team_response: Future[SendResponse] = Future()
+        self.intent_suggestions: list[str] | None = None
+        self.expression_suggestions: list[ExpressionSuggestion] | None = None
 
     @abstractmethod
     async def _run_conversation(
@@ -95,7 +110,6 @@ class AgentTeam(ABC):
 
                 is_run_complete = snapshot.values.get("is_run_complete")
                 response = snapshot.values["conversation"]["history"][-1]["content"]
-                suggestions = snapshot.values.get("suggestions")
 
                 if is_run_complete:
                     rich.print("=== is_run_complete is True ===")
@@ -103,14 +117,22 @@ class AgentTeam(ABC):
                     sign_url = snapshot.values.get("sign_url")
                     transaction_hash = snapshot.values.get("transaction_hash")
                     self._send_team_response(
-                        response, suggestions, sign_url, transaction_hash
+                        response,
+                        self.intent_suggestions,
+                        self.expression_suggestions,
+                        sign_url,
+                        transaction_hash,
                     )
                     continue
 
                 user_message_future = asyncio.create_task(self._get_human_messages())
 
                 if isinstance(response, str):
-                    self._send_team_response(response, suggestions)
+                    self._send_team_response(
+                        response,
+                        self.intent_suggestions,
+                        self.expression_suggestions,
+                    )
 
                 user_message = await user_message_future
 
@@ -126,7 +148,7 @@ class AgentTeam(ABC):
                         ]
                     }
                 }
-                rich.print(f"=== update state ===")
+                rich.print("=== update state ===")
                 app.update_state(
                     config,
                     state_values,
@@ -142,7 +164,8 @@ class AgentTeam(ABC):
     def _send_team_response(
         self,
         message: str,
-        suggestions: list[str] | None = None,
+        intent_suggestions: list[str] | None = None,
+        expression_suggestions: list[ExpressionSuggestion] | None = None,
         sign_url: str | None = None,
         transaction_hash: str | None = None,
     ):
@@ -150,7 +173,8 @@ class AgentTeam(ABC):
             self._agent_team_response.set_result(
                 {
                     "message": message,
-                    "suggestions": suggestions,
+                    "intent_suggestions": intent_suggestions,
+                    "expression_suggestions": expression_suggestions,
                     "sign_url": sign_url,
                     "transaction_hash": transaction_hash,
                 }
@@ -209,7 +233,10 @@ class AgentTeam(ABC):
         self._on_activity = on_activity
 
     async def send(
-        self, message: str, context: list[ChatCompletionMessageParam] | None = None
+        self,
+        message: str,
+        message_type: MessageType,
+        context: list[ChatCompletionMessageParam] | None = None,
     ) -> SendResponse:
         # send message to human proxy agent
         # await and return response
@@ -220,7 +247,11 @@ class AgentTeam(ABC):
             self._init_conversation(message, context=context)
         else:
             self._user_message_queue.put_nowait(
-                {"message": message, "context": context}
+                {
+                    "message": message,
+                    "message_type": message_type,
+                    "context": context,
+                }
             )
 
         return await self._on_team_response()

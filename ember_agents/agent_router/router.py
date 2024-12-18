@@ -7,10 +7,10 @@ from openai.types.chat import ChatCompletionMessageParam
 
 from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
 from ember_agents.common.agent_team import AgentTeam
+from ember_agents.common.types import MessageType
 from ember_agents.convert_token.convert_token_agent_team import ConvertTokenAgentTeam
 from ember_agents.earn.earn_agent_team import EarnAgentTeam
 from ember_agents.education.education import EducationAgentTeam
-from ember_agents.project_market_info.market_agent_team import MarketAgentTeam
 from ember_agents.send_token.send import SendTokenAgentTeam
 from ember_agents.token_tech_analysis.token_ta_agent_team import TokenTaAgentTeam
 
@@ -69,6 +69,7 @@ class Router:
         store_transaction_info: Any,
         session_id: str,
         message: str,
+        message_type: MessageType,
         activity: Callable[[str], None] | None = None,
         context: list[ChatCompletionMessageParam] | None = None,
         user_address: str | None = None,
@@ -88,7 +89,7 @@ class Router:
             )
         if activity is not None:
             agent_team.get_activity_updates(activity)
-        return await agent_team.send(message, context=context)
+        return await agent_team.send(message, message_type, context=context)
 
     def _create_agent_team_session(
         self,
@@ -114,9 +115,7 @@ class Router:
                 agent_team = EarnAgentTeam(
                     on_complete, store_transaction_info, user_chat_id
                 )
-            case "crypto_price_query" | "market_news_query":
-                agent_team = MarketAgentTeam(on_complete)
-            case "token_analysis_query":
+            case "token_analysis_query" | "crypto_price_query" | "market_news_query":
                 agent_team = TokenTaAgentTeam(on_complete, user_chat_id)
             case (
                 "explanation_query"

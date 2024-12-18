@@ -1,7 +1,9 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Literal
 
 from pydantic import BaseModel
+
+from ember_agents.common.utils import format_metric_suffix
 
 
 class QuoteToken(BaseModel):
@@ -26,6 +28,7 @@ class TokenMetrics(BaseModel):
     symbol: str
     address: str
     chain_id: str | None = None
+    chain_name: str | None = None
 
     # Quote token info
     quote_token: QuoteToken | None = None
@@ -33,7 +36,7 @@ class TokenMetrics(BaseModel):
     # Price data
     price_usd: str | None = None
     price_native: str | None = None
-    price_quote: str | None = None  # base_token_price_quote_token
+    price_quote: str | None = None  # base_token_price_quote
     quote_price: str | None = None  # quote_token_price_base_token
     base_token_price_usd: str | None = None
     base_token_price_native_currency: str | None = None
@@ -131,3 +134,9 @@ class TokenMetrics(BaseModel):
     freezeable: bool | None = None
     transfer_fee_enable: bool | None = None
     birdeye_data: bool = False
+
+    # Add these new fields to the TokenMetrics class:
+    x_url: str | None = None
+    website_url: str | None = None
+    telegram_url: str | None = None
+    discord_url: str | None = None
