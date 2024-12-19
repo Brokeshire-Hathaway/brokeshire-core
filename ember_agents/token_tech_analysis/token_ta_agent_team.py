@@ -7,13 +7,14 @@ from typing import Annotated, Any, Literal, get_args
 import rich
 from langchain_core.runnables.config import RunnableConfig
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.errors import NodeInterrupt
 from langgraph.graph import END, StateGraph
 from openai.types.chat import (
     ChatCompletionMessageParam,
 )
 from pydantic import BaseModel
 
-from ember_agents.common.agent_team import AgentTeam, ExpressionSuggestion
+from ember_agents.common.agent_team import AgentTeam, ExpressionSuggestion, UserMessage
 from ember_agents.common.agents.entity_extractor import extract_entities
 from ember_agents.common.agents.schema_validator import InferredEntity
 from ember_agents.common.ai_inference import openrouter
@@ -78,6 +79,7 @@ class AgentState(BaseModel):
     user_utterance: str
     intent_classification: str
     next_node: str | None = None
+    suggestion_choice: UserMessage | None = None
     requested_token_entity_name: str | None = None
     selected_token_pools: dict[str, PoolData] | None = None
     selected_tokens_data: list[TokenData] | None = None
@@ -116,7 +118,7 @@ class TokenTaAgentTeam(AgentTeam):
         self, message: str, context: list[ChatCompletionMessageParam] | None = None
     ):
         self._send_activity_update(
-            "Handing off your technical analysis request my agent team..."
+            "Handing off your technical analysis request to my agent team..."
         )
 
         participants = list(get_args(Participant))
@@ -124,6 +126,47 @@ class TokenTaAgentTeam(AgentTeam):
         await self._run_graph(
             self._app, self._config, message, participants=participants
         )
+
+    async def _suggestion_router_action(self, state: AgentState):
+        """Routes user responses based on active suggestions"""
+
+        message = state.conversation["history"][-1]["content"]
+        has_intent_match = False
+        if self.intent_suggestions is not None:
+            has_intent_match = any(
+                intent == message for intent in self.intent_suggestions
+            )
+
+        # Clear suggestions by default
+        self.intent_suggestions = None
+        self.expression_suggestions = None
+
+        # Check if we have a suggestion choice first
+        if not has_intent_match and not state.suggestion_choice:
+            return {"next_node": state.next_node}
+
+        # Use a local suggestion dict for cleaner access
+        suggestion = state.suggestion_choice or {}
+        message_type = suggestion.get("message_type")
+
+        if message_type == "intent" or has_intent_match:
+            rich.print("_suggestion_router_action - message_type", message_type)
+            rich.print("has_intent_match: ", has_intent_match)
+
+            message = suggestion.get("message", None)
+
+            rich.print(f"message: {message}")
+            raise NodeInterrupt(
+                {
+                    "intent": "convert_crypto_action",
+                    "message": message,
+                }
+            )
+
+        if message_type == "expression":
+            return {"next_node": suggestion.get("message", None)}
+
+        return {"next_node": state.next_node}
 
     async def _entity_extractor_action(self, state: AgentState):
         utterance = state.user_utterance
@@ -320,76 +363,11 @@ class TokenTaAgentTeam(AgentTeam):
 
         selected_token = state.selected_tokens_data[0]
         self._send_activity_update(f"Analyzing ${selected_token.token_info.symbol}...")
-        # formatted_token = self._format_token_data(selected_token)
         formatted_token = self._get_formatted_token_message(
             selected_token.token_metrics, state.risk_score
         )
 
         # rich.print(f"formatted_token:\n{formatted_token}")
-
-        #         system_prompt = """
-        #         You are an expert analyst for Brokeshire Hathaway, a crypto investment firm. Your task is to analyze a token and provide a concise report for Twitter, aimed at potential investors seeking exclusive opportunities.
-        #         """
-        #         user_prompt = f"""
-        #         Here is the token data you need to analyze:
-
-        #         <token_data>
-        #         {formatted_token}
-        #         </token_data>
-
-        #         Please follow these steps to complete your analysis:
-
-        #         1. Review the token data provided above.
-
-        #         2. Conduct a detailed analysis of the token. Wrap your analysis in <detailed_analysis> tags:
-        #         - List out key metrics extracted from the token data.
-        #         - Compare these metrics to industry benchmarks. If you don't have exact benchmarks, make reasonable estimates.
-        #         - Evaluate the significance of each data point for potential investors.
-        #         - List specific growth indicators you've identified.
-        #         - Consider any technical factors not explicitly mentioned in the data.
-        #         - Identify and list potential risk factors associated with this token.
-        #         - Ignore the token address when considering potential risks.
-        #         - Don't consider a lack of provided information as a risk factor.
-        #         - Propose a tentative assessment of the token's potential.
-        #         - Reconsider your initial assessment for flaws in your arguments.
-
-        #         3. Based on your analysis, compose a tweet-length report (maximum 270 characters) following these guidelines:
-        #         - Use conversational language with a human-like, casual style while maintaining the key information
-        #         - Avoid analytical labels like "Analysis," "Report," or any similar terms.
-        #         - Avoid using forward slashes (/) to separate data points.
-        #         - Do not include statements with similar or exact meaning to 'DYOR', 'NFA', 'caution' or 'high risk, high reward'.
-        #         - Use emojis only when they add significant value.
-        #         - Do not end the tweet with emojis.
-        #         - Avoid common emojis like rockets 🚀 and flames 🔥.
-        #         - Include risk factors if they are significant.
-        #         - Substantiate all claims with data.
-
-        #         4. Present your findings in the following format:
-
-        #         <detailed_analysis>
-        #         [Your comprehensive evaluation of the token data, including key metrics, growth potential, risk factors, and other relevant information]
-        #         </detailed_analysis>
-
-        #         <tweet>
-        #         [Your concise, 270-character max analysis suitable for Twitter, using newline separations for better readability]
-        #         </tweet>
-        #         """
-        #         response = await openrouter.get_openrouter_response(
-        #             messages=[
-        #                 openrouter.Message(role="system", content=system_prompt),
-        #                 openrouter.Message(role="user", content=user_prompt),
-        #             ],
-        #             models=["google/gemini-pro-1.5"],
-        #         )
-
-        #         response_content = response.choices[0].message.content
-        #         parsed_response = parse_response(response_content, "detailed_analysis", "tweet")
-
-        #         final_response = f"""{parsed_response}
-
-        # {state.risk_report}"""
-
-        #         rich.print(final_response)
 
         chain_name = (
             f" on {selected_token.token_metrics.chain_name}"
@@ -397,13 +375,12 @@ class TokenTaAgentTeam(AgentTeam):
             else ""
         )
 
+        # self.intent_suggestions = [
+        #     f"Buy {selected_token.token_metrics.address}{chain_name}"
+        # ]
         self.expression_suggestions = [
             ExpressionSuggestion(label="Brokeshire's analysis", id="broke_analysis"),
             ExpressionSuggestion(label="Risk report", id="risk_report"),
-            ExpressionSuggestion(
-                label="Buy token",
-                id=f"Buy {selected_token.token_metrics.address}{chain_name}",
-            ),
         ]
 
         return {
@@ -416,14 +393,145 @@ class TokenTaAgentTeam(AgentTeam):
                     }
                 ]
             },
+        }
+
+    async def _final_suggestions_action(self, state: AgentState):
+        # We'll set some expression_suggestions here
+        self.expression_suggestions = [
+            ExpressionSuggestion(label="Brokeshire's analysis", id="broke_analysis"),
+            ExpressionSuggestion(label="Risk report", id="risk_report"),
+            ExpressionSuggestion(label="Buy token", id="buy_token"),
+            ExpressionSuggestion(label="Done", id="done"),
+        ]
+        # Then go ask user
+        return {"next_node": "ask_user"}
+
+    async def _broke_analysis_action(self, state: AgentState):
+        rich.print("_broke_analysis_action")
+
+        if not state.selected_tokens_data:
+            msg = "Selected tokens data is empty or not present"
+            raise ValueError(msg)
+
+        self._send_activity_update("Analyzing token folks...")
+
+        selected_token = state.selected_tokens_data[0]
+        formatted_token = self._format_token_data(selected_token)
+        system_prompt = """
+        You are an expert analyst for Brokeshire Hathaway, a crypto investment firm. Your task is to analyze a token and provide a concise report for Twitter, aimed at potential investors seeking exclusive opportunities.
+        """
+        user_prompt = f"""
+        Here is the token data you need to analyze:
+
+        <token_data>
+        {formatted_token}
+        </token_data>
+
+        Please follow these steps to complete your analysis:
+
+        1. Review the token data provided above.
+
+        2. Conduct a detailed analysis of the token with a focus on the timeseries trends. Wrap your analysis in <detailed_analysis> tags:
+        - List out key metrics extracted from the token data.
+        - Compare these metrics to industry benchmarks. If you don't have exact benchmarks, make reasonable estimates.
+        - Evaluate the significance of each data point for potential investors.
+        - List specific growth indicators you've identified.
+        - Consider any technical factors not explicitly mentioned in the data.
+        - Identify and list potential risk factors associated with this token.
+        - Ignore the token address when considering potential risks.
+        - Don't consider a lack of provided information as a risk factor.
+        - Propose a tentative assessment of the token's potential.
+        - Reconsider your initial assessment for flaws in your arguments.
+
+        3. Based on your analysis, compose a tweet-length report (maximum 270 characters) following these guidelines:
+        - Use conversational language with a human-like, casual style while maintaining the key information
+        - Avoid analytical labels like "Analysis," "Report," or any similar terms.
+        - Avoid using forward slashes (/) to separate data points.
+        - Do not include statements with similar or exact meaning to 'DYOR', 'NFA', 'caution' or 'high risk, high reward'.
+        - Use emojis only when they add significant value.
+        - Do not end the tweet with emojis.
+        - Avoid common emojis like rockets 🚀 and flames 🔥.
+        - Include risk factors if they are significant.
+        - Substantiate all claims with data.
+
+        4. Present your findings in the following format:
+
+        <detailed_analysis>
+        [Your comprehensive evaluation of the token data, including key metrics, growth potential, risk factors, and other relevant information]
+        </detailed_analysis>
+
+        <tweet>
+        [Your concise, 270-character max analysis suitable for Twitter, using newline separations for better readability]
+        </tweet>
+        """
+        response = await openrouter.get_openrouter_response(
+            messages=[
+                openrouter.Message(role="system", content=system_prompt),
+                openrouter.Message(role="user", content=user_prompt),
+            ],
+            models=["google/gemini-pro-1.5"],
+        )
+
+        response_content = response.choices[0].message.content
+        parsed_response = parse_response(response_content, "detailed_analysis", "tweet")
+
+        return {
+            "conversation": {
+                "history": [
+                    {
+                        "sender_name": "broke_analysis",
+                        "content": parsed_response,
+                        "is_visible_to_user": True,
+                    }
+                ]
+            },
+            "next_node": END,
+            "is_run_complete": True,
+        }
+
+    async def _risk_report_action(self, state: AgentState):
+        rich.print("_risk_report_action")
+
+        rich.print(f"state.risk_score:")
+        rich.print(state.risk_score)
+
+        if not state.selected_tokens_data:
+            msg = "Selected tokens data is empty or not present"
+            raise ValueError(msg)
+
+        selected_token = state.selected_tokens_data[0]
+        if not selected_token.token_metrics:
+            msg = "Token metrics are missing"
+            raise ValueError(msg)
+
+        if not state.risk_score:
+            msg = "Risk score is missing"
+            raise ValueError(msg)
+
+        if not isinstance(state.risk_score, RiskScore):
+            msg = f"Expected RiskScore object but got {type(state.risk_score)}"
+            raise TypeError(msg)
+
+        header = self._get_formatted_token_header(selected_token.token_metrics)
+        risk_report = self._get_risk_report_message(state.risk_score)
+
+        return {
+            "conversation": {
+                "history": [
+                    {
+                        "sender_name": "risk_report",
+                        "content": f"{header}\n{risk_report}",
+                        "is_visible_to_user": True,
+                    }
+                ]
+            },
+            "next_node": END,
             "is_run_complete": True,
         }
 
     # TODO: Error needs to trigger on_complete and stop this agent team
 
-    def _get_formatted_token_message(
-        self, token_metrics: TokenMetrics, risk_score: RiskScore | None = None
-    ) -> str:
+    def _get_formatted_token_header(self, token_metrics: TokenMetrics) -> str:
         token_ticker = token_metrics.symbol
         chain_name = token_metrics.chain_name
         token_address = token_metrics.address
@@ -439,13 +547,22 @@ class TokenTaAgentTeam(AgentTeam):
 
         links_text = " ・ ".join(links) if links else ""
 
+        header = f"""__${token_ticker} on {chain_name}__ ・ `{token_address[:6]}⋯{token_address[-4:]}`
+─
+{links_text}"""
+
+        return header
+
+    def _get_formatted_token_message(
+        self, token_metrics: TokenMetrics, risk_score: RiskScore | None = None
+    ) -> str:
         price_usd = token_metrics.price_usd
         fdv_usd = format_metric_suffix(token_metrics.fdv_usd)
         # ath_usd = token_metrics.ath_usd
         market_cap_usd = format_metric_suffix(token_metrics.market_cap_usd)
         liquidity_usd = format_metric_suffix(token_metrics.liquidity_usd)
         age = (
-            token_metrics.creation_time - datetime.now(UTC)
+            datetime.now(UTC) - token_metrics.creation_time
             if token_metrics.creation_time
             else None
         )
@@ -473,11 +590,9 @@ class TokenTaAgentTeam(AgentTeam):
             else ""
         )
 
-        return f"""
-__${token_ticker} on {chain_name}__ ・ `{token_address[:6]}⋯{token_address[-4:]}`
-─
-{links_text}
+        header = self._get_formatted_token_header(token_metrics)
 
+        return f"""{header}
 
 💵 ┊ `{formatted_price}` USD
 💰 ┊ `{fdv_usd}` FDV
@@ -503,7 +618,7 @@ _powered by Ember AI_ ✨
 
 
     💵 ┊ $0.0018811 USD (◎0.0018811 SOL)
-    ⤷ ₿0.0370 ・ Ξ1.00
+    ₿0.0370 ・ Ξ1.00
     💰 ┊ $1.9M FDV (2.2M ATH)
     ⤷ $1.1M Market cap
     💧 ┊ $149K Liquidity
@@ -520,28 +635,31 @@ _powered by Ember AI_ ✨
 
     def _get_risk_report_message(self, risk_score: RiskScore) -> str:
         risk_level = risk_score.risk_level
+        rich.print(f"risk_level: {risk_level}")
         high_risks = risk_score.high_risk_factors
+        rich.print(f"high_risks: {high_risks}")
         moderate_risks = risk_score.moderate_risk_factors
+        rich.print(f"moderate_risks: {moderate_risks}")
         low_risks = risk_score.low_risk_factors
+        rich.print(f"low_risks: {low_risks}")
 
-        risk_report = f"""╭─
-&nbsp;&nbsp;{risk_level.emoji} {risk_level.to_string().title()} Overall Risk ({round(risk_score.risk_percentage)} / 100)
-╰─"""
+        risk_report = f"""
+{risk_level.emoji} ┊ __{risk_level.to_string().title()} Overall Risk__ ({round(risk_score.risk_percentage)} / 100)"""
 
         if high_risks:
-            risk_report += f"\n\n{RiskSeverity.HIGH.emoji} High Risk Factors"
+            risk_report += f"\n\n{RiskSeverity.HIGH.emoji} ┊ High Risk Factors"
             for factor in high_risks:
-                risk_report += f"\n&nbsp;&nbsp;&nbsp;• {factor.message} {factor.emoji}"
+                risk_report += f"\n&nbsp;&nbsp;⤷ {factor.message} {factor.emoji}"
 
         if moderate_risks:
-            risk_report += f"\n\n{RiskSeverity.MODERATE.emoji} Moderate Risk Factors"
+            risk_report += f"\n\n{RiskSeverity.MODERATE.emoji} ┊ Moderate Risk Factors"
             for factor in moderate_risks:
-                risk_report += f"\n&nbsp;&nbsp;&nbsp;• {factor.message} {factor.emoji}"
+                risk_report += f"\n&nbsp;&nbsp;⤷ {factor.message} {factor.emoji}"
 
         if low_risks:
-            risk_report += f"\n\n{RiskSeverity.LOW.emoji} Low Risk Factors"
+            risk_report += f"\n\n{RiskSeverity.LOW.emoji} ┊ Low Risk Factors"
             for factor in low_risks:
-                risk_report += f"\n&nbsp;&nbsp;&nbsp;• {factor.message} {factor.emoji}"
+                risk_report += f"\n&nbsp;&nbsp;⤷ {factor.message} {factor.emoji}"
 
         if not risk_score.factors:
             risk_report += f"\n\n{RiskSeverity.MINIMAL.emoji} No significant risk factors identified."
@@ -755,29 +873,7 @@ _powered by Ember AI_ ✨
         self._config: RunnableConfig = {"configurable": {"thread_id": 42}}
         self._graph = StateGraph(AgentState)
 
-        """self._graph.add_node("entity_extractor", self._entity_extractor_action)
-        self._graph.add_node("token_curator", self._token_curator_action)
-        self._graph.add_node("token_data_collector", self._token_data_collector_action)
-        self._graph.add_node("token_scorer", self._token_scorer_action)
-        self._graph.add_node("token_risk_analyst", self._token_risk_analyst_action)
-        self._graph.add_node("token_strategist", self._token_strategist_action)
-
-        self._graph.set_entry_point("entity_extractor")
-
-        self._graph.add_conditional_edges(
-            "entity_extractor",
-            self._choose_next_node,
-            {
-                "token_curator": "token_curator",
-                "default": "token_data_collector",
-            },
-        )
-        self._graph.add_edge("token_curator", "token_scorer")
-        self._graph.add_edge("token_data_collector", "token_scorer")
-        self._graph.add_edge("token_scorer", "token_risk_analyst")
-        self._graph.add_edge("token_risk_analyst", "token_strategist")
-        self._graph.add_edge("token_strategist", END)"""
-
+        self._graph.add_node("suggestion_router", self._suggestion_router_action)
         self._graph.add_node("entity_extractor", self._entity_extractor_action)
         self._graph.add_node("token_finder", self._token_finder_action)
         self._graph.add_node("ask_user", self._ask_user_action)
@@ -785,30 +881,29 @@ _powered by Ember AI_ ✨
         self._graph.add_node("token_curator", self._token_curator_action)
         self._graph.add_node("token_risk_analyst", self._token_risk_analyst_action)
         self._graph.add_node("token_strategist", self._token_strategist_action)
+        self._graph.add_node("broke_analysis", self._broke_analysis_action)
+        self._graph.add_node("risk_report", self._risk_report_action)
 
         self._graph.set_entry_point("entity_extractor")
 
         self._graph.add_conditional_edges(
             "entity_extractor",
             self._choose_next_node,
-            {
-                "token_curator": "token_curator",
-                "token_finder": "token_finder",
-            },
+        )
+        self._graph.add_conditional_edges(
+            "suggestion_router",
+            self._choose_next_node,
         )
         self._graph.add_conditional_edges(
             "token_finder",
             self._choose_next_node,
-            {
-                "token_data_collector": "token_data_collector",
-                "ask_user": "ask_user",
-            },
         )
-        self._graph.add_edge("ask_user", "token_data_collector")
+
+        self._graph.add_edge("ask_user", "suggestion_router")
         self._graph.add_edge("token_data_collector", "token_risk_analyst")
         self._graph.add_edge("token_curator", "token_risk_analyst")
         self._graph.add_edge("token_risk_analyst", "token_strategist")
-        self._graph.add_edge("token_strategist", END)
+        self._graph.add_edge("token_strategist", "ask_user")
 
         checkpointer = MemorySaver()
 

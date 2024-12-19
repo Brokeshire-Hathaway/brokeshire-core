@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from functools import partial
 from math import log
-from typing import Any, TypedDict
+from typing import Any, Tuple, TypedDict, Union
 
 from rich.console import Console
 
@@ -290,7 +290,6 @@ def get_top_tokens(pool_data: list[PoolData]) -> list[PoolDataWithScore]:
 
 async def get_trending_tokens() -> list[TokenMetrics]:
     try:
-        # Get trending pools from GeckoTerminal (first page should be enough)
         search_parameters = {"page": 1}
         response = await query_gecko_terminal(
             "/networks/trending_pools", search_parameters
@@ -300,9 +299,11 @@ async def get_trending_tokens() -> list[TokenMetrics]:
             console.print("[red]No trending pools found[/red]")
             return []
 
-        # Get base token addresses from the pool data
+        pools = response.data[:10]  # Limit to top 10
         tasks = []
-        for pool in response.data[:10]:  # Limit to top 10 pools
+
+        # Collect DexScreener & Birdeye calls in parallel
+        for pool in pools:
             base_token = pool.relationships.base_token.data
             chain_name, token_address = (
                 base_token.id.split("_", 1)
@@ -310,23 +311,83 @@ async def get_trending_tokens() -> list[TokenMetrics]:
                 else ("Chain unknown", base_token.id)
             )
 
-            # Create tasks for DexScreener and Birdeye API calls
-            tasks.append(query_dex_screener(token_address))
-            tasks.append(query_birdeye_security(token_address))
+            dex_task = query_dex_screener(token_address)
+            # Only query Birdeye for Solana tokens; otherwise None
+            birdeye_task = (
+                query_birdeye_security(token_address)
+                if chain_name.lower() == "solana"
+                else None
+            )
 
-        # Execute API calls in parallel
-        api_results = await asyncio.gather(*tasks, return_exceptions=True)
+            if birdeye_task:
+                # If we have two tasks, gather them as a tuple
+                tasks.append(
+                    (
+                        pool,
+                        asyncio.gather(dex_task, birdeye_task, return_exceptions=True),
+                    )
+                )
+            else:
+                # Otherwise just gather one
+                tasks.append((pool, asyncio.gather(dex_task, return_exceptions=True)))
 
-        # Process results and create TokenMetrics objects
+        # Execute all tasks
+        task_results = await asyncio.gather(
+            *[t[1] for t in tasks], return_exceptions=True
+        )
+
         token_metrics = []
-        for i in range(0, len(api_results), 2):  # Process results in pairs
-            pool = response.data[i // 2]
-            dex_result = api_results[i]
-            birdeye_result = api_results[i + 1]
 
-            # Create TokenMetrics using the pool data and API results
-            metrics = create_token_metrics(pool, dex_result, birdeye_result)
-            token_metrics.append(metrics)
+        # Process results in parallel to the tasks
+        for (pool, _), result in zip(tasks, task_results):
+            base_token = pool.relationships.base_token.data
+            chain_name, token_address = (
+                base_token.id.split("_", 1)
+                if "_" in base_token.id
+                else ("Chain unknown", base_token.id)
+            )
+
+            # If the entire gather failed for that pool
+            if isinstance(result, Exception):
+                console.print(
+                    f"[yellow]Error processing pool {base_token.id}: {result}[/yellow]"
+                )
+                continue
+
+            try:
+                # Type check and cast result to tuple
+                if not isinstance(result, (tuple, list)):
+                    console.print(
+                        f"[yellow]Unexpected result type for {base_token.id}: {type(result)}[/yellow]"
+                    )
+                    continue
+
+                # Now we know result is a sequence
+                if len(result) == 2:
+                    dex_result, birdeye_result = result
+                else:
+                    dex_result, birdeye_result = result[0], None
+
+                # If either is an Exception, skip
+                if isinstance(dex_result, Exception):
+                    console.print(
+                        f"[yellow]DexScreener error for {base_token.id}: {dex_result}[/yellow]"
+                    )
+                    continue
+                if isinstance(birdeye_result, Exception):
+                    console.print(
+                        f"[yellow]Birdeye error for {base_token.id}: {birdeye_result}[/yellow]"
+                    )
+                    # We can still proceed with just dex_result
+
+                metrics = create_token_metrics(pool, dex_result, birdeye_result)
+                token_metrics.append(metrics)
+
+            except Exception as e:
+                console.print(
+                    f"[yellow]Error processing pool {base_token.id}: {str(e)}[/yellow]"
+                )
+                continue
 
         return token_metrics
 

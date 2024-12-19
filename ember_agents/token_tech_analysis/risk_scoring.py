@@ -271,7 +271,8 @@ RISK_FACTORS = [
 ]
 
 
-class RiskFactor(NamedTuple):
+@dataclass(frozen=True)
+class RiskFactor:
     message: str
     severity: RiskSeverity
     emoji: str
@@ -289,8 +290,9 @@ class RiskScore:
     factors: list[RiskFactor] = field(default_factory=list)
 
     def __post_init__(self):
-        """Evaluates risks after instance initialization"""
-        self.evaluate_risk_factors(self.data)
+        # Only call evaluate if factors are empty
+        if not self.factors:
+            self.evaluate_risk_factors(self.data)
 
     def evaluate_risk_factors(self, data: RiskAssessmentData) -> None:
         """Evaluates all risk factors for the given assessment data"""

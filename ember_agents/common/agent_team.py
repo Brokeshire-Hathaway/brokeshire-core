@@ -11,6 +11,7 @@ from langgraph.types import Interrupt
 from openai.types.chat import ChatCompletionMessageParam
 
 from ember_agents.bg_tasks import add_bg_task
+from ember_agents.common import conversation
 from ember_agents.common.types import MessageType
 
 
@@ -28,7 +29,7 @@ class SendResponse(TypedDict):
 
 
 class UserMessage(TypedDict):
-    message: str | None
+    message: str
     message_type: MessageType | None
     context: Any | None
 
@@ -134,20 +135,32 @@ class AgentTeam(ABC):
                         self.expression_suggestions,
                     )
 
-                user_message = await user_message_future
+                user_messages = await user_message_future
 
                 node_name = "ask_user"
-                state_values = {
-                    "conversation": {
-                        "history": [
-                            {
-                                "sender_name": "user",
-                                "content": user_message,
-                                "is_visible_to_user": True,
-                            }
-                        ]
-                    }
+                conversation = {
+                    "history": [
+                        {
+                            "sender_name": "user",
+                            "content": message["message"],
+                            "is_visible_to_user": True,
+                        }
+                        for message in user_messages
+                    ]
                 }
+
+                state_values = {
+                    "conversation": conversation,
+                    "suggestion_choice": None,
+                }
+
+                rich.print("!!! user_messages !!!")
+                rich.print(user_messages)
+                for msg in user_messages:
+                    if msg["message_type"] != "chat":
+                        state_values["suggestion_choice"] = msg
+                        break
+
                 rich.print("=== update state ===")
                 app.update_state(
                     config,
@@ -191,15 +204,12 @@ class AgentTeam(ABC):
             raise e
         return self._agent_team_response.result()
 
-    async def _get_human_messages(self) -> str:
-        # human_reply: Callable[[], Awaitable[str]]
-        # assistant_reply: Callable[[str], None]
-
-        messages = []
+    async def _get_human_messages(self) -> list[UserMessage]:
+        messages: list[UserMessage] = []
 
         async def collect_from_queue():
             message = await self._user_message_queue.get()
-            messages.append(message["message"])
+            messages.append(message)
             self._user_message_queue.task_done()
 
         # Collect all existing messages
@@ -209,7 +219,7 @@ class AgentTeam(ABC):
         # Wait for and collect a new message
         await collect_from_queue()
 
-        return "\n\n".join(messages)
+        return messages
 
     def _init_conversation(
         self, message: str, context: list[ChatCompletionMessageParam] | None = None

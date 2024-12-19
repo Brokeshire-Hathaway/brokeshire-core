@@ -1,8 +1,10 @@
+import json
 from collections.abc import Callable
 from functools import partial
 from typing import Any
 
 import rich
+from langgraph.errors import NodeInterrupt
 from openai.types.chat import ChatCompletionMessageParam
 
 from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
@@ -89,7 +91,34 @@ class Router:
             )
         if activity is not None:
             agent_team.get_activity_updates(activity)
-        return await agent_team.send(message, message_type, context=context)
+
+        try:
+            # Normal AgentTeam flow
+            return await agent_team.send(message, message_type, context=context)
+        except NodeInterrupt as interrupt:
+            rich.print("@!@ NodeInterrupt @!@")
+            rich.print(interrupt)
+            self._session_manager.remove_session(session_id)
+
+            # Try to parse the interrupt value as JSON
+            try:
+                interrupt_data = json.loads(str(interrupt))
+                rich.print(f"Interrupt Data: {interrupt_data}")
+                route = interrupt_data.get("intent")
+                message = interrupt_data.get("message")
+                rich.print(f"Route: {route}")
+                rich.print(f"Message: {message}")
+            except json.JSONDecodeError:
+                rich.print("Failed to parse interrupt data as JSON")
+                raise
+
+            agent_team = self._create_agent_team_session(
+                session_id, route, store_transaction_info, user_chat_id, user_address
+            )
+            if activity is not None:
+                agent_team.get_activity_updates(activity)
+
+            return await agent_team.send(message, message_type, context=context)
 
     def _create_agent_team_session(
         self,
