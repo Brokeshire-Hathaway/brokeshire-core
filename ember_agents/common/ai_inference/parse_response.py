@@ -11,6 +11,7 @@ def parse_response(response: str, thinking_tag: str, response_tag: str):
     thinking_match = re.search(
         fr"<{thinking_tag}>(.*?)</{thinking_tag}>", response, re.DOTALL
     )
+    thinking_content = None
     if thinking_match:
         thinking_content = thinking_match.group(1).strip()
         console.print(f"[yellow]Thinking content: {thinking_content}[/yellow]")
@@ -30,13 +31,12 @@ def parse_response(response: str, thinking_tag: str, response_tag: str):
     if response_match:
         sanitized = response_match.group(1).strip()
         console.print(f"[green]Extracted response: {sanitized}[/green]")
-        return sanitized
+    else:
+        # If no tags found, remove any remaining tags and normalize whitespace
+        sanitized = re.sub(r"</?[^>]+>\s*", "", response).strip()
+        console.print(f"[green]Sanitized response: {sanitized}[/green]")
 
-    # If no tags found, remove any remaining tags and normalize whitespace
-    sanitized_response = re.sub(r"</?[^>]+>\s*", "", response).strip()
-    console.print(f"[green]Sanitized response: {sanitized_response}[/green]")
-
-    return sanitized_response
+    return (sanitized, thinking_content) if thinking_content else (sanitized,)
 
 
 def extract_xml_content(xml_string: str, tag_name: str) -> str | None:

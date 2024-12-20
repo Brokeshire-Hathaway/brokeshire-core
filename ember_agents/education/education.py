@@ -220,7 +220,8 @@ async def education(user_request: str, context: list[Message] | None = None) -> 
 
     # Parse response to extract content within <response> tags
     try:
-        parsed_response = parse_response(response, "response_planning", "response")
+        result = parse_response(response, "response_planning", "response")
+        parsed_response = result[0]
         return parsed_response
     except Exception as e:
         console.print(f"[red]Error parsing response: {e!s}[/red]")

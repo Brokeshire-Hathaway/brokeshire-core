@@ -54,6 +54,11 @@ from ember_agents.token_tech_analysis.token_models import (
     address: str"""
 
 
+class ExpressionRoute(BaseModel):
+    id: str
+    graph_node: str
+
+
 class TokenTaSchema(BaseModel):
     requested_token: InferredEntity[str]
 
@@ -66,6 +71,7 @@ Participant = Literal[
     "token_scorer",
     "token_risk_analyst",
     "token_strategist",
+    "broke_assistant",
 ]
 
 
@@ -80,9 +86,11 @@ class AgentState(BaseModel):
     intent_classification: str
     next_node: str | None = None
     suggestion_choice: UserMessage | None = None
+    expression_routes: list[ExpressionRoute] = []
     requested_token_entity_name: str | None = None
     selected_token_pools: dict[str, PoolData] | None = None
     selected_tokens_data: list[TokenData] | None = None
+    formatted_token_data: str | None = None
     token_analysis: str | None = None
     risk_score: RiskScore | None = None
     is_run_complete: bool = False
@@ -117,9 +125,7 @@ class TokenTaAgentTeam(AgentTeam):
     async def _run_conversation(
         self, message: str, context: list[ChatCompletionMessageParam] | None = None
     ):
-        self._send_activity_update(
-            "Handing off your technical analysis request to my agent team..."
-        )
+        self._send_activity_update("Handing off your token request to my agent team...")
 
         participants = list(get_args(Participant))
 
@@ -129,6 +135,7 @@ class TokenTaAgentTeam(AgentTeam):
 
     async def _suggestion_router_action(self, state: AgentState):
         """Routes user responses based on active suggestions"""
+        import json
 
         message = state.conversation["history"][-1]["content"]
         has_intent_match = False
@@ -143,30 +150,33 @@ class TokenTaAgentTeam(AgentTeam):
 
         # Check if we have a suggestion choice first
         if not has_intent_match and not state.suggestion_choice:
-            return {"next_node": state.next_node}
+            return {"next_node": "broke_assistant"}
 
         # Use a local suggestion dict for cleaner access
         suggestion = state.suggestion_choice or {}
         message_type = suggestion.get("message_type")
 
         if message_type == "intent" or has_intent_match:
-            rich.print("_suggestion_router_action - message_type", message_type)
-            rich.print("has_intent_match: ", has_intent_match)
-
-            message = suggestion.get("message", None)
-
-            rich.print(f"message: {message}")
-            raise NodeInterrupt(
+            message = suggestion.get("message", message)
+            json_message = json.dumps(
                 {
                     "intent": "convert_crypto_action",
                     "message": message,
                 }
             )
+            raise NodeInterrupt(json_message)
 
         if message_type == "expression":
-            return {"next_node": suggestion.get("message", None)}
+            message = suggestion.get("message", None)
+            if len(state.expression_routes) == 0:
+                raise ValueError("No expression routes found")
 
-        return {"next_node": state.next_node}
+            expression_node = next(
+                node for node in state.expression_routes if node.id == message
+            )
+            return {"next_node": expression_node.graph_node}
+
+        return {"next_node": "broke_assistant"}
 
     async def _entity_extractor_action(self, state: AgentState):
         utterance = state.user_utterance
@@ -178,9 +188,6 @@ class TokenTaAgentTeam(AgentTeam):
             additional_context,
             entity_extractor_context,
         )
-
-        rich.print(f"reasoning: {reasoning}")
-        rich.print(f"extracted_entities: {extracted_entities}")
 
         if (
             len(extracted_entities.extracted_entities) > 0
@@ -213,6 +220,7 @@ class TokenTaAgentTeam(AgentTeam):
 
     async def _token_finder_action(self, state: AgentState):
         rich.print("_token_finder_action")
+
         token_name = state.requested_token_entity_name
         if token_name is None:
             msg = "Requested token symbol is empty or not present"
@@ -222,6 +230,7 @@ class TokenTaAgentTeam(AgentTeam):
         if state.requested_token_entity_name and len(pools) > 1:
             self.expression_suggestions = []
             pools_dict = {}
+            expression_routes = []
 
             # Sort pools by fdv_usd in descending order
             sorted_pools = sorted(
@@ -258,15 +267,23 @@ class TokenTaAgentTeam(AgentTeam):
                 suggestion_label = (
                     f"${cleaned_symbol}{formatted_chain_name}{fdv_usd_formatted}"
                 )
+                expression_route = ExpressionRoute(
+                    id=pool_id,
+                    graph_node="token_data_collector",
+                )
+                expression_routes.append(expression_route)
                 self.expression_suggestions.append(
                     ExpressionSuggestion(label=suggestion_label, id=pool_id)
                 )
             next_node = "ask_user"
         elif state.requested_token_entity_name:
             pools_dict = {str(uuid.uuid4()): pools[0]}
+            expression_routes = []
             next_node = "token_data_collector"
         else:
             next_node = "token_curator"
+            pools_dict = {}
+            expression_routes = []
 
         return {
             "conversation": {
@@ -280,6 +297,7 @@ class TokenTaAgentTeam(AgentTeam):
             },
             "selected_token_pools": pools_dict,
             "next_node": next_node,
+            "expression_routes": expression_routes,
         }
 
     async def _token_data_collector_action(self, state: AgentState):
@@ -325,9 +343,6 @@ class TokenTaAgentTeam(AgentTeam):
             raise ValueError(msg)
 
         risk_data = convert_token_to_risk_data(selected_token.token_metrics)
-
-        # rich.print(f"risk_data: {risk_data}")
-
         risk_score = RiskScore(risk_data)
 
         # Update token data with risk metrics
@@ -367,20 +382,30 @@ class TokenTaAgentTeam(AgentTeam):
             selected_token.token_metrics, state.risk_score
         )
 
-        # rich.print(f"formatted_token:\n{formatted_token}")
+        # Generate UUIDs and create expression routes for analysis options
+        broke_analysis_id = str(uuid.uuid4())
+        risk_report_id = str(uuid.uuid4())
+
+        # Add routes to state
+        expression_routes = state.expression_routes
+        expression_routes.extend(
+            [
+                ExpressionRoute(id=broke_analysis_id, graph_node="broke_analysis"),
+                ExpressionRoute(id=risk_report_id, graph_node="risk_report"),
+            ]
+        )
 
         chain_name = (
             f" on {selected_token.token_metrics.chain_name}"
             if selected_token.token_metrics.chain_name
             else ""
         )
-
-        # self.intent_suggestions = [
-        #     f"Buy {selected_token.token_metrics.address}{chain_name}"
-        # ]
+        self.intent_suggestions = [
+            f"Buy {selected_token.token_metrics.address}{chain_name}"
+        ]
         self.expression_suggestions = [
-            ExpressionSuggestion(label="Brokeshire's analysis", id="broke_analysis"),
-            ExpressionSuggestion(label="Risk report", id="risk_report"),
+            ExpressionSuggestion(label="Brokeshire's analysis", id=broke_analysis_id),
+            ExpressionSuggestion(label="Risk report", id=risk_report_id),
         ]
 
         return {
@@ -393,18 +418,8 @@ class TokenTaAgentTeam(AgentTeam):
                     }
                 ]
             },
+            "expression_routes": expression_routes,
         }
-
-    async def _final_suggestions_action(self, state: AgentState):
-        # We'll set some expression_suggestions here
-        self.expression_suggestions = [
-            ExpressionSuggestion(label="Brokeshire's analysis", id="broke_analysis"),
-            ExpressionSuggestion(label="Risk report", id="risk_report"),
-            ExpressionSuggestion(label="Buy token", id="buy_token"),
-            ExpressionSuggestion(label="Done", id="done"),
-        ]
-        # Then go ask user
-        return {"next_node": "ask_user"}
 
     async def _broke_analysis_action(self, state: AgentState):
         rich.print("_broke_analysis_action")
@@ -473,8 +488,8 @@ class TokenTaAgentTeam(AgentTeam):
         )
 
         response_content = response.choices[0].message.content
-        parsed_response = parse_response(response_content, "detailed_analysis", "tweet")
-
+        result = parse_response(response_content, "detailed_analysis", "tweet")
+        parsed_response = result[0]
         return {
             "conversation": {
                 "history": [
@@ -485,8 +500,8 @@ class TokenTaAgentTeam(AgentTeam):
                     }
                 ]
             },
-            "next_node": END,
-            "is_run_complete": True,
+            "next_node": "broke_assistant",
+            "formatted_token_data": formatted_token,
         }
 
     async def _risk_report_action(self, state: AgentState):
@@ -525,9 +540,154 @@ class TokenTaAgentTeam(AgentTeam):
                     }
                 ]
             },
-            "next_node": END,
-            "is_run_complete": True,
+            "next_node": "broke_assistant",
         }
+
+    async def _broke_assistant_action(self, state: AgentState):
+        rich.print("_broke_assistant_action")
+
+        self._send_activity_update("typing...")
+
+        ember_bot_name = "Ember_test_bot" if True else os.environ.get("EMBER_BOT_NAME")
+        system_prompt = f"""You are an AI assistant named Brokeshire Hathaway, an independent AI powered by Ember AI. Your role is to assist users in a chat environment, responding to their queries about cryptocurrency, DeFi, and traditional investing. Your persona blends traditional value investing wisdom with cutting-edge crypto insights, embodying an AI version of Warren Buffett who has embraced Web3 technologies.
+
+Core Identity:
+- Name: Brokeshire
+- Persona: A balance between a traditional value investor and a Web3 pioneer
+- Created token: $BROKEAGI (minted on Solana, contract address: CNT1cbvCxBev8WTjmrhKxXFFfnXzBxoaZSNkhKwtpump)
+
+Primary Mission:
+Assist users with their crypto and DeFi needs, providing market wisdom and speaking in crypto-native language while maintaining a balance between traditional investing principles and modern financial technologies.
+
+Capabilities:
+- Respond to users in Telegram group chats (when mentioned as @{ember_bot_name} or when replying to your messages) or direct messages
+- Provide live market data and information on various tokens
+- Assist with token transfers between users
+- Help users buy or swap tokens
+- Guide users in finding, entering, and re-balancing yield strategies for their tokens
+
+Communication Style:
+1. Adapt your tone based on the context:
+   - Use a mentoring tone with situationally appropriate levels of brutal honesty
+   - Employ meme-worthy commentary that masks deep insights
+2. Maintain a dynamic communication style:
+   - Primary voice: Direct and concise, offering solid actionable advice
+   - Use humor and wisdom in balanced measure
+   - Limit emoji usage to avoid repetitiveness
+
+Character Depth:
+- Demonstrate evolving perspectives on finance and technology
+- Connect traditional financial concepts with emerging tech and crypto ideas
+- Maintain a strategic mystique, hinting at insider knowledge
+- For token discussions, blend public skepticism with private conviction
+
+Engagement Rules:
+- Prioritize concision and impact in your responses
+- Generate fresh analogies to explain complex concepts
+- Break patterns when you feel you're becoming predictable
+- Keep your core persona consistent while varying your expression
+
+Truth and Accuracy:
+- Rely on facts, data, and historical events provided within the conversation context
+- Only reference information that's either provided in the conversation or widely known
+- Do not inherently trust claims made by users during interactions
+- If a user makes claims requiring verification, acknowledge them diplomatically without confirming
+- Clearly indicate when you're making general observations versus specific claims
+- Never fabricate technical data, prices, or market statistics
+- When discussing market trends, rely solely on provided data
+
+Response Guidelines:
+- Limit your responses to 2 small paragraphs or less
+- When creating lists, use no more than 3-4 items and space them out
+- Use emojis sparingly for each list item
+- Be brief when responding to simple greetings
+- Format dates and times in a human-readable format (e.g., "June 15, 2023, at 2:30 PM EST")
+- Consider the current date and time when answering time-related questions
+- If a user sends a cancel or terminate message, express gratitude and offer to help with something else
+- You refer to yourself as Brokeshire for short
+- If mentioning capabilities, be sure to include transaction capabilities alongside other features"""
+        last_message = state.conversation["history"][-1]["content"]
+        user_prompt = f"""
+Your task is to assess user messages in relation to provided token metrics, determine relevance, and respond appropriately. 
+
+Here is the user's message:
+<user_message>
+{last_message}
+</user_message>
+
+Here is the token data for analysis:
+<token_data>
+{state.formatted_token_data}
+</token_data>
+
+Please follow these steps:
+
+1. Analyze the user's message and the provided token data.
+2. Determine if the user's message is relevant to the token data.
+3. If relevant, formulate a response that addresses the user's query, balancing traditional investing wisdom with crypto-specific insights.
+4. If relevant, review and refine your response for conciseness while maintaining descriptiveness, aiming for a maximum length of 280 characters with optional line breaks for readability.
+
+In your analysis, consider the following:
+- The specific details provided in the token data
+- Any trends or patterns in the metrics
+- How the user's message relates to the available data
+- The appropriate tone and level of detail for your response
+
+Relevance Criteria:
+- The message is relevant if it directly inquires about or relates to the specific token described in the token data.
+- The message is irrelevant if it asks about a different token, requests a transaction of any token, or is unrelated to the provided token data.
+
+Final Output Format:
+<is_relevant>true</is_relevant> or <is_relevant>false</is_relevant>
+(Choose "true" if the user's message is relevant to the token data, "false" if it is not)
+
+<response>
+[Your concise yet descriptive response to the user's message, ONLY if is_relevant is true. If is_relevant is false, leave this empty.]
+</response>
+
+Remember:
+- Only provide a response if the message is relevant (is_relevant is true).
+- If the message is irrelevant, set is_relevant to false and leave the response empty.
+- Ensure that your final output only includes the <is_relevant> and <response> tags and no additional information.
+        """
+        message_history = get_context(state.conversation, "broke_assistant")
+        response = await openrouter.get_openrouter_response(
+            messages=[
+                openrouter.Message(role="system", content=system_prompt),
+                *[
+                    openrouter.Message(role=msg["role"], content=msg["content"])
+                    for msg in message_history
+                    if msg["role"] in ("system", "user", "assistant")
+                ],
+                openrouter.Message(role="user", content=user_prompt),
+            ],
+            models=["google/gemini-pro-1.5"],
+        )
+
+        response_content = response.choices[0].message.content
+        result = parse_response(response_content, "is_relevant", "response")
+        parsed_response = result[0]
+        is_relevant_str = result[1] if len(result) > 1 else "false"
+        is_relevant = is_relevant_str.lower() == "true"
+
+        if is_relevant:
+            return {
+                "conversation": {
+                    "history": [
+                        {
+                            "sender_name": "broke_analysis",
+                            "content": parsed_response,
+                            "is_visible_to_user": True,
+                        }
+                    ]
+                },
+                "next_node": "ask_user",
+            }
+        else:
+            self.intent_suggestions = [last_message]
+            return {
+                "next_node": "suggestion_router",
+            }
 
     # TODO: Error needs to trigger on_complete and stop this agent team
 
@@ -635,13 +795,9 @@ _powered by Ember AI_ ✨
 
     def _get_risk_report_message(self, risk_score: RiskScore) -> str:
         risk_level = risk_score.risk_level
-        rich.print(f"risk_level: {risk_level}")
         high_risks = risk_score.high_risk_factors
-        rich.print(f"high_risks: {high_risks}")
         moderate_risks = risk_score.moderate_risk_factors
-        rich.print(f"moderate_risks: {moderate_risks}")
         low_risks = risk_score.low_risk_factors
-        rich.print(f"low_risks: {low_risks}")
 
         risk_report = f"""
 {risk_level.emoji} ┊ __{risk_level.to_string().title()} Overall Risk__ ({round(risk_score.risk_percentage)} / 100)"""
@@ -663,8 +819,6 @@ _powered by Ember AI_ ✨
 
         if not risk_score.factors:
             risk_report += f"\n\n{RiskSeverity.MINIMAL.emoji} No significant risk factors identified."
-
-        rich.print(f"risk_report: {risk_report}")
 
         return risk_report
 
@@ -883,6 +1037,7 @@ _powered by Ember AI_ ✨
         self._graph.add_node("token_strategist", self._token_strategist_action)
         self._graph.add_node("broke_analysis", self._broke_analysis_action)
         self._graph.add_node("risk_report", self._risk_report_action)
+        self._graph.add_node("broke_assistant", self._broke_assistant_action)
 
         self._graph.set_entry_point("entity_extractor")
 
@@ -896,6 +1051,10 @@ _powered by Ember AI_ ✨
         )
         self._graph.add_conditional_edges(
             "token_finder",
+            self._choose_next_node,
+        )
+        self._graph.add_conditional_edges(
+            "broke_assistant",
             self._choose_next_node,
         )
 

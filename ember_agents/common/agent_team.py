@@ -6,6 +6,7 @@ from typing import Any, TypedDict
 
 import rich
 from langchain_core.runnables.config import RunnableConfig
+from langgraph.errors import NodeInterrupt
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Interrupt
 from openai.types.chat import ChatCompletionMessageParam
@@ -67,7 +68,7 @@ class AgentTeam(ABC):
                         and (interrupt := next(iter(item), None))
                         and isinstance(interrupt, Interrupt)
                     ):
-                        raise Exception(interrupt.value)
+                        raise NodeInterrupt(interrupt.value)
 
                     rich.print(
                         f"""
@@ -169,6 +170,11 @@ class AgentTeam(ABC):
                 )
                 graph_input = None
 
+        except NodeInterrupt as node_ex:
+            # Instead of re-raising the NodeInterrupt, set the future's exception
+            # so the Router can handle it. Then just return.
+            self._agent_team_response.set_exception(node_ex)
+            return
         except Exception as error:
             rich.print("=== Exception as error ===")
             rich.print(error)
@@ -226,11 +232,21 @@ class AgentTeam(ABC):
     ):
         # NOTE: self._run_conversation does not return until the entire team conversation is complete
 
-        # TODO: Probably should first have a setup method, then execute a run method
         async def task():
-            await self._run_conversation(message, context=context)
-            if self._on_complete is not None:
-                self._on_complete()
+            try:
+                await self._run_conversation(message, context=context)
+            except NodeInterrupt as node_ex:
+                # Prevent the unhandled exception warning in the logs by handling NodeInterrupt here:
+                # We set the Future exception so that .send(...) can see it, but don't re-raise.
+                self._agent_team_response.set_exception(node_ex)
+            except Exception as e:
+                # Other exceptions can be raised or logged
+                rich.print(f"Background task error: {e}")
+                self._agent_team_response.set_exception(e)
+            finally:
+                # This will still call on_complete whether or not an interrupt happened
+                if self._on_complete is not None:
+                    self._on_complete()
 
         add_bg_task(asyncio.create_task(task()))
         self._is_initialized = True

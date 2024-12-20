@@ -75,14 +75,16 @@ class Router:
         activity: Callable[[str], None] | None = None,
         context: list[ChatCompletionMessageParam] | None = None,
         user_address: str | None = None,
+        _retry_count: int = 0,
+        _max_retries: int = 3,
     ):
         intent = await classify_intent(message)
         route = intent.name
+        rich.print(f"Intent Name: {route}")
         if self._requested_intents is not None and route not in self._requested_intents:
             msg = f"Requested intents {', '.join(self._requested_intents)} mismatches with matched intent {route}"
             raise ValueError(msg)
 
-        rich.print(f"Intent Name: {route}")
         agent_team = self._get_agent_team_session(session_id)
         rich.print(f"Agent Team: {agent_team}")
         if route == "terminate" or agent_team is None:
@@ -93,32 +95,41 @@ class Router:
             agent_team.get_activity_updates(activity)
 
         try:
-            # Normal AgentTeam flow
-            return await agent_team.send(message, message_type, context=context)
-        except NodeInterrupt as interrupt:
-            rich.print("@!@ NodeInterrupt @!@")
-            rich.print(interrupt)
+            response = await agent_team.send(message, message_type, context=context)
+            return response
+        except NodeInterrupt as interrupt_tuple:
+            if _retry_count >= _max_retries:
+                raise ValueError(
+                    f"Maximum number of retries ({_max_retries}) exceeded while handling NodeInterrupt"
+                )
+
+            if not interrupt_tuple.args or len(interrupt_tuple.args) != 1:
+                raise interrupt_tuple
+
+            interrupt = interrupt_tuple.args[0][0]
             self._session_manager.remove_session(session_id)
 
-            # Try to parse the interrupt value as JSON
             try:
-                interrupt_data = json.loads(str(interrupt))
-                rich.print(f"Interrupt Data: {interrupt_data}")
-                route = interrupt_data.get("intent")
-                message = interrupt_data.get("message")
-                rich.print(f"Route: {route}")
-                rich.print(f"Message: {message}")
-            except json.JSONDecodeError:
-                rich.print("Failed to parse interrupt data as JSON")
+                interrupt_data = json.loads(interrupt.value)
+                new_route = interrupt_data.get("intent")
+                new_message = interrupt_data.get("message")
+            except json.JSONDecodeError as e:
+                rich.print(f"Failed to parse interrupt data as JSON: {e}")
                 raise
 
-            agent_team = self._create_agent_team_session(
-                session_id, route, store_transaction_info, user_chat_id, user_address
+            # Recursively call send() with incremented retry count
+            return await self.send(
+                user_chat_id=user_chat_id,
+                store_transaction_info=store_transaction_info,
+                session_id=session_id,
+                message=new_message,
+                message_type=message_type,
+                activity=activity,
+                context=context,
+                user_address=user_address,
+                _retry_count=_retry_count + 1,
+                _max_retries=_max_retries,
             )
-            if activity is not None:
-                agent_team.get_activity_updates(activity)
-
-            return await agent_team.send(message, message_type, context=context)
 
     def _create_agent_team_session(
         self,
