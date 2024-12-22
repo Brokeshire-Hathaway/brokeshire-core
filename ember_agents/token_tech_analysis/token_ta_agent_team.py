@@ -1,3 +1,4 @@
+import os
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -211,7 +212,7 @@ class TokenTaAgentTeam(AgentTeam):
 
         curated_tokens = []
         for pool in trending_tokens:
-            token_data = self._convert_metrics_data_to_token_data(pool)
+            token_data = convert_metrics_data_to_token_data(pool)
             curated_tokens.append(token_data)
 
         return {
@@ -319,7 +320,7 @@ class TokenTaAgentTeam(AgentTeam):
             f"Collecting token data for {state.requested_token_entity_name}..."
         )
         token_metrics = await build_token_metrics(selected_token_pool)
-        token_data = self._convert_metrics_data_to_token_data(token_metrics)
+        token_data = convert_metrics_data_to_token_data(token_metrics)
         return {
             "selected_tokens_data": [token_data],
         }
@@ -431,7 +432,7 @@ class TokenTaAgentTeam(AgentTeam):
         self._send_activity_update("Analyzing token folks...")
 
         selected_token = state.selected_tokens_data[0]
-        formatted_token = self._format_token_data(selected_token)
+        formatted_token = format_token_data(selected_token)
         system_prompt = """
         You are an expert analyst for Brokeshire Hathaway, a crypto investment firm. Your task is to analyze a token and provide a concise report for Twitter, aimed at potential investors seeking exclusive opportunities.
         """
@@ -822,106 +823,6 @@ _powered by Ember AI_ ✨
 
         return risk_report
 
-    def _convert_metrics_data_to_token_data(
-        self, token_metrics: TokenMetrics
-    ) -> TokenData:
-        # Get symbol and clean it up
-        raw_symbol = (
-            token_metrics.name.split(" / ")[0] if token_metrics.name else "Unknown"
-        )
-        cleaned_symbol = raw_symbol.lstrip("$").upper()
-
-        return TokenData(
-            token_info=TokenInfo(
-                symbol=cleaned_symbol,
-                address=token_metrics.address,
-                chain_name=token_metrics.chain_id or "Unknown",
-            ),
-            market_data=TokenMarketData(
-                price=str(token_metrics.base_token_price_usd or "0"),
-                price_change_percentage_5m=str(token_metrics.price_change_5m or "0"),
-                price_change_percentage_1h=str(token_metrics.price_change_1h or "0"),
-                price_change_percentage_6h=str(token_metrics.price_change_6h or "0"),
-                price_change_percentage_24h=str(token_metrics.price_change_24h or "0"),
-                volume_5m=str(token_metrics.volume_5m or "0"),
-                volume_1h=str(token_metrics.volume_1h or "0"),
-                volume_6h=str(token_metrics.volume_6h or "0"),
-                volume_24h=str(token_metrics.volume_24h or "0"),
-                buys_5m=str(token_metrics.buys_5m or "0"),
-                sells_5m=str(token_metrics.sells_5m or "0"),
-                buyers_5m=str(token_metrics.buyers_5m or "0"),
-                sellers_5m=str(token_metrics.sellers_5m or "0"),
-                buys_15m=str(token_metrics.buys_15m or "0"),
-                sells_15m=str(token_metrics.sells_15m or "0"),
-                buyers_15m=str(token_metrics.buyers_15m or "0"),
-                sellers_15m=str(token_metrics.sellers_15m or "0"),
-                buys_30m=str(token_metrics.buys_30m or "0"),
-                sells_30m=str(token_metrics.sells_30m or "0"),
-                buyers_30m=str(token_metrics.buyers_30m or "0"),
-                sellers_30m=str(token_metrics.sellers_30m or "0"),
-                buys_1h=str(token_metrics.buys_1h or "0"),
-                sells_1h=str(token_metrics.sells_1h or "0"),
-                buyers_1h=str(token_metrics.buyers_1h or "0"),
-                sellers_1h=str(token_metrics.sellers_1h or "0"),
-                buys_24h=str(token_metrics.buys_24h or "0"),
-                sells_24h=str(token_metrics.sells_24h or "0"),
-                buyers_24h=str(token_metrics.buyers_24h or "0"),
-                sellers_24h=str(token_metrics.sellers_24h or "0"),
-                fdv=str(token_metrics.fdv_usd or "0"),
-                market_cap=str(token_metrics.market_cap_usd or "0"),
-                liquidity_in_usd=str(token_metrics.liquidity_usd or "0"),
-            ),
-            token_metrics=token_metrics,
-        )
-
-    def _format_token_data(self, token: TokenData) -> str:
-        if not token.token_info.symbol:
-            return ""
-
-        try:
-            symbol = token.token_info.symbol
-            rich.print(f"[blue]Token: {symbol}[/blue]")
-
-            token_xml = f"""
-        <token_data>
-            <symbol>${symbol}</symbol>
-            <contract_address>{token.token_info.address}</contract_address>
-            <fully_diluted_valuation>{token.market_data.fdv}</fully_diluted_valuation>
-            <market_cap>{token.market_data.market_cap or "unknown"}</market_cap>
-            <price_change_5m>{token.market_data.price_change_percentage_5m or "unknown"}%</price_change_5m>
-            <price_change_1h>{token.market_data.price_change_percentage_1h or "unknown"}%</price_change_1h>
-            <price_change_6h>{token.market_data.price_change_percentage_6h or "unknown"}%</price_change_6h>
-            <price_change_24h>{token.market_data.price_change_percentage_24h or "unknown"}%</price_change_24h>
-            <volume_usd_5m>{token.market_data.volume_5m or "unknown"}</volume_usd_5m>
-            <volume_usd_1h>{token.market_data.volume_1h or "unknown"}</volume_usd_1h>
-            <volume_usd_6h>{token.market_data.volume_6h or "unknown"}</volume_usd_6h>
-            <volume_usd_24h>{token.market_data.volume_24h or "unknown"}</volume_usd_24h>
-            <buys_5m>{token.market_data.buys_5m or "unknown"}</buys_5m>
-            <sells_5m>{token.market_data.sells_5m or "unknown"}</sells_5m>
-            <buyers_5m>{token.market_data.buyers_5m or "unknown"}</buyers_5m>
-            <sellers_5m>{token.market_data.sellers_5m or "unknown"}</sellers_5m>
-            <buys_15m>{token.market_data.buys_15m or "unknown"}</buys_15m>
-            <sells_15m>{token.market_data.sells_15m or "unknown"}</sells_15m>
-            <buyers_15m>{token.market_data.buyers_15m or "unknown"}</buyers_15m>
-            <sellers_15m>{token.market_data.sellers_15m or "unknown"}</sellers_15m>
-            <buys_30m>{token.market_data.buys_30m or "unknown"}</buys_30m>
-            <sells_30m>{token.market_data.sells_30m or "unknown"}</sells_30m>
-            <buyers_30m>{token.market_data.buyers_30m or "unknown"}</buyers_30m>
-            <sellers_30m>{token.market_data.sellers_30m or "unknown"}</sellers_30m>
-            <buys_1h>{token.market_data.buys_1h or "unknown"}</buys_1h>
-            <sells_1h>{token.market_data.sells_1h or "unknown"}</sells_1h>
-            <buyers_1h>{token.market_data.buyers_1h or "unknown"}</buyers_1h>
-            <sellers_1h>{token.market_data.sellers_1h or "unknown"}</sellers_1h>
-            <buys_24h>{token.market_data.buys_24h or "unknown"}</buys_24h>
-            <sells_24h>{token.market_data.sells_24h or "unknown"}</sells_24h>
-            <buyers_24h>{token.market_data.buyers_24h or "unknown"}</buyers_24h>
-            <sellers_24h>{token.market_data.sellers_24h or "unknown"}</sellers_24h>
-        </token_data>"""
-            return token_xml
-        except Exception as e:
-            rich.print(f"[red]Error formatting token data: {e!s}[/red]")
-            return ""
-
     async def _get_linked_chain_id(self, chain_name: str) -> str:
         # TODO: Mock link_chain for testing
         linked_from_chain_results = await link_chain(chain_name)
@@ -1069,3 +970,101 @@ _powered by Ember AI_ ✨
         self._app = self._graph.compile(
             checkpointer=checkpointer, interrupt_before=["ask_user"]
         )
+
+
+def convert_metrics_data_to_token_data(token_metrics: TokenMetrics) -> TokenData:
+    # Get symbol and clean it up
+    raw_symbol = token_metrics.name.split(" / ")[0] if token_metrics.name else "Unknown"
+    cleaned_symbol = raw_symbol.lstrip("$").upper()
+
+    return TokenData(
+        token_info=TokenInfo(
+            symbol=cleaned_symbol,
+            address=token_metrics.address,
+            chain_name=token_metrics.chain_id or "Unknown",
+        ),
+        market_data=TokenMarketData(
+            price=str(token_metrics.base_token_price_usd or "0"),
+            price_change_percentage_5m=str(token_metrics.price_change_5m or "0"),
+            price_change_percentage_1h=str(token_metrics.price_change_1h or "0"),
+            price_change_percentage_6h=str(token_metrics.price_change_6h or "0"),
+            price_change_percentage_24h=str(token_metrics.price_change_24h or "0"),
+            volume_5m=str(token_metrics.volume_5m or "0"),
+            volume_1h=str(token_metrics.volume_1h or "0"),
+            volume_6h=str(token_metrics.volume_6h or "0"),
+            volume_24h=str(token_metrics.volume_24h or "0"),
+            buys_5m=str(token_metrics.buys_5m or "0"),
+            sells_5m=str(token_metrics.sells_5m or "0"),
+            buyers_5m=str(token_metrics.buyers_5m or "0"),
+            sellers_5m=str(token_metrics.sellers_5m or "0"),
+            buys_15m=str(token_metrics.buys_15m or "0"),
+            sells_15m=str(token_metrics.sells_15m or "0"),
+            buyers_15m=str(token_metrics.buyers_15m or "0"),
+            sellers_15m=str(token_metrics.sellers_15m or "0"),
+            buys_30m=str(token_metrics.buys_30m or "0"),
+            sells_30m=str(token_metrics.sells_30m or "0"),
+            buyers_30m=str(token_metrics.buyers_30m or "0"),
+            sellers_30m=str(token_metrics.sellers_30m or "0"),
+            buys_1h=str(token_metrics.buys_1h or "0"),
+            sells_1h=str(token_metrics.sells_1h or "0"),
+            buyers_1h=str(token_metrics.buyers_1h or "0"),
+            sellers_1h=str(token_metrics.sellers_1h or "0"),
+            buys_24h=str(token_metrics.buys_24h or "0"),
+            sells_24h=str(token_metrics.sells_24h or "0"),
+            buyers_24h=str(token_metrics.buyers_24h or "0"),
+            sellers_24h=str(token_metrics.sellers_24h or "0"),
+            fdv=str(token_metrics.fdv_usd or "0"),
+            market_cap=str(token_metrics.market_cap_usd or "0"),
+            liquidity_in_usd=str(token_metrics.liquidity_usd or "0"),
+        ),
+        token_metrics=token_metrics,
+    )
+
+
+def format_token_data(token: TokenData) -> str:
+    if not token.token_info.symbol:
+        return ""
+
+    try:
+        symbol = token.token_info.symbol
+        rich.print(f"[blue]Token: {symbol}[/blue]")
+
+        token_xml = f"""
+    <token_data>
+        <symbol>${symbol}</symbol>
+        <contract_address>{token.token_info.address}</contract_address>
+        <fully_diluted_valuation>{token.market_data.fdv}</fully_diluted_valuation>
+        <market_cap>{token.market_data.market_cap or "unknown"}</market_cap>
+        <price_change_5m>{token.market_data.price_change_percentage_5m or "unknown"}%</price_change_5m>
+        <price_change_1h>{token.market_data.price_change_percentage_1h or "unknown"}%</price_change_1h>
+        <price_change_6h>{token.market_data.price_change_percentage_6h or "unknown"}%</price_change_6h>
+        <price_change_24h>{token.market_data.price_change_percentage_24h or "unknown"}%</price_change_24h>
+        <volume_usd_5m>{token.market_data.volume_5m or "unknown"}</volume_usd_5m>
+        <volume_usd_1h>{token.market_data.volume_1h or "unknown"}</volume_usd_1h>
+        <volume_usd_6h>{token.market_data.volume_6h or "unknown"}</volume_usd_6h>
+        <volume_usd_24h>{token.market_data.volume_24h or "unknown"}</volume_usd_24h>
+        <buys_5m>{token.market_data.buys_5m or "unknown"}</buys_5m>
+        <sells_5m>{token.market_data.sells_5m or "unknown"}</sells_5m>
+        <buyers_5m>{token.market_data.buyers_5m or "unknown"}</buyers_5m>
+        <sellers_5m>{token.market_data.sellers_5m or "unknown"}</sellers_5m>
+        <buys_15m>{token.market_data.buys_15m or "unknown"}</buys_15m>
+        <sells_15m>{token.market_data.sells_15m or "unknown"}</sells_15m>
+        <buyers_15m>{token.market_data.buyers_15m or "unknown"}</buyers_15m>
+        <sellers_15m>{token.market_data.sellers_15m or "unknown"}</sellers_15m>
+        <buys_30m>{token.market_data.buys_30m or "unknown"}</buys_30m>
+        <sells_30m>{token.market_data.sells_30m or "unknown"}</sells_30m>
+        <buyers_30m>{token.market_data.buyers_30m or "unknown"}</buyers_30m>
+        <sellers_30m>{token.market_data.sellers_30m or "unknown"}</sellers_30m>
+        <buys_1h>{token.market_data.buys_1h or "unknown"}</buys_1h>
+        <sells_1h>{token.market_data.sells_1h or "unknown"}</sells_1h>
+        <buyers_1h>{token.market_data.buyers_1h or "unknown"}</buyers_1h>
+        <sellers_1h>{token.market_data.sellers_1h or "unknown"}</sellers_1h>
+        <buys_24h>{token.market_data.buys_24h or "unknown"}</buys_24h>
+        <sells_24h>{token.market_data.sells_24h or "unknown"}</sells_24h>
+        <buyers_24h>{token.market_data.buyers_24h or "unknown"}</buyers_24h>
+        <sellers_24h>{token.market_data.sellers_24h or "unknown"}</sellers_24h>
+    </token_data>"""
+        return token_xml
+    except Exception as e:
+        rich.print(f"[red]Error formatting token data: {e!s}[/red]")
+        return ""

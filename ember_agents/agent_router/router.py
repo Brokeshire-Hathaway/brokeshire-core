@@ -9,6 +9,7 @@ from openai.types.chat import ChatCompletionMessageParam
 
 from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
 from ember_agents.common.agent_team import AgentTeam
+from ember_agents.common.broke_twitter.broke_twitter import BrokeTwitterAgentTeam
 from ember_agents.common.types import MessageType
 from ember_agents.convert_token.convert_token_agent_team import ConvertTokenAgentTeam
 from ember_agents.earn.earn_agent_team import EarnAgentTeam
@@ -157,6 +158,8 @@ class Router:
                 )
             case "token_analysis_query" | "crypto_price_query" | "market_news_query":
                 agent_team = TokenTaAgentTeam(on_complete, user_chat_id)
+            case "broke_twitter_query":
+                agent_team = BrokeTwitterAgentTeam(on_complete)
             case (
                 "explanation_query"
                 | "capabilities_query"
