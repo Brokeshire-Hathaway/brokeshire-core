@@ -3,6 +3,7 @@ import math
 import httpx
 from pydantic import BaseModel, ConfigDict, HttpUrl
 from pydantic.alias_generators import to_camel
+from solders.pubkey import Pubkey
 from web3 import Web3
 
 from ember_agents.common.entity_linker import link_entity
@@ -112,7 +113,8 @@ async def link_token(token: str, chain_id: str):
     print("Token length", len(supported_tokens))
     supported_tokens_dict = [token.model_dump() for token in supported_tokens]
 
-    if Web3.is_address(token):
+    # Check if it's an address (either ETH or SOL)
+    if Web3.is_address(token) or Pubkey.from_string(token):
         fuzzy_keys = ["address"]
         return await link_entity(
             token,
