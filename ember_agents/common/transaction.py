@@ -108,13 +108,23 @@ async def link_abstract_token(token: str):
     )
 
 
+def is_valid_sol_address(addr: str) -> bool:
+    """Check if string is a valid Solana pubkey without raising an exception."""
+    # Optional: you can also check for correct length
+    try:
+        _ = Pubkey.from_string(addr)
+        return True
+    except ValueError:
+        return False
+
+
 async def link_token(token: str, chain_id: str):
     supported_tokens = await _get_supported_tokens(chain_id)
     print("Token length", len(supported_tokens))
     supported_tokens_dict = [token.model_dump() for token in supported_tokens]
 
     # Check if it's an address (either ETH or SOL)
-    if Web3.is_address(token) or Pubkey.from_string(token):
+    if Web3.is_address(token) or is_valid_sol_address(token):
         fuzzy_keys = ["address"]
         return await link_entity(
             token,
@@ -129,7 +139,6 @@ async def link_token(token: str, chain_id: str):
         fuzzy_keys,
     )
     fuzzy_matches = fuzzy_results.get("fuzzy_matches")
-
     if fuzzy_matches:
         # Check if any matches are vetted by the primary data source
         vetted_matches = [

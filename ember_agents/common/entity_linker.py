@@ -168,14 +168,12 @@ async def link_entity(
         if fuzzy_keys is None
         else fuzzy_entity_match(named_entity, unique_entities, fuzzy_keys)
     )
-    llm_entity_list = (
-        [le["entity"] for le in fuzzy_matches] if fuzzy_matches else unique_entities
-    )
-    llm_matches = (
-        None
-        if llm_keys is None
-        else await llm_entity_match(named_entity, llm_entity_list, llm_keys)
-    )
+    llm_matches = None
+    if llm_keys is not None:
+        llm_entity_list = (
+            [le["entity"] for le in fuzzy_matches] if fuzzy_matches else unique_entities
+        )
+        llm_matches = await llm_entity_match(named_entity, llm_entity_list, llm_keys)
     return LinkedEntityResults(
         named_entity=named_entity, fuzzy_matches=fuzzy_matches, llm_matches=llm_matches
     )

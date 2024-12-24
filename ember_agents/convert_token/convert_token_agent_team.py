@@ -31,7 +31,7 @@ from ember_agents.common.conversation import (
     conversation_reducer,
     get_context,
 )
-from ember_agents.common.transaction import link_chain, link_token, Token
+from ember_agents.common.transaction import Token, link_chain, link_token
 from ember_agents.common.utils import format_transaction_url
 from ember_agents.common.validators import PositiveAmount
 from ember_agents.settings import SETTINGS
@@ -259,17 +259,15 @@ class ConvertTokenAgentTeam(AgentTeam):
 
         results = await asyncio.gather(link_from(), link_to(), return_exceptions=True)
 
-        errors = [r for r in results if isinstance(r, BaseException)]
-        if errors:
-            raise ValueError(str(errors))
+        # Check each result individually
+        if isinstance(results[0], BaseException):
+            msg = f"Error in source chain/token: {results[0]!s}"
+            raise ValueError(msg) from results[0]
+        if isinstance(results[1], BaseException):
+            msg = f"Error in destination chain/token: {results[1]!s}"
+            raise ValueError(msg) from results[1]
 
-        valid_results = [r for r in results if not isinstance(r, BaseException)]
-        expected_results = 2
-        if len(valid_results) != expected_results:
-            msg = f"Expected {expected_results} valid results, but got {len(valid_results)}"
-            raise ValueError(msg)
-
-        return valid_results[0] + valid_results[1]
+        return results[0] + results[1]
 
     async def _schema_validator_action(self, state: AgentState):
         try:
@@ -284,10 +282,11 @@ class ConvertTokenAgentTeam(AgentTeam):
                 linked_to_token_address,
             ) = await self._get_linked_entities(schema)
 
-            rich.print(f"linked_to_chain_id: {linked_to_chain_id}")
-            rich.print(f"linked_to_token_address: {linked_to_token_address}")
-            rich.print(f"linked_from_chain_id: {linked_from_chain_id}")
-            rich.print(f"linked_from_token_address: {linked_from_token}")
+            # rich.print(f"linked_to_chain_id: {linked_to_chain_id}")
+            # rich.print(f"linked_to_token_address: {linked_to_token_address}")
+            # rich.print(f"linked_from_chain_id: {linked_from_chain_id}")
+            # rich.print(f"linked_from_token_address: {linked_from_token}")
+
             token_convert_to = TokenConvertTo(
                 network_id=int(linked_to_chain_id),
                 token=linked_to_token_address,
