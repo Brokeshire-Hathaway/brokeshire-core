@@ -57,9 +57,22 @@ async def find_top_pools(search_term: str, limit: int = 3) -> list[PoolData]:
         msg = f"No pools found for search term: {search_term}"
         raise Exception(msg)
 
-    # Get top pools by volume
+    # Create a dictionary to store the highest volume pool for each base token
+    token_pools: dict[str, PoolData] = {}
+
+    for pool in response.data:
+        base_token_id = pool.relationships.base_token.data.id
+        current_volume = pool.attributes.volume_usd.h24 or 0
+
+        # If we haven't seen this token before, or if this pool has higher volume
+        if base_token_id not in token_pools or current_volume > (
+            token_pools[base_token_id].attributes.volume_usd.h24 or 0
+        ):
+            token_pools[base_token_id] = pool
+
+    # Sort unique pools by volume and take top N
     sorted_pools = sorted(
-        response.data,
+        token_pools.values(),
         key=lambda pool: pool.attributes.volume_usd.h24 or 0,
         reverse=True,
     )[:limit]

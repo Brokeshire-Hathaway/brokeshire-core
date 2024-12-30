@@ -128,6 +128,8 @@ class TokenTaAgentTeam(AgentTeam):
     ):
         self._send_activity_update("Handing off your token request to my agent team...")
 
+        self.intent_suggestions = ["< Go back"]
+
         participants = list(get_args(Participant))
 
         await self._run_graph(
@@ -146,7 +148,7 @@ class TokenTaAgentTeam(AgentTeam):
             )
 
         # Clear suggestions by default
-        self.intent_suggestions = None
+        # self.intent_suggestions = ["< Go back"]
         self.expression_suggestions = None
 
         # Check if we have a suggestion choice first
@@ -237,7 +239,9 @@ class TokenTaAgentTeam(AgentTeam):
             sorted_pools = sorted(
                 pools,
                 key=lambda p: (
-                    p.attributes.fdv_usd if p.attributes.fdv_usd is not None else 0
+                    float(p.attributes.fdv_usd)
+                    if p.attributes.fdv_usd is not None
+                    else 0.0
                 ),
                 reverse=True,
             )
@@ -401,9 +405,15 @@ class TokenTaAgentTeam(AgentTeam):
             if selected_token.token_metrics.chain_name
             else ""
         )
-        self.intent_suggestions = [
-            f"Buy {selected_token.token_metrics.address}{chain_name}"
-        ]
+        if self.intent_suggestions is not None:
+            self.intent_suggestions.append(
+                f"Buy {selected_token.token_metrics.address}{chain_name}"
+            )
+        else:
+            self.intent_suggestions = [
+                f"Buy {selected_token.token_metrics.address}{chain_name}"
+            ]
+
         self.expression_suggestions = [
             ExpressionSuggestion(label="Brokeshire's analysis", id=broke_analysis_id),
             ExpressionSuggestion(label="Risk report", id=risk_report_id),
@@ -685,7 +695,10 @@ Remember:
                 "next_node": "ask_user",
             }
         else:
-            self.intent_suggestions = [last_message]
+            if self.intent_suggestions is None:
+                self.intent_suggestions = [last_message]
+            else:
+                self.intent_suggestions.append(last_message)
             return {
                 "next_node": "suggestion_router",
             }

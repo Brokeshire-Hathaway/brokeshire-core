@@ -1,4 +1,5 @@
 import os
+import random
 import typing
 import uuid
 from datetime import UTC, datetime
@@ -34,7 +35,21 @@ class EducationAgentTeam(AgentTeam):
             for msg in reversed(context or [])
         ]
         response = await education(message, context=converted_context)
-        self._send_team_response(response)
+        intent_suggestion_options = [
+            "brokeagi token analysis",
+            "buy CNT1cbvCxBev8WTjmrhKxXFFfnXzBxoaZSNkhKwtpump",
+            "swap usdc on base for arb on arbitrum",
+            "sol price",
+            "who's behind brokeshire hathaway?",
+            "what can you do?",
+            "random token analysis",
+            "design a trading strategy",
+            "send dai",
+            "get yield on rETH",
+            "tell me about the team",
+        ]
+        intent_suggestions = random.sample(intent_suggestion_options, 3)
+        self._send_team_response(response, intent_suggestions=intent_suggestions)
 
 
 pc = Pinecone(SETTINGS.pinecone_api_key)

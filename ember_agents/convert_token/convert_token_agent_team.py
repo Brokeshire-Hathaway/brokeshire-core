@@ -175,6 +175,8 @@ class ConvertTokenAgentTeam(AgentTeam):
 
         self._send_activity_update("Understanding your convert request...")
 
+        self.intent_suggestions = ["< Go back"]
+
         participants = list(get_args(Participant))
 
         await self._run_graph(
