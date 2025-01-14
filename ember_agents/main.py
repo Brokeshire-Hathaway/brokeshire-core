@@ -32,6 +32,8 @@ class RequestMessage(BaseModel):
     store_transaction: Any
     requested_routes: list[INTENT] | None = None
     user_address: str | None = None
+    required_route: INTENT | None = None
+
 
 
 def context_to_messages(
@@ -56,6 +58,8 @@ class Response(BaseModel):
     expression_suggestions: list[ExpressionSuggestion] | None = None
     sign_tx_url: str | None = None
     transaction_hash: str | None = None
+    reroute_recommendations:list | None= None
+
 
 
 @app.get("/")
@@ -79,6 +83,10 @@ def event_router(
 
     message_queue: Queue[Response] = Queue()
 
+    # ===================================================
+    # Returning Response with reroute recommendations
+    # ===================================================
+    
     def on_activity(activity: str):
         response = Response(status="processing", message=activity)
         message_queue.put_nowait(response)
@@ -94,6 +102,7 @@ def event_router(
     print(f"body.context: {body.context}")
     print(f"body.store_transaction: {body.store_transaction}")
     print(f"request: {request}")
+    print(f"body.required_route: {body.required_route}")
 
     async def send_message():
         router = Router(agent_team_session_manager, routes, body.requested_routes)
@@ -107,6 +116,7 @@ def event_router(
                 on_activity,
                 context=context_to_messages(body.context),
                 user_address=body.user_address,
+                required_route=body.required_route,
             )
             response = Response(
                 status="done",
@@ -115,6 +125,7 @@ def event_router(
                 expression_suggestions=response_message["expression_suggestions"],
                 sign_tx_url=response_message["sign_url"],
                 transaction_hash=response_message["transaction_hash"],
+                reroute_recommendations=response_message["route_recommendations"]
             )
         except Exception as e:
             response = Response(status="error", message=str(e))
