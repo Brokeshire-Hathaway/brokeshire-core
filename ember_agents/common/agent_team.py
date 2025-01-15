@@ -197,7 +197,7 @@ class AgentTeam(ABC):
                     "expression_suggestions": expression_suggestions,
                     "sign_url": sign_url,
                     "transaction_hash": transaction_hash,
-                    "route_recommendations" : None
+                    "route_recommendations": None,
                 }
             )
         except InvalidStateError as e:

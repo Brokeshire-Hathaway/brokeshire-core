@@ -35,7 +35,6 @@ class RequestMessage(BaseModel):
     required_route: INTENT | None = None
 
 
-
 def context_to_messages(
     context: list[MessageContext],
 ):
@@ -58,8 +57,7 @@ class Response(BaseModel):
     expression_suggestions: list[ExpressionSuggestion] | None = None
     sign_tx_url: str | None = None
     transaction_hash: str | None = None
-    reroute_recommendations:list | None= None
-
+    reroute_recommendations: list | None = None
 
 
 @app.get("/")
@@ -86,7 +84,7 @@ def event_router(
     # ===================================================
     # Returning Response with reroute recommendations
     # ===================================================
-    
+
     def on_activity(activity: str):
         response = Response(status="processing", message=activity)
         message_queue.put_nowait(response)
@@ -125,7 +123,7 @@ def event_router(
                 expression_suggestions=response_message["expression_suggestions"],
                 sign_tx_url=response_message["sign_url"],
                 transaction_hash=response_message["transaction_hash"],
-                reroute_recommendations=response_message["route_recommendations"]
+                reroute_recommendations=response_message["route_recommendations"],
             )
         except Exception as e:
             response = Response(status="error", message=str(e))

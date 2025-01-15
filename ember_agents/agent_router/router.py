@@ -7,7 +7,11 @@ import rich
 from langgraph.errors import NodeInterrupt
 from openai.types.chat import ChatCompletionMessageParam
 
-from ember_agents.agent_router.intent_classifier import INTENT, classify_intent, ClassifiedIntent
+from ember_agents.agent_router.intent_classifier import (
+    INTENT,
+    classify_intent,
+    ClassifiedIntent,
+)
 from ember_agents.common.agent_team import AgentTeam
 from ember_agents.common.broke_twitter.broke_twitter import BrokeTwitterAgentTeam
 from ember_agents.common.types import MessageType
@@ -78,9 +82,8 @@ class Router:
         user_address: str | None = None,
         _retry_count: int = 0,
         _max_retries: int = 3,
-        required_route: INTENT | None = None
+        required_route: INTENT | None = None,
     ):
-
 
         # ===================================================
         # Checking required_route in params and if exist then creating classified intent instance from it
@@ -128,7 +131,6 @@ class Router:
                 rich.print(f"Failed to parse interrupt data as JSON: {e}")
                 raise
 
-
             # ===================================================
             # returning recommendations inf the provided message scope is out of the requested route
             # ===================================================
@@ -136,7 +138,14 @@ class Router:
                 recommended_intent = await classify_intent(message)
                 recommended_intent = recommended_intent.name
 
-                if recommended_intent in ["capabilities_query", "advice_query", "unclear", "out_of_scope", "terminate", None]:
+                if recommended_intent in [
+                    "capabilities_query",
+                    "advice_query",
+                    "unclear",
+                    "out_of_scope",
+                    "terminate",
+                    None,
+                ]:
                     recommended_intent = "explanation_query"
                 elif recommended_intent in ["crypto_price_query", "market_news_query"]:
                     recommended_intent = "token_analysis_query"
@@ -147,8 +156,10 @@ class Router:
                 route_recommendations = [recommended_intent]
 
                 response = {}
-                response['status'] =  "done"
-                response['message'] = "Out of Scope/ please Choose from recommended workflow or choose from below workflows"
+                response['status'] = "done"
+                response['message'] = (
+                    "Out of Scope/ please Choose from recommended workflow or choose from below workflows"
+                )
                 response['intent_suggestions'] = None
                 response['expression_suggestions'] = None
                 response['sign_tx_url'] = None
@@ -167,7 +178,7 @@ class Router:
                 context=context,
                 user_address=user_address,
                 _retry_count=_retry_count + 1,
-                _max_retries=_max_retries
+                _max_retries=_max_retries,
             )
 
     def _create_agent_team_session(
