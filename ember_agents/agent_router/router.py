@@ -9,8 +9,8 @@ from openai.types.chat import ChatCompletionMessageParam
 
 from ember_agents.agent_router.intent_classifier import (
     INTENT,
-    classify_intent,
     ClassifiedIntent,
+    classify_intent,
 )
 from ember_agents.common.agent_team import AgentTeam
 from ember_agents.common.broke_twitter.broke_twitter import BrokeTwitterAgentTeam
@@ -156,15 +156,15 @@ class Router:
                 route_recommendations = [recommended_intent]
 
                 response = {}
-                response['status'] = "done"
-                response['message'] = (
-                    "Out of Scope/ please Choose from recommended workflow or choose from below workflows"
+                response["status"] = "done"
+                response["message"] = (
+                    "Out of Scope! Please choose from the below workflow to proceed this action."
                 )
-                response['intent_suggestions'] = None
-                response['expression_suggestions'] = None
-                response['sign_tx_url'] = None
-                response['transaction_hash'] = None
-                response['route_recommendations'] = route_recommendations
+                response["intent_suggestions"] = None
+                response["expression_suggestions"] = None
+                response["sign_tx_url"] = None
+                response["transaction_hash"] = None
+                response["route_recommendations"] = route_recommendations
                 return response
 
             # Recursively call send() with incremented retry count

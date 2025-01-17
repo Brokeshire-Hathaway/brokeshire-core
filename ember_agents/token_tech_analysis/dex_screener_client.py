@@ -42,10 +42,10 @@ class TimePeriodVolume(BaseModel):
 
 
 class TimePeriodPriceChange(BaseModel):
-    m5: float
-    h1: float
-    h6: float
-    h24: float
+    m5: float = 0
+    h1: float = 0
+    h6: float = 0
+    h24: float = 0
 
 
 class Liquidity(BaseModel):
