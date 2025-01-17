@@ -2,7 +2,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from asyncio import Future, InvalidStateError, Queue
 from collections.abc import Callable
-from typing import Any, TypedDict
+from typing import Any, TypedDict, NotRequired
 
 import rich
 from langchain_core.runnables.config import RunnableConfig
@@ -27,6 +27,7 @@ class SendResponse(TypedDict):
     expression_suggestions: list[ExpressionSuggestion] | None
     sign_url: str | None
     transaction_hash: str | None
+    route_recommendations: NotRequired[list] | None
 
 
 class UserMessage(TypedDict):
@@ -196,6 +197,7 @@ class AgentTeam(ABC):
                     "expression_suggestions": expression_suggestions,
                     "sign_url": sign_url,
                     "transaction_hash": transaction_hash,
+                    "route_recommendations": None,
                 }
             )
         except InvalidStateError as e:
