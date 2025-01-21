@@ -89,6 +89,7 @@ class Router:
         # Checking required_route in params and if exist then creating classified intent instance from it
         # ===================================================
         if required_route is not None:
+            session_id = f"{session_id}:{required_route}"
             intent = ClassifiedIntent(name=required_route, linear_probability=0.9)
         else:
             intent = await classify_intent(message)
