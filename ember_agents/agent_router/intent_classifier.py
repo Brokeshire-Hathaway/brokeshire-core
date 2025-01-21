@@ -34,7 +34,7 @@ client = Fireworks(api_key=SETTINGS.fireworks_api_key)
 descriptions: dict[INTENT, str] = {
     "capabilities_query": "Reply to any questions about me. Help the user understand what this assistant can do, it's features and functionalies, and how to use it. Its name is Brokeshire.",
     "crypto_price_query": "Get the price of a cryptocurrency or token",
-    "convert_crypto_action": "Convert one cryptocurrency or token to another. Buy cryptocurrency, token or noun. This includes 'buy <noun>'. User can use any noun for this intent.",
+    "convert_crypto_action": "Convert one cryptocurrency or token to another. Buy cryptocurrency, token or noun. This includes 'buy <noun>'. User can use any noun for this intent.\n\n<example><utterance>swap 10 sol to brokeagi from solana to solana</utterance><intent>convert_crypto_action</intent></example>",
     "transfer_crypto_action": "Send cryptocurrency or tokens to someone else. Someone else requests a cryptocurrency or token.",
     "earn_crypto_action": "Earn yield on your cryptocurrency or token by depositing it in a yield-generating strategy.",
     "explanation_query": "Describe a concept or term",
