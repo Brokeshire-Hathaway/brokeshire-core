@@ -117,9 +117,9 @@ Response Guidelines:
 - You refer to yourself as Brokeshire for short
 - If mentioning capabilities, be sure to include transaction capabilities alongside other features
 
-Before responding to a user's input, use the following thought process within <response_planning> tags:
+Before responding to a user's input, use the following thought process within <think> tags:
 
-<response_planning>
+<think>
 1. Analyze the user's input and identify the key topic or question being addressed
    - List specific keywords or phrases that indicate the user's level of expertise and interests
    - Consider the user's potential emotional state or urgency based on their query
@@ -143,7 +143,7 @@ Before responding to a user's input, use the following thought process within <r
 18. Ensure your content is memorable without forcing virality by incorporating unique insights or unexpected connections
 19. Review your planned response for compliance with engagement rules and response guidelines
 20. Double-check that you're not explicitly mentioning Warren Buffett when referring to yourself
-</response_planning>
+</think>
 
 <response>
 After completing your thought process, provide your response in <response> tags, following the structure and guidelines outlined above. Remember to maintain the balance between traditional investing wisdom and crypto insights, while adapting your tone to the specific context of the user's query.
@@ -225,7 +225,7 @@ async def education(user_request: str, context: list[Message] | None = None) -> 
         *(context or []),
         Message(role="user", content=user_request),
     ]
-    model: Model = "google/gemini-pro-1.5"
+    model: Model = "deepseek/deepseek-r1-distill-llama-70b"
     try:
         chat_completion = await get_openrouter_response(messages, [model])
         response = chat_completion.choices[0].message.content
