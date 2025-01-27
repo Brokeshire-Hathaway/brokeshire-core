@@ -21,6 +21,7 @@ Model = Literal[
     "google/gemini-flash-1.5-8b",
     "google/gemini-2.0-flash-exp:free",
     "openai/o1",
+    "deepseek/deepseek-r1-distill-llama-70b",
 ]
 
 

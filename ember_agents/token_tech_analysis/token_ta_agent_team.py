@@ -457,7 +457,7 @@ class TokenTaAgentTeam(AgentTeam):
 
         1. Review the token data provided above.
 
-        2. Conduct a detailed analysis of the token with a focus on the timeseries trends. Wrap your analysis in <detailed_analysis> tags:
+        2. Conduct a detailed analysis of the token with a focus on the timeseries trends. Wrap your analysis in <think> tags:
         - List out key metrics extracted from the token data.
         - Compare these metrics to industry benchmarks. If you don't have exact benchmarks, make reasonable estimates.
         - Evaluate the significance of each data point for potential investors.
@@ -482,9 +482,9 @@ class TokenTaAgentTeam(AgentTeam):
 
         4. Present your findings in the following format:
 
-        <detailed_analysis>
+        <think>
         [Your comprehensive evaluation of the token data, including key metrics, growth potential, risk factors, and other relevant information]
-        </detailed_analysis>
+        </think>
 
         <tweet>
         [Your concise, 270-character max analysis suitable for Twitter, using newline separations for better readability]
@@ -495,7 +495,7 @@ class TokenTaAgentTeam(AgentTeam):
                 openrouter.Message(role="system", content=system_prompt),
                 openrouter.Message(role="user", content=user_prompt),
             ],
-            models=["google/gemini-pro-1.5"],
+            models=["deepseek/deepseek-r1-distill-llama-70b"],
         )
 
         response_content = response.choices[0].message.content
