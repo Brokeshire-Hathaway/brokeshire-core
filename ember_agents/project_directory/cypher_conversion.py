@@ -1,7 +1,7 @@
 import json
 import re
 
-from src.ember_agents.project_directory.parse_c4_updates import (
+from src.brokeshire_agents.project_directory.parse_c4_updates import (
     Launch,
     NewsItem,
     Project,

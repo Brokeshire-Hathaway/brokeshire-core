@@ -1,10 +1,10 @@
 import pytest
 
-from ember_agents.token_tech_analysis.curate_tokens import (
+from brokeshire_agents.token_tech_analysis.curate_tokens import (
     find_token,
     get_trending_tokens,
 )
-from ember_agents.token_tech_analysis.token_metrics import TokenMetrics
+from brokeshire_agents.token_tech_analysis.token_metrics import TokenMetrics
 
 
 @pytest.mark.asyncio

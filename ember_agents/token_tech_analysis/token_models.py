@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from ember_agents.token_tech_analysis.token_metrics import TokenMetrics
+from brokeshire_agents.token_tech_analysis.token_metrics import TokenMetrics
 
 
 class TokenInfo(BaseModel):

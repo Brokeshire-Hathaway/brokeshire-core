@@ -11,9 +11,9 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Interrupt
 from openai.types.chat import ChatCompletionMessageParam
 
-from ember_agents.bg_tasks import add_bg_task
-from ember_agents.common import conversation
-from ember_agents.common.types import MessageType
+from brokeshire_agents.bg_tasks import add_bg_task
+from brokeshire_agents.common import conversation
+from brokeshire_agents.common.types import MessageType
 
 
 class ExpressionSuggestion(TypedDict):

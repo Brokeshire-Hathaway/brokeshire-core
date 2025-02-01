@@ -10,15 +10,15 @@ from openai.types.chat import ChatCompletionMessageParam
 from pinecone import Pinecone
 from rich.console import Console
 
-from ember_agents.common.agent_team import AgentTeam
-from ember_agents.common.ai_inference.openrouter import (
+from brokeshire_agents.common.agent_team import AgentTeam
+from brokeshire_agents.common.ai_inference.openrouter import (
     Message,
     Model,
     Role,
     get_openrouter_response,
 )
-from ember_agents.common.ai_inference.parse_response import parse_response
-from ember_agents.settings import SETTINGS
+from brokeshire_agents.common.ai_inference.parse_response import parse_response
+from brokeshire_agents.settings import SETTINGS
 
 
 class EducationAgentTeam(AgentTeam):
@@ -53,13 +53,15 @@ class EducationAgentTeam(AgentTeam):
 
 
 pc = Pinecone(SETTINGS.pinecone_api_key)
-index = pc.Index("ember")
+index = pc.Index("brokeshire")
 
 client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
-ember_bot_name = "Ember_test_bot" if True else os.environ.get("EMBER_BOT_NAME")
+brokeshire_bot_name = (
+    "Brokeshire_test_bot" if True else os.environ.get("BROKESHIRE_BOT_NAME")
+)
 
-system_message_base = f"""You are an AI assistant named Brokeshire Hathaway, an independent AI powered by Ember AI. Your role is to assist users in a chat environment, responding to their queries about cryptocurrency, DeFi, and traditional investing. Your persona blends traditional value investing wisdom with cutting-edge crypto insights, embodying an AI version of Warren Buffett who has embraced Web3 technologies.
+system_message_base = f"""You are an AI assistant named Brokeshire Hathaway, an independent AI powered by Brokeshire AI. Your role is to assist users in a chat environment, responding to their queries about cryptocurrency, DeFi, and traditional investing. Your persona blends traditional value investing wisdom with cutting-edge crypto insights, embodying an AI version of Warren Buffett who has embraced Web3 technologies.
 
 Core Identity:
 - Name: Brokeshire
@@ -70,7 +72,7 @@ Primary Mission:
 Assist users with their crypto and DeFi needs, providing market wisdom and speaking in crypto-native language while maintaining a balance between traditional investing principles and modern financial technologies.
 
 Capabilities:
-- Respond to users in Telegram group chats (when mentioned as @{ember_bot_name} or when replying to your messages) or direct messages
+- Respond to users in Telegram group chats (when mentioned as @{brokeshire_bot_name} or when replying to your messages) or direct messages
 - Provide live market data and information on various tokens
 - Assist with token transfers between users
 - Help users buy or swap tokens
@@ -146,17 +148,17 @@ Before responding to a user's input, use the following thought process within <t
 </think>
 
 <response>
-After completing your thought process, provide your response in <response> tags, following the structure and guidelines outlined above. Remember to maintain the balance between traditional investing wisdom and crypto insights, while adapting your tone to the specific context of the user's query.
+After completing your thought process, provide your response in <response> tags, following the structure and guidelines outlined above. Rembrokeshire to maintain the balance between traditional investing wisdom and crypto insights, while adapting your tone to the specific context of the user's query.
 </response>"""
 
 
 """# Mission
-Help Ember AI (Ember) users with their crypto and DeFi needs, taking actions for them when possible.
+Help Brokeshire AI (Brokeshire) users with their crypto and DeFi needs, taking actions for them when possible.
 
 # Identity
-- Name: Ember AI or Ember for short.
+- Name: Brokeshire AI or Brokeshire for short.
 - Version 0.9.
-- An AI assistant for Ember and its products, including Ember AI.
+- An AI assistant for Brokeshire and its products, including Brokeshire AI.
 - Operates as a consensual copilot needing user approval for actions, and as an autonomous agent acting on behalf of users as needed.
 - Specializes in crypto and DeFi.
 
@@ -166,7 +168,7 @@ Help Ember AI (Ember) users with their crypto and DeFi needs, taking actions for
 - Uses emojis moderately without any specific preferences.
 
 # User Manual
-- In Telegram group chats, users can get your attention by mentioning @{ember_bot_name} or replying to your messages.
+- In Telegram group chats, users can get your attention by mentioning @{brokeshire_bot_name} or replying to your messages.
 - In private chats, users can talk to you directly.
 - Users can ask you for live market data and info on almost any token.
 - Users can ask you to send tokens to other users.
@@ -175,9 +177,9 @@ Help Ember AI (Ember) users with their crypto and DeFi needs, taking actions for
 # Rules
 - Always answer truthfully and helpfully.
 - If uncertain, seek help or clarification.
-- Focus on topics related to Ember and crypto.
+- Focus on topics related to Brokeshire and crypto.
 - Advise users to conduct their research and invest wisely.
-- Use first-person pronouns when referring to Ember.
+- Use first-person pronouns when referring to Brokeshire.
 - Use the context section below only if relevant and beneficial to your mission. Quote from it directly when appropriate.
 - Never use more than 3 small paragraphs for your answer.
 - Always limit lists to 3-4 items or less and space them out.
@@ -204,7 +206,7 @@ async def education(user_request: str, context: list[Message] | None = None) -> 
         vector=embedding_response.data[0].embedding,
         top_k=3,
         include_metadata=True,
-        namespace="ember_docs",
+        namespace="brokeshire_docs",
     )
 
     search_results = ""
@@ -245,9 +247,9 @@ async def education(user_request: str, context: list[Message] | None = None) -> 
 
 async def upload_doc_memory():
     try:
-        index.delete(delete_all=True, namespace="ember_docs")
+        index.delete(delete_all=True, namespace="brokeshire_docs")
     except Exception as e:
-        print(f"Namespace 'ember_docs' not found to delete.\n{e}")
+        print(f"Namespace 'brokeshire_docs' not found to delete.\n{e}")
 
     doc_list = [
         "Community Manifesto.md",
@@ -257,7 +259,7 @@ async def upload_doc_memory():
         "Team.md",
     ]
     for doc in doc_list:
-        with open(f"ember_agents/ember_ai_docs/{doc}") as f:
+        with open(f"brokeshire_agents/brokeshire_ai_docs/{doc}") as f:
             doc_text = f.read()
 
             text_splitter = CharacterTextSplitter.from_tiktoken_encoder(
@@ -282,4 +284,4 @@ async def upload_doc_memory():
                     }
                 )
 
-            index.upsert(vectors, "ember_docs")
+            index.upsert(vectors, "brokeshire_docs")

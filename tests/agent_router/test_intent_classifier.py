@@ -1,7 +1,7 @@
 from operator import is_
 import pytest
 
-from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
+from brokeshire_agents.agent_router.intent_classifier import INTENT, classify_intent
 
 
 @pytest.mark.parametrize(
@@ -13,12 +13,12 @@ from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
         ("buy render", "swap_crypto_action", True),
         ("change a tire", "out_of_scope", True),
         (
-            "@EmberAIBot  What is the cryptocurrency with the highest trading volume today and why? 🤔",
+            "@BrokeshireAIBot  What is the cryptocurrency with the highest trading volume today and why? 🤔",
             "market_news_query",
             True,
         ),
         (
-            "how is ember ai different from unibot or bananabot?",
+            "how is brokeshire ai different from unibot or bananabot?",
             "capabilities_query",
             True,
         ),
@@ -66,13 +66,13 @@ from ember_agents.agent_router.intent_classifier import INTENT, classify_intent
         ),
         ("features", "capabilities_query", True),
         (
-            "hi @EmberAIBot What are the 3 key signs that investing in a token might be a bad idea?",
+            "hi @BrokeshireAIBot What are the 3 key signs that investing in a token might be a bad idea?",
             "advice_query",
             True,
         ),
         ("anything exciting happen this week", "market_news_query", True),
         (
-            "@EmberAIBot What's up What will be the next X100 crypto gem?",
+            "@BrokeshireAIBot What's up What will be the next X100 crypto gem?",
             "advice_query",
             True,
         ),

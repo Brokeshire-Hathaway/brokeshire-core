@@ -1,5 +1,5 @@
 services:
-  ember-core:
+  brokeshire-core:
     build: .
     restart: always
     environment:
@@ -30,7 +30,7 @@ services:
 
 networks:
   shared_network:
-    name: ember-main-${ENVIRONMENT}
+    name: brokeshire-main-${ENVIRONMENT}
     external: true
 
 secrets:

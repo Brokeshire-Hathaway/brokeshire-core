@@ -1,4 +1,4 @@
-from ember_agents.settings import SETTINGS
+from brokeshire_agents.settings import SETTINGS
 
 
 def format_currency_string(amount_str: str, decimal_places: int = 2) -> str:

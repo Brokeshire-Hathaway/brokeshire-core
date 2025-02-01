@@ -4,7 +4,7 @@ from typing import Literal
 from fireworks.client import Fireworks
 from pydantic import BaseModel
 
-from ember_agents.settings import SETTINGS
+from brokeshire_agents.settings import SETTINGS
 
 INTENT = Literal[
     "capabilities_query",

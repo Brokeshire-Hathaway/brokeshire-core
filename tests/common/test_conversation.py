@@ -1,7 +1,7 @@
 import json
 from typing import Literal
 import pytest
-from ember_agents.common.conversation import (
+from brokeshire_agents.common.conversation import (
     Conversation,
     conversation_reducer,
     create_context_message,

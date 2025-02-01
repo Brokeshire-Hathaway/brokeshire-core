@@ -2,12 +2,12 @@ import pytest
 from typing import Literal, TypedDict
 from rich.console import Console
 
-from ember_agents.common.agents.entity_extractor import (
+from brokeshire_agents.common.agents.entity_extractor import (
     ClassifiedEntities,
     extract_entities,
     flatten_classified_entities,
 )
-from ember_agents.common.conversation import ContextMessage
+from brokeshire_agents.common.conversation import ContextMessage
 
 
 console = Console()

@@ -5,9 +5,9 @@ from typing import Literal, TypedDict, TypeVar, get_args
 from pydantic import BaseModel
 from rich.console import Console
 
-from ember_agents.common.ai_inference import openrouter
-from ember_agents.common.ai_inference.parse_response import extract_xml_content
-from ember_agents.common.conversation import ContextMessage
+from brokeshire_agents.common.ai_inference import openrouter
+from brokeshire_agents.common.ai_inference.parse_response import extract_xml_content
+from brokeshire_agents.common.conversation import ContextMessage
 
 console = Console()
 
@@ -181,7 +181,7 @@ def get_instructions_prompt(
    [Your JSON output here]
    </output>
 
-Remember to adhere strictly to the provided JSON schema and ensure your output is valid JSON. Do not include any explanations or additional text outside of the specified tags."""
+Rembrokeshire to adhere strictly to the provided JSON schema and ensure your output is valid JSON. Do not include any explanations or additional text outside of the specified tags."""
 
 
 # If there is no match, do not include the entity in the output.

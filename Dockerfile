@@ -14,5 +14,5 @@ FROM python:$PYTHON_BASE
 WORKDIR /app
 COPY --from=builder /app/.venv/ .venv
 ENV PATH "/app/.venv/bin:$PATH"
-COPY ember_agents ember_agents
-ENTRYPOINT ["uvicorn", "ember_agents.main:app", "--host", "0.0.0.0", "--port",  "80"]
+COPY brokeshire_agents brokeshire_agents
+ENTRYPOINT ["uvicorn", "brokeshire_agents.main:app", "--host", "0.0.0.0", "--port",  "80"]

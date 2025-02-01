@@ -7,19 +7,21 @@ import rich
 from langgraph.errors import NodeInterrupt
 from openai.types.chat import ChatCompletionMessageParam
 
-from ember_agents.agent_router.intent_classifier import (
+from brokeshire_agents.agent_router.intent_classifier import (
     INTENT,
     ClassifiedIntent,
     classify_intent,
 )
-from ember_agents.common.agent_team import AgentTeam
-from ember_agents.common.broke_twitter.broke_twitter import BrokeTwitterAgentTeam
-from ember_agents.common.types import MessageType
-from ember_agents.convert_token.convert_token_agent_team import ConvertTokenAgentTeam
-from ember_agents.earn.earn_agent_team import EarnAgentTeam
-from ember_agents.education.education import EducationAgentTeam
-from ember_agents.send_token.send import SendTokenAgentTeam
-from ember_agents.token_tech_analysis.token_ta_agent_team import TokenTaAgentTeam
+from brokeshire_agents.common.agent_team import AgentTeam
+from brokeshire_agents.common.broke_twitter.broke_twitter import BrokeTwitterAgentTeam
+from brokeshire_agents.common.types import MessageType
+from brokeshire_agents.convert_token.convert_token_agent_team import (
+    ConvertTokenAgentTeam,
+)
+from brokeshire_agents.earn.earn_agent_team import EarnAgentTeam
+from brokeshire_agents.education.education import EducationAgentTeam
+from brokeshire_agents.send_token.send import SendTokenAgentTeam
+from brokeshire_agents.token_tech_analysis.token_ta_agent_team import TokenTaAgentTeam
 
 
 class AgentTeamSessionManager:

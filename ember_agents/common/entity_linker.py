@@ -5,7 +5,10 @@ from typing import Any, TypedDict
 from openai.types.chat import ChatCompletionMessageParam
 from rapidfuzz import fuzz, process, utils
 
-from ember_agents.common.ai_inference.openai import Temperature, get_openai_response
+from brokeshire_agents.common.ai_inference.openai import (
+    Temperature,
+    get_openai_response,
+)
 
 LOGPROBS_REQUIRED_ERROR = "Logprobs are required but were not provided."
 

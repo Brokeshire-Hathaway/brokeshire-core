@@ -6,8 +6,8 @@ from pydantic.alias_generators import to_camel
 from solders.pubkey import Pubkey
 from web3 import Web3
 
-from ember_agents.common.entity_linker import link_entity
-from ember_agents.settings import SETTINGS
+from brokeshire_agents.common.entity_linker import link_entity
+from brokeshire_agents.settings import SETTINGS
 
 
 class Explorer(BaseModel):

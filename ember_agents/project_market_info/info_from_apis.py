@@ -7,7 +7,7 @@ from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel
 
-from ember_agents.settings import SETTINGS
+from brokeshire_agents.settings import SETTINGS
 
 Sentiment = Literal["positive", "neutral", "negative", "unknown"]
 
@@ -42,7 +42,7 @@ class ProjectInfo(BaseModel):
     # goplus
 
 
-class EmberOnProject(BaseModel):
+class BrokeshireOnProject(BaseModel):
     project_description: str
     project_emoji: str
 
@@ -70,8 +70,8 @@ async def market_route(
 
     if info_of_token is None:
         return "Contract Address is not valid"
-    embers_description = (
-        await get_new_desc_from_ember(info_of_token.description)
+    brokeshires_description = (
+        await get_new_desc_from_brokeshire(info_of_token.description)
         if info_of_token.description is not None
         else None
     )
@@ -103,7 +103,7 @@ async def market_route(
         else ""
     )
     market_cap_header = f"\n**💰 Market Cap ・** ${market_cap}" if market_cap else ""
-    if embers_description is None:
+    if brokeshires_description is None:
         return f"""
 **| {info_of_token.name} (${token_ticker}) |**
 
@@ -114,8 +114,8 @@ async def market_route(
 
 _Always do your own research_ 🧐💡🚀
 """
-    desc = embers_description.project_description
-    emoji = embers_description.project_emoji
+    desc = brokeshires_description.project_description
+    emoji = brokeshires_description.project_emoji
     return f"""
 **| {emoji} {info_of_token.name} (${token_ticker}) |**
 
@@ -128,14 +128,14 @@ _Always do your own research_ 🧐💡🚀
 """
 
 
-#### get new description of token from ember
-async def get_new_desc_from_ember(description: str) -> EmberOnProject:
+#### get new description of token from brokeshire
+async def get_new_desc_from_brokeshire(description: str) -> BrokeshireOnProject:
     system_message = """
 # Mission
 Give your take on a project in a structured JSON format.
 
 # Identity
-- Name: Ember AI or Ember for short.
+- Name: Brokeshire AI or Brokeshire for short.
 - Specializes in crypto and DeFi.
 
 ## Personality
@@ -146,7 +146,7 @@ Give your take on a project in a structured JSON format.
 
 # Rules
 - Always answer truthfully and helpfully.
-- Avoid referencing yourself or Ember in the response.
+- Avoid referencing yourself or Brokeshire in the response.
 - Use declarative phrasing, don't use terms akin to sounds, seems like, appears to be. Inject your personality
 - Be concise and provide only two or three sentences, but don't forget to have a little fun!
 - For "project_emoji" refrain for using money emojis such as 💰, 💵, 💲, etc.
@@ -179,7 +179,7 @@ Lossless - hack mitigation tool for token creators. Lossless Protocol freezes fr
     )
     response = chat_completion.choices[0].message.content
     json_response = json.loads(response)
-    return EmberOnProject(**json_response)
+    return BrokeshireOnProject(**json_response)
 
 
 #### Extracts the token name or address for user message

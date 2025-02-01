@@ -12,7 +12,7 @@ from openai.types.chat import (
 from openai.types.chat.completion_create_params import ResponseFormat
 from pydantic import BaseModel, Field
 
-from ember_agents.settings import SETTINGS
+from brokeshire_agents.settings import SETTINGS
 
 Role = Literal["system", "user", "assistant"]
 

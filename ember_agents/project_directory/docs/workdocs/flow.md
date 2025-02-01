@@ -659,7 +659,7 @@ CREATE (fromNode)-[:HAS_MENTION]->(toNode);
 
 
 You are a database parser responsible for converting json into structured cypher.
-Use the following entry example as a guide. ALWAYS remember to wrap your output in an individual code block for each.
+Use the following entry example as a guide. ALWAYS rembrokeshire to wrap your output in an individual code block for each.
 
 —
  ### example
@@ -688,7 +688,7 @@ CREATE (ProtocolFxLaunchesFxusd:News_Item {name: 'ProtocolFxLaunchesFxusd', head
 ## Relations JSON to Cypher
 
 You are a database parser responsible for converting json into structured cypher.
-Use the following entry example as a guide. ALWAYS remember to wrap your output in an individual code block for each.
+Use the following entry example as a guide. ALWAYS rembrokeshire to wrap your output in an individual code block for each.
 for HAS_MENTION its Project->X_Thread
 —
 ### example

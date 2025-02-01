@@ -4,7 +4,7 @@ import pytest
 
 import json
 
-from ember_agents.common.entity_linker import link_entity
+from brokeshire_agents.common.entity_linker import link_entity
 
 console = Console()
 

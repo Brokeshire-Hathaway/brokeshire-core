@@ -1,7 +1,7 @@
 from typing import NamedTuple
 
 import pytest
-from ember_agents.agent_router.router import Router
+from brokeshire_agents.agent_router.router import Router
 
 
 @pytest.mark.parametrize(

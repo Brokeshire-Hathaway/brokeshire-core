@@ -1,12 +1,12 @@
 from pydantic import BaseModel
 from rich import print
 
-from ember_agents.common.ai_inference.openai import (
+from brokeshire_agents.common.ai_inference.openai import (
     Temperature,
     get_openai_response,
 )
-from ember_agents.common.ai_inference.parse_response import extract_xml_content
-from ember_agents.common.conversation import ContextMessage
+from brokeshire_agents.common.ai_inference.parse_response import extract_xml_content
+from brokeshire_agents.common.conversation import ContextMessage
 
 
 class ClarifierResponse(BaseModel):
@@ -119,7 +119,7 @@ def get_instructions_prompt(
    - Your response adheres to the format specified in the instructions.
       * Ensure that the <analysis>, <revised_utterance>, <questions>, and <next_node> tags are present, correctly formatted, and not empty.
 
-Remember, your goal is to efficiently and politely gather all necessary information or provide a clear, complete revised utterance based on the user's intent and the information available."""
+Rembrokeshire, your goal is to efficiently and politely gather all necessary information or provide a clear, complete revised utterance based on the user's intent and the information available."""
 
 
 async def get_clarifier_response(

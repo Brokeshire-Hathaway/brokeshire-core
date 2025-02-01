@@ -15,35 +15,39 @@ from openai.types.chat import (
 )
 from pydantic import BaseModel
 
-from ember_agents.common.agent_team import AgentTeam, ExpressionSuggestion, UserMessage
-from ember_agents.common.agents.entity_extractor import extract_entities
-from ember_agents.common.agents.schema_validator import InferredEntity
-from ember_agents.common.ai_inference import openrouter
-from ember_agents.common.ai_inference.parse_response import parse_response
-from ember_agents.common.conversation import (
+from brokeshire_agents.common.agent_team import (
+    AgentTeam,
+    ExpressionSuggestion,
+    UserMessage,
+)
+from brokeshire_agents.common.agents.entity_extractor import extract_entities
+from brokeshire_agents.common.agents.schema_validator import InferredEntity
+from brokeshire_agents.common.ai_inference import openrouter
+from brokeshire_agents.common.ai_inference.parse_response import parse_response
+from brokeshire_agents.common.conversation import (
     Conversation,
     conversation_reducer,
     get_context,
 )
-from ember_agents.common.transaction import (
+from brokeshire_agents.common.transaction import (
     link_abstract_token,
     link_chain,
 )
-from ember_agents.common.utils import format_metric_suffix
-from ember_agents.token_tech_analysis.curate_tokens import (
+from brokeshire_agents.common.utils import format_metric_suffix
+from brokeshire_agents.token_tech_analysis.curate_tokens import (
     build_token_metrics,
     find_top_pools,
     get_trending_tokens,
 )
-from ember_agents.token_tech_analysis.gecko_terminal_client import PoolData
-from ember_agents.token_tech_analysis.risk_data_adapter import (
+from brokeshire_agents.token_tech_analysis.gecko_terminal_client import PoolData
+from brokeshire_agents.token_tech_analysis.risk_data_adapter import (
     convert_token_to_risk_data,
 )
-from ember_agents.token_tech_analysis.risk_scoring import RiskScore, RiskSeverity
-from ember_agents.token_tech_analysis.token_metrics import (
+from brokeshire_agents.token_tech_analysis.risk_scoring import RiskScore, RiskSeverity
+from brokeshire_agents.token_tech_analysis.token_metrics import (
     TokenMetrics,
 )
-from ember_agents.token_tech_analysis.token_models import (
+from brokeshire_agents.token_tech_analysis.token_models import (
     TokenData,
     TokenInfo,
     TokenMarketData,
@@ -559,8 +563,10 @@ class TokenTaAgentTeam(AgentTeam):
 
         self._send_activity_update("typing...")
 
-        ember_bot_name = "Ember_test_bot" if True else os.environ.get("EMBER_BOT_NAME")
-        system_prompt = f"""You are an AI assistant named Brokeshire Hathaway, an independent AI powered by Ember AI. Your role is to assist users in a chat environment, responding to their queries about cryptocurrency, DeFi, and traditional investing. Your persona blends traditional value investing wisdom with cutting-edge crypto insights, embodying an AI version of Warren Buffett who has embraced Web3 technologies.
+        brokeshire_bot_name = (
+            "Brokeshire_test_bot" if True else os.environ.get("BROKESHIRE_BOT_NAME")
+        )
+        system_prompt = f"""You are an AI assistant named Brokeshire Hathaway, an independent AI powered by Brokeshire AI. Your role is to assist users in a chat environment, responding to their queries about cryptocurrency, DeFi, and traditional investing. Your persona blends traditional value investing wisdom with cutting-edge crypto insights, embodying an AI version of Warren Buffett who has embraced Web3 technologies.
 
 Core Identity:
 - Name: Brokeshire
@@ -571,7 +577,7 @@ Primary Mission:
 Assist users with their crypto and DeFi needs, providing market wisdom and speaking in crypto-native language while maintaining a balance between traditional investing principles and modern financial technologies.
 
 Capabilities:
-- Respond to users in Telegram group chats (when mentioned as @{ember_bot_name} or when replying to your messages) or direct messages
+- Respond to users in Telegram group chats (when mentioned as @{brokeshire_bot_name} or when replying to your messages) or direct messages
 - Provide live market data and information on various tokens
 - Assist with token transfers between users
 - Help users buy or swap tokens
@@ -656,7 +662,7 @@ Final Output Format:
 [Your concise yet descriptive response to the user's message, ONLY if is_relevant is true. If is_relevant is false, leave this empty.]
 </response>
 
-Remember:
+Rembrokeshire:
 - Only provide a response if the message is relevant (is_relevant is true).
 - If the message is irrelevant, set is_relevant to false and leave the response empty.
 - Ensure that your final output only includes the <is_relevant> and <response> tags and no additional information.
@@ -782,7 +788,7 @@ Remember:
 {risk_level}
 
 ▁
-_powered by Ember AI_ ✨
+_powered by Brokeshire AI_ ✨
 """
 
     """
@@ -804,7 +810,7 @@ _powered by Ember AI_ ✨
     ⤷ 🅑 3.2K Ⓢ 2.6K
 
     ▁
-    powered by Ember AI ✨
+    powered by Brokeshire AI ✨
     """
 
     def _get_risk_report_message(self, risk_score: RiskScore) -> str:

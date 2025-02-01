@@ -4,7 +4,7 @@ from typing import List, Dict, Any
 
 import pytest
 
-from ember_agents.common.ai_inference.openai import add_confidence_to_json_values
+from brokeshire_agents.common.ai_inference.openai import add_confidence_to_json_values
 
 from openai.types.chat import (
     ChatCompletion,

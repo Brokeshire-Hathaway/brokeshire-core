@@ -2,7 +2,7 @@ from typing import TypedDict
 
 import httpx
 
-from ember_agents.settings import SETTINGS
+from brokeshire_agents.settings import SETTINGS
 
 BIRDEYE_BASE_URL = "https://public-api.birdeye.so"
 BIRDEYE_API_KEY = SETTINGS.birdeye_api_key

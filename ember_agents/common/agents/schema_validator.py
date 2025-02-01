@@ -7,7 +7,7 @@ from typing import (
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 from rich import print
 
-from ember_agents.common.agents.entity_extractor import (
+from brokeshire_agents.common.agents.entity_extractor import (
     ConfidenceLevel,
     ExtractedEntities,
     flatten_classified_entities,

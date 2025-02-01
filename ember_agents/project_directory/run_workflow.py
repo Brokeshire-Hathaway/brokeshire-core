@@ -1,11 +1,11 @@
-from ember_agents.project_directory.cypher_conversion import (
+from brokeshire_agents.project_directory.cypher_conversion import (
     main_launches,
     main_new_projects,
     main_news_items,
     main_project_updates,
     main_threads_and_reads,
 )
-from ember_agents.project_directory.parse_c4_updates import (
+from brokeshire_agents.project_directory.parse_c4_updates import (
     parse_headers,
     parse_launches_live,
     parse_new_projects,
@@ -21,7 +21,7 @@ from ember_agents.project_directory.parse_c4_updates import (
 async def run_workflow_saved(daily_update):
     print("=====CURRENTLY running workflow; parse headers (aprox 70s)")
     with open(
-        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
+        "src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
     ) as f:
         data = f.read()
     #  data = await parse_headers(daily_update)
@@ -67,14 +67,14 @@ def run_conversion(date):
     print("=====CURRENTLY running conversion======")
     all_queries = ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_news_items_{date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_news_items_{date}.json",
     ) as f:
         data = f.read()
         news_queries = main_news_items(data)
         all_queries += "\n".join(news_queries)
     print(f"=====CURRENTLY running conversion; news_queries: {news_queries}")
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_project_updates_{date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_project_updates_{date}.json",
     ) as f:
         data = f.read()
         project_updates_queries = main_project_updates(data)
@@ -85,7 +85,7 @@ def run_conversion(date):
         f"=====CURRENTLY running conversion; project_updates_queries: {project_updates_queries}"
     )
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_threads_and_reads_items_{date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_threads_and_reads_items_{date}.json",
     ) as f:
         data = f.read()
         threads_and_reads_queries = main_threads_and_reads(data)
@@ -94,14 +94,14 @@ def run_conversion(date):
         f"=====CURRENTLY running conversion; threads_and_reads_queries: {threads_and_reads_queries}"
     )
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_launches_items_{date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_launches_items_{date}.json",
     ) as f:
         data = f.read()
         launches_queries = main_launches(data)
         all_queries += "\n".join(launches_queries)
     print(f"=====CURRENTLY running conversion; launches_queries: {launches_queries}")
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_new_projects_items_{date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_new_projects_items_{date}.json",
     ) as f:
         data = f.read()
         new_project_queries = main_new_projects(data)
@@ -110,7 +110,7 @@ def run_conversion(date):
         f"=====CURRENTLY running conversion; new_project_queries: {new_project_queries}"
     )
     with open(
-        f"src/ember_agents/project_directory/docs/populate_database/cypher_scripts/all_queries_{date}.txt",
+        f"src/brokeshire_agents/project_directory/docs/populate_database/cypher_scripts/all_queries_{date}.txt",
         "w",
     ) as f:
         f.write(all_queries)

@@ -3,7 +3,7 @@ from urllib import response
 
 import httpx
 import pytest
-from ember_agents.project_market_info.info_from_apis import (
+from brokeshire_agents.project_market_info.info_from_apis import (
     search_coingecko_with_id,
     extract_token_from_message,
     information_from_token_apis,
@@ -75,7 +75,7 @@ async def test_market_route(message):
 @pytest.mark.parametrize(
     "search",
     [
-        ("ember"),
+        ("brokeshire"),
         # ("btc"),
         # ("pepe"),
     ],

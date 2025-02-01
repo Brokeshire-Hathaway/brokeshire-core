@@ -3,7 +3,7 @@ from typing import Annotated, Any, Literal
 import httpx
 from pydantic import BaseModel, Field
 
-from ember_agents.settings import SETTINGS
+from brokeshire_agents.settings import SETTINGS
 
 Role = Literal["system", "user", "assistant"]
 
@@ -55,8 +55,8 @@ class Temperature(BaseModel):
 ResponseFormat = Literal["json_object"]
 
 
-SITE_URL = "https://www.emberai.xyz/"
-APP_NAME = "Ember AI"
+SITE_URL = "https://www.brokeshireai.xyz/"
+APP_NAME = "Brokeshire AI"
 
 
 async def get_openrouter_response(

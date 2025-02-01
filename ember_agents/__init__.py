@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 
-print("\nInitializing ember_agents package...")
+print("\nInitializing brokeshire_agents package...")
 
 load_dotenv()
 
-print("...ember_agents package initialized")
+print("...brokeshire_agents package initialized")

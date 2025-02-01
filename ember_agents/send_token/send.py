@@ -18,11 +18,11 @@ from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel, ValidationError
 
-from ember_agents.common.agent_team import AgentTeam
-from ember_agents.common.transaction import link_chain, link_token
-from ember_agents.common.utils import format_transaction_url
-from ember_agents.common.validators import PositiveAmount
-from ember_agents.settings import SETTINGS
+from brokeshire_agents.common.agent_team import AgentTeam
+from brokeshire_agents.common.transaction import link_chain, link_token
+from brokeshire_agents.common.utils import format_transaction_url
+from brokeshire_agents.common.validators import PositiveAmount
+from brokeshire_agents.settings import SETTINGS
 
 client = AsyncOpenAI(api_key=SETTINGS.openai_api_key)
 
@@ -192,7 +192,7 @@ async def interpreter_reply(recipient: ConversableAgent, messages, sender, confi
 
             "network" will always be "sepolia" for now.
 
-            Use the following JSON example as a guide. ALWAYS remember to wrap your JSON in a code block.
+            Use the following JSON example as a guide. ALWAYS rembrokeshire to wrap your JSON in a code block.
             ---
             # Intent
             Send .5 Chainlink to Susan

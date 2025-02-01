@@ -3,7 +3,7 @@ import uuid
 from typing import List
 
 import pytest
-from ember_agents.send_token.send import (
+from brokeshire_agents.send_token.send import (
     convert_to_json,
 )
 
@@ -61,7 +61,7 @@ async def test_send(intent: str, user_replies: List[str]):
         tx_preview = TxPreview(
             tx_id=str(uuid.uuid4()),
             tx_details=tx_details,
-            signature_link="https://ember.ai/tx/1234",
+            signature_link="https://brokeshire.ai/tx/1234",
         )
         return tx_preview
 

@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from ember_agents.common.utils import format_metric_suffix
+from brokeshire_agents.common.utils import format_metric_suffix
 
 
 class QuoteToken(BaseModel):

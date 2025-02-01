@@ -13,31 +13,34 @@ from openai.types.chat import (
 )
 from pydantic import BaseModel, ValidationError
 
-from ember_agents.common.agent_team import AgentTeam
-from ember_agents.common.agents.clarifier import get_clarifier_response
-from ember_agents.common.agents.entity_extractor import (
+from brokeshire_agents.common.agent_team import AgentTeam
+from brokeshire_agents.common.agents.clarifier import get_clarifier_response
+from brokeshire_agents.common.agents.entity_extractor import (
     ExtractedEntities,
     extract_entities,
 )
-from ember_agents.common.agents.schema_validator import (
+from brokeshire_agents.common.agents.schema_validator import (
     InferredEntity,
     convert_to_schema,
     flatten_classified_entities,
 )
-from ember_agents.common.conversation import (
+from brokeshire_agents.common.conversation import (
     Conversation,
     conversation_reducer,
     get_context,
 )
-from ember_agents.common.transaction import (
+from brokeshire_agents.common.transaction import (
     get_best_yield_strategy,
     link_abstract_token,
     link_chain,
     link_token,
 )
-from ember_agents.common.utils import format_currency_string, format_transaction_url
-from ember_agents.common.validators import PositiveAmount
-from ember_agents.settings import SETTINGS
+from brokeshire_agents.common.utils import (
+    format_currency_string,
+    format_transaction_url,
+)
+from brokeshire_agents.common.validators import PositiveAmount
+from brokeshire_agents.settings import SETTINGS
 
 
 class EarnSchema(BaseModel):

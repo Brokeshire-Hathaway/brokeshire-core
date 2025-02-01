@@ -1,12 +1,12 @@
 import pytest
 from rich import print
 from typing import Any, Literal
-from ember_agents.common.agents.entity_extractor import (
+from brokeshire_agents.common.agents.entity_extractor import (
     ExtractedEntities,
     ExtractedEntity,
 )
 
-from ember_agents.convert_token.convert_token_agent_team import (
+from brokeshire_agents.convert_token.convert_token_agent_team import (
     AgentState,
     ConvertTokenAgentTeam,
     ConvertTokenSchema,

@@ -1,13 +1,13 @@
 import pytest
 from rich import print
 from typing import Any, Literal
-from ember_agents.common.agents.entity_extractor import (
+from brokeshire_agents.common.agents.entity_extractor import (
     ExtractedEntities,
     ExtractedEntity,
 )
 
-from ember_agents.common.conversation import ContextMessage, Conversation, Message
-from ember_agents.earn.earn_agent_team import (
+from brokeshire_agents.common.conversation import ContextMessage, Conversation, Message
+from brokeshire_agents.earn.earn_agent_team import (
     AgentState,
     Participant,
     EarnAgentTeam,

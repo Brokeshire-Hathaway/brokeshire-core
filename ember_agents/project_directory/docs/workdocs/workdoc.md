@@ -57,7 +57,7 @@
     6. Finalization
 
         - **Review and Adjust**: Review the JSON files for any anomalies or errors and adjust as necessary.
-        - **Documentation**: Document the process and structure of the JSON files for future reference or for use by other team members.
+        - **Documentation**: Document the process and structure of the JSON files for future reference or for use by other team mbrokeshires.
     7. Normalize dates
     8. Create Database [once]
     8a. Pre-load with network nodes

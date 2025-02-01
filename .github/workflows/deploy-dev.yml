@@ -6,7 +6,7 @@ on:
     paths:
       - pyproject.toml
       - pdm.lock
-      - ember_agents/**
+      - brokeshire_agents/**
       - .github/workflows/deploy-dev.yml
       - compose.yaml
   workflow_dispatch:
@@ -51,4 +51,4 @@ jobs:
           DISABLE_TRANSACTION_SIGNING_URL: ${{ vars.DISABLE_TRANSACTION_SIGNING_URL }}
           BIRDEYE_API_KEY: ${{ secrets.BIRDEYE_API_KEY }}
         run: |
-          docker compose -f compose.yaml -p ember-core-$ENVIRONMENT up -d --build
+          docker compose -f compose.yaml -p brokeshire-core-$ENVIRONMENT up -d --build

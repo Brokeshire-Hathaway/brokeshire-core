@@ -7,18 +7,18 @@ from typing import Any, Tuple, TypedDict, Union
 
 from rich.console import Console
 
-from ember_agents.common.transaction import Token, link_token
-from ember_agents.token_tech_analysis.birdeye_client import query_birdeye_security
-from ember_agents.token_tech_analysis.dex_screener_client import (
+from brokeshire_agents.common.transaction import Token, link_token
+from brokeshire_agents.token_tech_analysis.birdeye_client import query_birdeye_security
+from brokeshire_agents.token_tech_analysis.dex_screener_client import (
     query_dex_screener,
 )
-from ember_agents.token_tech_analysis.gecko_terminal_client import (
+from brokeshire_agents.token_tech_analysis.gecko_terminal_client import (
     GeckoTerminalResponse,
     PoolData,
     PoolDataWithScore,
     query_gecko_terminal,
 )
-from ember_agents.token_tech_analysis.token_metrics import (
+from brokeshire_agents.token_tech_analysis.token_metrics import (
     Boosts,
     DexScreenerPayments,
     QuoteToken,

@@ -11,14 +11,14 @@ from update_samples import (
     raw_update_simple,
 )
 
-from ember_agents.project_directory.parse_c4_updates import (
+from brokeshire_agents.project_directory.parse_c4_updates import (
     parse_launches,
     parse_new_projects,
     parse_news_items,
     parse_project_updates,
     parse_threads_and_reads,
 )
-from ember_agents.project_directory.run_workflow import (
+from brokeshire_agents.project_directory.run_workflow import (
     run_all_things,
     run_workflow_live,
     run_workflow_saved,

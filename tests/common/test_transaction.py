@@ -2,8 +2,8 @@ from pprint import pprint
 import pytest
 
 
-from ember_agents.common.entity_linker import link_entity
-from ember_agents.common.transaction import link_chain, link_token
+from brokeshire_agents.common.entity_linker import link_entity
+from brokeshire_agents.common.transaction import link_chain, link_token
 
 
 @pytest.mark.parametrize(

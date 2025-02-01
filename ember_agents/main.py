@@ -8,12 +8,12 @@ from pydantic import BaseModel
 from rich import print
 from sse_starlette.sse import EventSourceResponse, ServerSentEvent
 
-from ember_agents.agent_router.intent_classifier import INTENT
-from ember_agents.agent_router.router import AgentTeamSessionManager, Router
-from ember_agents.bg_tasks import add_bg_task, delete_task
-from ember_agents.common.agent_team import ExpressionSuggestion
-from ember_agents.common.types import MessageType
-from ember_agents.education.education import upload_doc_memory
+from brokeshire_agents.agent_router.intent_classifier import INTENT
+from brokeshire_agents.agent_router.router import AgentTeamSessionManager, Router
+from brokeshire_agents.bg_tasks import add_bg_task, delete_task
+from brokeshire_agents.common.agent_team import ExpressionSuggestion
+from brokeshire_agents.common.types import MessageType
+from brokeshire_agents.education.education import upload_doc_memory
 
 app = FastAPI()
 

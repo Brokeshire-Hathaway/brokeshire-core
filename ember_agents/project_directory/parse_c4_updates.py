@@ -136,13 +136,13 @@ async def parse_headers(raw_post: str):
     headers_response = json.loads(response)
     data = HeadersAndContents(**headers_response)
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response_{data.date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_headers_response_{data.date}.json",
         "w",
     ) as f:
         f.write(response)
         # will depricate once live is only version
     with open(
-        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
+        "src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
         "w",
     ) as f:
         f.write(response)
@@ -155,7 +155,7 @@ async def parse_headers(raw_post: str):
 async def parse_news_items(expected_result):  # pass it the result of prase_headers
     #### loading stuff from file
     with open(
-        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
+        "src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
     ) as f:
         headers_response = f.read()
 
@@ -226,7 +226,7 @@ you must not add apostrophes "'" to any field."""
     response = chat_completion.choices[0].message.content
     response = response if response else ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_news_items_{data.date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_news_items_{data.date}.json",
         "w",
     ) as f:
         f.write(response)
@@ -240,7 +240,7 @@ you must not add apostrophes "'" to any field."""
 async def parse_project_updates(expected_result):  # pass it the result of prase_headers
     #### loading stuff from file
     with open(
-        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
+        "src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
     ) as f:
         headers_response = f.read()
     headers_response = headers_response if headers_response else ""
@@ -308,7 +308,7 @@ you must not add apostrophes "'" to any field."""
     response = chat_completion.choices[0].message.content
     response = response if response else ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_project_updates_{data.date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_project_updates_{data.date}.json",
         "w",
     ) as f:
         f.write(response)
@@ -324,7 +324,7 @@ async def parse_threads_and_reads(
 ):  # pass it the result of prase_headers
     #### loading stuff from file
     with open(
-        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
+        "src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
     ) as f:
         headers_response = f.read()
     headers_response = headers_response if headers_response else ""
@@ -376,7 +376,7 @@ you must not add apostrophes "'" to any field.
     response = chat_completion.choices[0].message.content
     response = response if response else ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_threads_and_reads_items_{data.date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_threads_and_reads_items_{data.date}.json",
         "w",
     ) as f:
         f.write(response)
@@ -390,7 +390,7 @@ you must not add apostrophes "'" to any field.
 async def parse_launches(expected_result):  # pass it the result of prase_headers
     #### loading stuff from file
     with open(
-        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
+        "src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
     ) as f:
         headers_response = f.read()
     headers_response = headers_response if headers_response else ""
@@ -463,7 +463,7 @@ you must not add apostrophes "'" to any field."""
     response = chat_completion.choices[0].message.content
     response = response if response else ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_launches_items_{data.date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_launches_items_{data.date}.json",
         "w",
     ) as f:
         f.write(response)
@@ -477,7 +477,7 @@ you must not add apostrophes "'" to any field."""
 async def parse_new_projects(expected_result):  # pass it the result of prase_headers
     #### loading stuff from file
     with open(
-        "src/ember_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
+        "src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_headers_response.json",
     ) as f:
         headers_response = f.read()
     headers_response = headers_response if headers_response else ""
@@ -550,7 +550,7 @@ Publication Date: March 1"""
     response = chat_completion.choices[0].message.content
     response = response if response else ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_new_projects_items_{data.date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_new_projects_items_{data.date}.json",
         "w",
     ) as f:
         f.write(response)
@@ -633,7 +633,7 @@ you must not add apostrophes "'" to any field."""
     response = chat_completion.choices[0].message.content
     response = response if response else ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_news_items_{data.date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_news_items_{data.date}.json",
         "w",
     ) as f:
         f.write(response)
@@ -710,7 +710,7 @@ you must not add apostrophes "'" to any field."""
     response = chat_completion.choices[0].message.content
     response = response if response else ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_project_updates_{data.date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_project_updates_{data.date}.json",
         "w",
     ) as f:
         f.write(response)
@@ -771,7 +771,7 @@ you must not add apostrophes "'" to any field.
     response = chat_completion.choices[0].message.content
     response = response if response else ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_threads_and_reads_items_{data.date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_threads_and_reads_items_{data.date}.json",
         "w",
     ) as f:
         f.write(response)
@@ -851,7 +851,7 @@ you must not add apostrophes "'" to any field."""
     response = chat_completion.choices[0].message.content
     response = response if response else ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_launches_items_{data.date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_launches_items_{data.date}.json",
         "w",
     ) as f:
         f.write(response)
@@ -932,7 +932,7 @@ Publication Date: March 1"""
     response = chat_completion.choices[0].message.content
     response = response if response else ""
     with open(
-        f"src/ember_agents/project_directory/docs/cached_daily_updates/parsed_new_projects_items_{data.date}.json",
+        f"src/brokeshire_agents/project_directory/docs/cached_daily_updates/parsed_new_projects_items_{data.date}.json",
         "w",
     ) as f:
         f.write(response)

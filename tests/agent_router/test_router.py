@@ -1,7 +1,7 @@
 import uuid
 
 import pytest
-from ember_agents.agent_router.router import AgentTeamSessionManager, Router
+from brokeshire_agents.agent_router.router import AgentTeamSessionManager, Router
 
 """
 @pytest.mark.parametrize(

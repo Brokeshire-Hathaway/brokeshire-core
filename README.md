@@ -1,6 +1,6 @@
-# Ember Agents
+# Brokeshire Agents
 
-The Ember AI agent swarm for intent based cognition and reasoning.
+The Brokeshire AI agent swarm for intent based cognition and reasoning.
 
 ## Setup
 This project is meant to be built using `pdm`, a modern `python` project manager to
@@ -18,7 +18,7 @@ will be created.
 To run your API, you need to setup three API keys:
 - [Open AI](https://openai.com/): An open AI key. For the education step to work, you'll need a Tier 1 account, for which you will need a minimum 5 dollar charge in the account.
 - [Cohere](https://cohere.com/): A Cohere key, you can also get a free one by creating an account.
-- [Pinecone](https://app.pinecone.io/): A Pinecone key, you can also get a free one by creating an account. Additionally, through the `pinecone` app, create an index call `ember`. When configuring the model select dimensions as `1024` and metric as `cosine`.
+- [Pinecone](https://app.pinecone.io/): A Pinecone key, you can also get a free one by creating an account. Additionally, through the `pinecone` app, create an index call `brokeshire`. When configuring the model select dimensions as `1024` and metric as `cosine`.
 
 Create the `.env`:
 
@@ -41,8 +41,8 @@ pdm run dev
 You should see something similar to if it was run successfully:
 
 ```
-Initializing ember_agents package...
-...ember_agents package initialized
+Initializing brokeshire_agents package...
+...brokeshire_agents package initialized
 COHERE_API_KEY
 <YOUR_COHERE_API_KEY_HERE>
 2024-03-28 17:03:24 INFO semantic_router.utils.logger Initializing RouteLayer

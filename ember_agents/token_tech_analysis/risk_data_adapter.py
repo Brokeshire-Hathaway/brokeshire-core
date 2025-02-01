@@ -1,6 +1,6 @@
 from datetime import datetime
-from ember_agents.token_tech_analysis.risk_scoring import RiskAssessmentData
-from ember_agents.token_tech_analysis.token_metrics import TokenMetrics
+from brokeshire_agents.token_tech_analysis.risk_scoring import RiskAssessmentData
+from brokeshire_agents.token_tech_analysis.token_metrics import TokenMetrics
 
 
 def convert_token_to_risk_data(token_metrics: TokenMetrics) -> RiskAssessmentData:

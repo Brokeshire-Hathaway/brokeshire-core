@@ -1,7 +1,7 @@
 from pprint import pprint
 
 import pytest
-from ember_agents.education.education import education
+from brokeshire_agents.education.education import education
 
 
 @pytest.mark.parametrize(

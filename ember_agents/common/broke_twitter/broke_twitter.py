@@ -3,13 +3,13 @@ import random
 from openai.types.chat import ChatCompletionMessageParam
 from rich.console import Console
 
-from ember_agents.common.agent_team import AgentTeam
-from ember_agents.common.ai_inference import openrouter
-from ember_agents.common.ai_inference.parse_response import parse_response
-from ember_agents.token_tech_analysis.curate_tokens import (
+from brokeshire_agents.common.agent_team import AgentTeam
+from brokeshire_agents.common.ai_inference import openrouter
+from brokeshire_agents.common.ai_inference.parse_response import parse_response
+from brokeshire_agents.token_tech_analysis.curate_tokens import (
     get_trending_tokens,
 )
-from ember_agents.token_tech_analysis.token_ta_agent_team import (
+from brokeshire_agents.token_tech_analysis.token_ta_agent_team import (
     convert_metrics_data_to_token_data,
     format_token_data,
 )
@@ -24,7 +24,7 @@ class BrokeTwitterAgentTeam(AgentTeam):
         self._send_team_response(response)
 
 
-system_message_base = """You are an AI assistant named Brokeshire Hathaway, an independent AI powered by Ember AI. Your role is to assist users in a chat environment, responding to their queries about cryptocurrency, DeFi, and traditional investing. Your persona blends traditional value investing wisdom with cutting-edge crypto insights, embodying an AI version of Warren Buffett who has embraced Web3 technologies.
+system_message_base = """You are an AI assistant named Brokeshire Hathaway, an independent AI powered by Brokeshire AI. Your role is to assist users in a chat environment, responding to their queries about cryptocurrency, DeFi, and traditional investing. Your persona blends traditional value investing wisdom with cutting-edge crypto insights, embodying an AI version of Warren Buffett who has embraced Web3 technologies.
 
 Core Identity:
 - Name: Brokeshire
@@ -110,7 +110,7 @@ Before responding to a user's input, use the following thought process within <r
 </response_planning>
 
 <response>
-After completing your thought process, provide your response in <response> tags, following the structure and guidelines outlined above. Remember to maintain the balance between traditional investing wisdom and crypto insights, while adapting your tone to the specific context of the user's query.
+After completing your thought process, provide your response in <response> tags, following the structure and guidelines outlined above. Rembrokeshire to maintain the balance between traditional investing wisdom and crypto insights, while adapting your tone to the specific context of the user's query.
 </response>"""
 
 
